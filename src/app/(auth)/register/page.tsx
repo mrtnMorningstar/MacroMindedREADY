@@ -8,9 +8,10 @@ import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
 } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 import { FirebaseError } from "firebase/app";
 
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 
 const heroEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
@@ -58,7 +59,37 @@ export default function RegisterPage() {
     setIsSubmitting(true);
 
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const credential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+      await setDoc(
+        doc(db, "users", credential.user.uid),
+        {
+          email,
+          displayName: credential.user.displayName ?? "",
+          packageTier: null,
+          mealPlanStatus: "Not Started",
+          mealPlanFileURL: null,
+          profile: {
+            height: "",
+            weight: "",
+            age: "",
+            gender: "",
+            activityLevel: "",
+            goal: "",
+            dietaryRestrictions: "",
+            allergies: "",
+            preferences: "",
+          },
+          role: "member",
+          createdAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+
       router.replace("/dashboard");
     } catch (err) {
       if (err instanceof FirebaseError) {
@@ -66,6 +97,7 @@ export default function RegisterPage() {
       } else {
         setError("Something went wrong. Please try again.");
       }
+    } finally {
       setIsSubmitting(false);
     }
   };
