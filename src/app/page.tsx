@@ -1,30 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 
-const heroTextVariants = {
+const heroEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+const heroTextVariants: Variants = {
   hidden: { opacity: 0, y: 40 },
-  visible: (delay: number) => ({
+  visible: (custom: number = 0) => ({
     opacity: 1,
     y: 0,
     transition: {
+      type: "tween",
       duration: 0.7,
-      delay,
-      ease: [0.22, 1, 0.36, 1],
+      delay: custom,
+      ease: heroEase,
     },
   }),
 };
 
-const featureVariants = {
+const featureVariants: Variants = {
   hidden: { opacity: 0, y: 20 },
-  visible: (i: number) => ({
+  visible: (custom: number = 0) => ({
     opacity: 1,
     y: 0,
     transition: {
       duration: 0.6,
-      delay: 0.5 + i * 0.1,
+      delay: 0.5 + custom * 0.1,
       ease: "easeOut",
+      type: "tween",
     },
   }),
 };
