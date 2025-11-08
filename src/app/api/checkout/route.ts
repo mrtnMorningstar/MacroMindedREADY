@@ -1,14 +1,9 @@
 import { NextResponse } from "next/server";
 
 import { getStripe } from "@/lib/stripe";
+import { PRICE_IDS } from "@/lib/prices";
 
 type PlanTier = "Basic" | "Pro" | "Elite";
-
-const priceMap: Record<PlanTier, string> = {
-  Basic: "price_basic_placeholder",
-  Pro: "price_pro_placeholder",
-  Elite: "price_elite_placeholder",
-};
 
 function getBaseUrl(request: Request) {
   const origin = request.headers.get("origin");
@@ -21,14 +16,14 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { plan } = body as { plan?: PlanTier };
 
-    if (!plan || !(plan in priceMap)) {
+    if (!plan || !(plan in PRICE_IDS)) {
       return NextResponse.json(
         { error: "Invalid or missing plan tier." },
         { status: 400 }
       );
     }
 
-    const priceId = priceMap[plan];
+    const priceId = PRICE_IDS[plan];
     if (!priceId || priceId.includes("placeholder")) {
       return NextResponse.json(
         { error: "Stripe price ID not configured for this plan." },
@@ -41,7 +36,7 @@ export async function POST(request: Request) {
     const stripe = getStripe();
 
     const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
+      mode: "payment",
       payment_method_types: ["card"],
       line_items: [
         {
