@@ -235,9 +235,6 @@ export default function PackagesPage() {
                     <div className="flex items-baseline gap-3">
                       <p className="text-3xl font-semibold tracking-[0.18em] text-foreground">
                         {price}
-                        <span className="ml-2 text-xs uppercase tracking-[0.3em] text-foreground/50">
-                          per month
-                        </span>
                       </p>
                       {originalPrice && (
                         <span className="text-sm uppercase tracking-[0.3em] text-foreground/40 line-through">
