@@ -35,8 +35,19 @@ export async function POST(request: Request) {
 
     const stripe = getStripe();
 
+    const price = await stripe.prices.retrieve(priceId);
+
+    if (!price.active) {
+      return NextResponse.json(
+        { error: "Selected plan is currently unavailable." },
+        { status: 400 }
+      );
+    }
+
+    const mode = price.type === "recurring" ? "subscription" : "payment";
+
     const session = await stripe.checkout.sessions.create({
-      mode: "payment",
+      mode,
       payment_method_types: ["card"],
       line_items: [
         {
