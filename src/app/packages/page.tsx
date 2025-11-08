@@ -15,6 +15,7 @@ type PlanTier = {
   benefits: string[];
   accent: string;
   description: string;
+  price: string;
 };
 
 type PlanConfig = Record<PlanTier["name"], PlanTier>;
@@ -29,6 +30,8 @@ const planConfig: PlanConfig = {
       "1 Meal plan PDF",
     ],
     accent: "from-accent/30 via-accent/15 to-transparent",
+    price: "$149",
+    originalPrice: "$199",
   },
   Pro: {
     name: "Pro",
@@ -41,6 +44,8 @@ const planConfig: PlanConfig = {
       "Progress check-in message",
     ],
     accent: "from-accent/50 via-accent/20 to-transparent",
+    price: "$249",
+    originalPrice: "$329",
   },
   Elite: {
     name: "Elite",
@@ -53,6 +58,8 @@ const planConfig: PlanConfig = {
       "Progress check-ins weekly",
     ],
     accent: "from-accent/70 via-accent/35 to-transparent",
+    price: "$399",
+    originalPrice: "$549",
   },
 };
 
@@ -201,7 +208,7 @@ export default function PackagesPage() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="grid gap-6 sm:grid-cols-3"
         >
-          {cards.map(({ name, turnaround, benefits, accent, description }) => {
+          {cards.map(({ name, turnaround, benefits, accent, description, price, originalPrice }) => {
             const isSaving = savingTier === name;
             const isCurrentSelection =
               !checkingAuth && currentTier === name;
@@ -224,6 +231,27 @@ export default function PackagesPage() {
                     <h2 className="text-sm uppercase tracking-[0.32em] text-foreground/70">
                       {turnaround}
                     </h2>
+                    <div className="flex items-baseline gap-3">
+                      <p className="text-3xl font-semibold tracking-[0.18em] text-foreground">
+                        {price}
+                        <span className="ml-2 text-xs uppercase tracking-[0.3em] text-foreground/50">
+                          per month
+                        </span>
+                      </p>
+                      {originalPrice && (
+                        <span className="text-sm uppercase tracking-[0.3em] text-foreground/40 line-through">
+                          {originalPrice}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs uppercase tracking-[0.3em] text-accent/80">
+                      Limited time discount
+                    </span>
+                  </header>
+*** End Patch
+                        per month
+                      </span>
+                    </p>
                   </header>
 
                   <p className="text-xs uppercase tracking-[0.28em] text-foreground/60">
