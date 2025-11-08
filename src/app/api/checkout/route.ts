@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 
 type PlanTier = "Basic" | "Pro" | "Elite";
 
@@ -37,6 +37,8 @@ export async function POST(request: Request) {
     }
 
     const baseUrl = getBaseUrl(request);
+
+    const stripe = getStripe();
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
