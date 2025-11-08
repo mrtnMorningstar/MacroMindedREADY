@@ -132,7 +132,11 @@ export default function PackagesPage() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ plan: tier }),
+          body: JSON.stringify({
+            plan: tier,
+            userId: currentUser.uid,
+            email: currentUser.email ?? "",
+          }),
         });
 
         if (!response.ok) {
