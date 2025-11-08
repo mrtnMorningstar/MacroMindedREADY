@@ -16,6 +16,7 @@ type PlanTier = {
   accent: string;
   description: string;
   price: string;
+  originalPrice?: string;
 };
 
 type PlanConfig = Record<PlanTier["name"], PlanTier>;
