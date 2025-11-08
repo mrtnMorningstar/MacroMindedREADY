@@ -248,11 +248,6 @@ export default function PackagesPage() {
                       Limited time discount
                     </span>
                   </header>
-*** End Patch
-                        per month
-                      </span>
-                    </p>
-                  </header>
 
                   <p className="text-xs uppercase tracking-[0.28em] text-foreground/60">
                     {description}
