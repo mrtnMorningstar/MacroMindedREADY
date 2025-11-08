@@ -7,6 +7,7 @@ import { motion, type Variants } from "framer-motion";
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  updateProfile,
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { FirebaseError } from "firebase/app";
@@ -26,6 +27,7 @@ const containerVariants: Variants = {
 
 export default function RegisterPage() {
   const router = useRouter();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -33,8 +35,9 @@ export default function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isDisabled = useMemo(
-    () => !email || !password || !confirmPassword || isSubmitting,
-    [email, password, confirmPassword, isSubmitting]
+    () =>
+      !name.trim() || !email || !password || !confirmPassword || isSubmitting,
+    [name, email, password, confirmPassword, isSubmitting]
   );
 
   useEffect(() => {
@@ -51,6 +54,13 @@ export default function RegisterPage() {
     event.preventDefault();
     setError(null);
 
+    const trimmedName = name.trim();
+
+    if (!trimmedName) {
+      setError("Please enter your name.");
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
@@ -65,15 +75,20 @@ export default function RegisterPage() {
         password
       );
 
+      await updateProfile(credential.user, {
+        displayName: trimmedName,
+      });
+
       await setDoc(
         doc(db, "users", credential.user.uid),
         {
           email,
-          displayName: credential.user.displayName ?? "",
+          displayName: trimmedName,
           packageTier: null,
           mealPlanStatus: "Not Started",
           mealPlanFileURL: null,
           profile: {
+            name: trimmedName,
             height: "",
             weight: "",
             age: "",
@@ -171,6 +186,23 @@ export default function RegisterPage() {
             className="relative mt-10 flex flex-col gap-6"
             onSubmit={handleSubmit}
           >
+            <label className="flex flex-col gap-2">
+              <span className="text-xs uppercase tracking-[0.32em] text-foreground/70">
+                Full Name<span className="ml-2 text-accent">*</span>
+              </span>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                autoComplete="name"
+                required
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                className="rounded-2xl border border-border/60 bg-background/40 px-4 py-3 text-sm tracking-[0.08em] text-foreground placeholder:text-foreground/40 focus:border-accent focus:outline-none"
+                placeholder="How should we address you?"
+              />
+            </label>
+
             <label className="flex flex-col gap-2">
               <span className="text-xs uppercase tracking-[0.32em] text-foreground/70">
                 Email<span className="ml-2 text-accent">*</span>
