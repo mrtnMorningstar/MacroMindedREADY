@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "dotenv": "^17.2.3",
     "firebase": "^12.5.0",
     "framer-motion": "^12.23.24",
     "next": "16.0.1",
@@ -23,6 +24,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.0.1",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }
