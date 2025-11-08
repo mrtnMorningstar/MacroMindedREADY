@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import type { User } from "firebase/auth";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 
 import { auth, db } from "@/lib/firebase";
 
@@ -119,18 +119,33 @@ export default function PackagesPage() {
 
       try {
         setSavingTier(tier);
-        const userDocRef = doc(db, "users", currentUser.uid);
-        await setDoc(
-          userDocRef,
-          { packageTier: tier },
-          { merge: true }
-        );
-        setCurrentTier(tier);
-        router.push("/macro-form");
+        const response = await fetch("/api/checkout", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ plan: tier }),
+        });
+
+        if (!response.ok) {
+          const errorData = (await response.json().catch(() => ({}))) as {
+            error?: string;
+          };
+          throw new Error(errorData.error ?? "Failed to initiate checkout.");
+        }
+
+        const data = (await response.json()) as { url?: string };
+        if (!data.url) {
+          throw new Error("No checkout URL returned.");
+        }
+
+        window.location.href = data.url;
       } catch (error) {
         console.error("Failed to save package selection:", error);
         setFeedback(
-          "Could not save your selection. Please try again or contact support."
+          error instanceof Error
+            ? error.message
+            : "Could not start checkout. Please try again."
         );
         setSavingTier(null);
       }

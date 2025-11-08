@@ -401,18 +401,30 @@ function SelectField({
         {label}
         {required && <span className="ml-2 text-accent">*</span>}
       </span>
-      <select
-        className="rounded-2xl border border-border/60 bg-background/40 px-4 py-3 text-sm tracking-[0.08em] text-foreground focus:border-accent focus:outline-none"
-        value={value}
-        onChange={onChange}
-      >
-        <option value="">Select...</option>
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
+      <div className="group relative">
+        <select
+          className="w-full appearance-none rounded-2xl border border-border/60 bg-gradient-to-r from-background/60 via-background/40 to-background/60 px-4 py-3 text-sm tracking-[0.12em] text-foreground shadow-[0_0_40px_-25px_rgba(215,38,61,0.8)] transition focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30 group-hover:border-accent/80"
+          value={value}
+          onChange={onChange}
+        >
+          <option value="">Select...</option>
+          {options.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+        <span className="pointer-events-none absolute right-4 top-1/2 hidden -translate-y-1/2 text-accent/80 group-hover:text-accent sm:block">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="h-4 w-4"
+          >
+            <path d="M12 15.75a.75.75 0 0 1-.53-.22l-5-5a.75.75 0 0 1 1.06-1.06L12 13.94l4.47-4.47a.75.75 0 0 1 1.06 1.06l-5 5a.75.75 0 0 1-.53.22Z" />
+          </svg>
+        </span>
+      </div>
       {error && (
         <span className="text-[0.6rem] uppercase tracking-[0.32em] text-accent">
           {error}
