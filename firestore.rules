@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.role == 'admin';
+    }
+
+    function unchangedRestrictedFields() {
+      return (!request.resource.data.keys().hasAny(['mealPlanFileURL']) ||
+          (!('mealPlanFileURL' in resource.data)
+            && !('mealPlanFileURL' in request.resource.data)) ||
+          request.resource.data.mealPlanFileURL == resource.data.mealPlanFileURL) &&
+        (!request.resource.data.keys().hasAny(['mealPlanStatus']) ||
+          (!('mealPlanStatus' in resource.data)
+            && !('mealPlanStatus' in request.resource.data)) ||
+          request.resource.data.mealPlanStatus == resource.data.mealPlanStatus);
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+
+      allow create: if isSignedIn() && request.auth.uid == userId
+        && !request.resource.data.keys().hasAny(['mealPlanFileURL', 'mealPlanStatus']);
+
+      allow update: if isAdmin()
+        || (isSignedIn()
+          && request.auth.uid == userId
+          && unchangedRestrictedFields());
+
+      allow delete: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+    }
+
+    match /purchases/{purchaseId} {
+      allow read, write: if isSignedIn();
+    }
+  }
+}
+
