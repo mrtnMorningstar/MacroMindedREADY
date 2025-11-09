@@ -1,6 +1,6 @@
 export const PRICE_IDS = {
-  Basic: "price_1SRJXZC9GeeSL2vBJ7aGEuSS",
-  Pro: "price_1SRJYnC9GeeSL2vBqRFrH2u2",
-  Elite: "price_1SRJapC9GeeSL2vB2ZScPnMe",
+  Basic: "price_1SRV5LC9GeeSL2vBXBlL7sUP",
+  Pro: "price_1SRV5qC9GeeSL2vBM49Fqb4H",
+  Elite: "price_1SRV6GC9GeeSL2vBLaRFkKKf",
 } as const;
 
