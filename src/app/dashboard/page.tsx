@@ -170,7 +170,7 @@ export default function DashboardPage() {
             initial="hidden"
             animate="visible"
             variants={containerVariants}
-            className="font-display text-xs uppercase tracking-[0.5em] text-accent/90"
+            className="font-medium uppercase tracking-[0.45em] text-foreground/70"
           >
             Macro Command Center
           </motion.span>
@@ -182,19 +182,19 @@ export default function DashboardPage() {
             className="flex flex-col items-center justify-between gap-4 sm:flex-row"
           >
             <div className="text-center sm:text-left">
-              <h1 className="font-display text-3xl uppercase tracking-[0.24em] text-foreground sm:text-4xl">
+              <h1 className="font-bold text-3xl uppercase tracking-[0.22em] text-foreground sm:text-4xl">
                 Your Nutrition Operations Hub
               </h1>
-              <p className="mt-2 text-xs uppercase tracking-[0.32em] text-foreground/60 sm:text-sm">
+              <p className="mt-2 text-xs font-medium uppercase tracking-[0.3em] text-foreground/60 sm:text-sm">
                 {user?.email
                   ? `Signed in as ${user.email}`
                   : "Stay in sync with your coaching team."}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={handleSignOut}
-              className="rounded-full border border-border/80 bg-muted/60 px-5 py-2 text-xs font-semibold uppercase tracking-[0.32em] text-foreground transition hover:border-accent hover:bg-accent hover:text-background"
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="rounded-full border border-border/70 px-5 py-2 text-xs font-medium uppercase tracking-[0.3em] text-foreground/70 transition hover:border-accent hover:text-accent"
             >
               Sign Out
             </button>
@@ -296,44 +296,43 @@ function StatusOverview({
   packageTier?: string | null;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-border/80 bg-muted/60 px-8 py-10 shadow-[0_0_90px_-45px_rgba(215,38,61,0.6)] backdrop-blur">
-      <div className="pointer-events-none absolute inset-x-0 -top-28 h-40 bg-gradient-to-b from-accent/45 via-accent/15 to-transparent blur-3xl" />
+    <motion.div
+      whileHover={{ scale: 1.02 }}
+      className="relative overflow-hidden rounded-3xl border border-border/70 bg-muted/60 px-8 py-8 shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] backdrop-blur"
+    >
+      <div className="pointer-events-none absolute inset-x-0 -top-24 h-32 bg-gradient-to-b from-background/20 via-background/5 to-transparent blur-3xl" />
       <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <span className="font-display text-xs uppercase tracking-[0.45em] text-accent">
+          <span className="font-medium uppercase tracking-[0.32em] text-foreground/70">
             Plan Status
           </span>
-          <h3 className="mt-4 font-display text-3xl uppercase tracking-[0.24em]">
+          <h3 className="mt-4 font-bold text-2xl uppercase tracking-[0.22em] text-foreground">
             {status}
           </h3>
-          <p className="mt-2 text-xs uppercase tracking-[0.28em] text-foreground/60 sm:text-sm">
-            Package tier:{" "}
-            <span className="text-foreground/90">{packageTier ?? "Unknown"}</span>
+          <p className="mt-2 text-xs font-medium uppercase tracking-[0.28em] text-foreground/60 sm:text-sm">
+            Package tier: <span className="text-foreground">{packageTier ?? "Unknown"}</span>
           </p>
         </div>
         <div className="flex gap-4">
           {progressSteps.map((step, index) => {
             const isActive = progressSteps.indexOf(status) >= index;
             return (
-              <motion.div
+              <div
                 key={step}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
-                className={`relative flex min-w-[120px] flex-col items-center rounded-2xl border px-4 py-4 text-center text-[0.6rem] uppercase tracking-[0.3em] ${
+                className={`relative flex min-w-[120px] flex-col items-center rounded-2xl border px-4 py-4 text-center text-[0.6rem] font-medium uppercase tracking-[0.3em] transition ${
                   isActive
-                    ? "border-accent bg-accent/20 text-accent"
-                    : "border-border/70 bg-background/20 text-foreground/40"
+                    ? "border-accent/70 bg-background/30 text-foreground"
+                    : "border-border/70 bg-background/10 text-foreground/40"
                 }`}
               >
-                <span className="h-2 w-2 rounded-full bg-accent" />
+                <span className={`h-2 w-2 rounded-full ${isActive ? "bg-accent" : "bg-border/60"}`} />
                 <span className="mt-3">{step}</span>
-              </motion.div>
+              </div>
             );
           })}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -344,38 +343,41 @@ function ProfileSummary({ profile }: { profile: Profile }) {
 
   if (entries.length === 0) {
     return (
-      <div className="rounded-3xl border border-border/80 bg-muted/60 px-8 py-10 text-center text-xs uppercase tracking-[0.3em] text-foreground/50 backdrop-blur">
+      <motion.div
+        whileHover={{ scale: 1.02 }}
+        className="rounded-3xl border border-border/70 bg-muted/60 px-8 py-8 text-center text-xs font-medium uppercase tracking-[0.3em] text-foreground/50 backdrop-blur"
+      >
         No profile metrics yet. Complete the macro intake form to unlock custom
         insights.
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="rounded-3xl border border-border/80 bg-muted/60 px-8 py-10 backdrop-blur">
-      <h3 className="font-display text-xs uppercase tracking-[0.45em] text-accent">
+    <motion.div
+      whileHover={{ scale: 1.02 }}
+      className="rounded-3xl border border-border/70 bg-muted/60 px-8 py-8 backdrop-blur"
+    >
+      <h3 className="font-bold uppercase tracking-[0.34em] text-foreground">
         Athlete Profile
       </h3>
-      <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {entries.map(([key, value]) => (
           <motion.div
             key={key}
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-            className="flex flex-col gap-2 rounded-2xl border border-border/60 bg-background/30 px-6 py-6 text-xs uppercase tracking-[0.3em] text-foreground/80"
+            whileHover={{ scale: 1.02 }}
+            className="flex flex-col gap-2 rounded-2xl border border-border/60 bg-background/20 px-5 py-5 text-xs font-medium uppercase tracking-[0.28em] text-foreground/70 transition"
           >
             <span className="text-foreground/50">
               {key.replace(/([A-Z])/g, " $1").toUpperCase()}
             </span>
-            <span className="text-sm tracking-[0.18em] text-foreground">
+            <span className="text-sm font-bold tracking-[0.18em] text-foreground">
               {value}
             </span>
           </motion.div>
         ))}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -407,26 +409,29 @@ function MealPlanSection({
     daysSinceDelivery !== null && daysSinceDelivery > 30;
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-border/80 bg-muted/60 px-8 py-10 backdrop-blur">
-      <div className="pointer-events-none absolute inset-x-0 -top-24 h-32 bg-gradient-to-b from-accent/35 via-accent/10 to-transparent blur-3xl" />
+    <motion.div
+      whileHover={{ scale: 1.02 }}
+      className="relative overflow-hidden rounded-3xl border border-border/70 bg-muted/60 px-8 py-8 backdrop-blur shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)]"
+    >
+      <div className="pointer-events-none absolute inset-x-0 -top-24 h-32 bg-gradient-to-b from-background/20 via-background/5 to-transparent blur-3xl" />
       <div className="relative flex flex-col gap-4">
-        <h3 className="font-display text-xs uppercase tracking-[0.45em] text-accent">
+        <h3 className="font-bold uppercase tracking-[0.34em] text-foreground">
           Meal Plan Delivery
         </h3>
         {!isDelivered ? (
           <>
-            <p className="text-xs uppercase tracking-[0.3em] text-foreground/60 sm:text-sm">
+            <p className="text-xs font-medium uppercase tracking-[0.3em] text-foreground/60 sm:text-sm">
               Your dashboard will unlock automatically once our coaches deliver
               your plan. Refresh shortly after checkout to see updates.
             </p>
-            <div className="mt-4 flex h-36 items-center justify-center rounded-2xl border border-dashed border-border/70 bg-background/20 text-[0.65rem] uppercase tracking-[0.3em] text-foreground/50">
+            <div className="mt-4 flex h-36 items-center justify-center rounded-2xl border border-dashed border-border/70 bg-background/20 text-[0.65rem] font-medium uppercase tracking-[0.3em] text-foreground/50">
               Meal plan file pending upload
             </div>
           </>
         ) : (
           <>
             {deliveryLabel && (
-              <span className="inline-flex w-fit items-center justify-center rounded-full border border-accent/60 bg-accent/10 px-4 py-1 text-[0.55rem] uppercase tracking-[0.32em] text-accent">
+              <span className="inline-flex w-fit items-center justify-center rounded-full border border-border/70 bg-background/20 px-4 py-1 text-[0.55rem] font-medium uppercase tracking-[0.32em] text-foreground/70">
                 {deliveryLabel}
               </span>
             )}
@@ -435,12 +440,12 @@ function MealPlanSection({
                 href={fileUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center rounded-full border border-accent bg-accent px-6 py-3 text-xs font-semibold uppercase tracking-[0.32em] text-background transition hover:bg-transparent hover:text-accent"
+                className="inline-flex items-center justify-center rounded-full border border-accent bg-accent px-6 py-3 text-xs font-bold uppercase tracking-[0.32em] text-background transition hover:bg-transparent hover:text-accent"
               >
                 Download Meal Plan PDF
               </a>
             ) : (
-              <p className="text-xs uppercase tracking-[0.3em] text-foreground/60 sm:text-sm">
+              <p className="text-xs font-medium uppercase tracking-[0.3em] text-foreground/60 sm:text-sm">
                 PDF delivery is being prepared. Check back soon.
               </p>
             )}
@@ -450,7 +455,7 @@ function MealPlanSection({
                 href={groceryListUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex w-fit items-center justify-center rounded-full border border-border/70 px-5 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-foreground/80 transition hover:border-accent hover:text-accent"
+                className="inline-flex w-fit items-center justify-center rounded-full border border-border/70 px-5 py-2 text-[0.6rem] font-medium uppercase tracking-[0.3em] text-foreground/70 transition hover:border-accent hover:text-accent"
               >
                 Download Grocery List
               </a>
@@ -459,7 +464,7 @@ function MealPlanSection({
             {showRefreshCTA && (
               <button
                 type="button"
-                className="inline-flex w-fit items-center justify-center rounded-full border border-border/70 px-5 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-foreground/70 transition hover:border-accent hover:text-accent"
+                className="inline-flex w-fit items-center justify-center rounded-full border border-border/70 px-5 py-2 text-[0.6rem] font-medium uppercase tracking-[0.3em] text-foreground/70 transition hover:border-accent hover:text-accent"
               >
                 Request Updated Meal Plan
               </button>
@@ -468,14 +473,14 @@ function MealPlanSection({
             {images.length > 0 ? (
               <MealPlanGallery images={images} />
             ) : (
-              <p className="text-[0.65rem] uppercase tracking-[0.3em] text-foreground/50">
+              <p className="text-[0.65rem] font-medium uppercase tracking-[0.3em] text-foreground/50">
                 Image gallery coming soon.
               </p>
             )}
           </>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -566,41 +571,44 @@ function MetricCard({
   subtitle?: string;
 }) {
   return (
-    <div className="flex flex-col gap-3 rounded-3xl border border-border/80 bg-muted/60 px-6 py-8 shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] backdrop-blur">
-      <h3 className="font-display text-xs uppercase tracking-[0.4em] text-accent">
+    <motion.div
+      whileHover={{ scale: 1.02 }}
+      className="flex flex-col gap-3 rounded-3xl border border-border/70 bg-muted/60 px-6 py-6 shadow-[0_0_50px_-30px_rgba(215,38,61,0.5)] backdrop-blur"
+    >
+      <h3 className="font-bold uppercase tracking-[0.34em] text-foreground">
         {title}
       </h3>
-      <p className="text-xl font-semibold uppercase tracking-[0.22em] text-foreground">
+      <p className="text-xl font-bold uppercase tracking-[0.2em] text-foreground">
         {value}
       </p>
       {subtitle && (
-        <p className="text-[0.65rem] uppercase tracking-[0.3em] text-foreground/50">
+        <p className="text-[0.7rem] font-medium uppercase tracking-[0.28em] text-foreground/60">
           {subtitle}
         </p>
       )}
-    </div>
+    </motion.div>
   );
 }
 
 function ProgressTracker({ statusIndex }: { statusIndex: number }) {
   return (
-    <div className="rounded-3xl border border-border/80 bg-muted/60 px-8 py-10 backdrop-blur">
-      <h3 className="font-display text-xs uppercase tracking-[0.45em] text-accent">
+    <motion.div
+      whileHover={{ scale: 1.02 }}
+      className="rounded-3xl border border-border/70 bg-muted/60 px-8 py-8 backdrop-blur shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)]"
+    >
+      <h3 className="font-bold uppercase tracking-[0.34em] text-foreground">
         Progress Tracker
       </h3>
       <div className="mt-6 flex flex-col gap-4">
         {progressSteps.map((step, index) => {
           const isReached = index <= statusIndex;
           return (
-            <motion.div
+            <div
               key={step}
-              initial={{ opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, delay: index * 0.15 }}
               className="flex items-center gap-3"
             >
               <span
-                className={`flex h-10 w-10 items-center justify-center rounded-full border text-xs font-semibold uppercase tracking-[0.28em] ${
+                className={`flex h-10 w-10 items-center justify-center rounded-full border text-xs font-bold uppercase tracking-[0.28em] ${
                   isReached
                     ? "border-accent bg-accent text-background"
                     : "border-border/60 bg-background/20 text-foreground/50"
@@ -608,14 +616,14 @@ function ProgressTracker({ statusIndex }: { statusIndex: number }) {
               >
                 {index + 1}
               </span>
-              <div className="flex-1 rounded-2xl border border-border/60 bg-background/20 px-4 py-3 text-[0.65rem] uppercase tracking-[0.3em] text-foreground/70">
+              <div className="flex-1 rounded-2xl border border-border/60 bg-background/20 px-4 py-3 text-[0.65rem] font-medium uppercase tracking-[0.3em] text-foreground/70">
                 {step}
               </div>
-            </motion.div>
+            </div>
           );
         })}
       </div>
-    </div>
+    </motion.div>
   );
 }
 

@@ -65,6 +65,7 @@ export default function AdminPage() {
     useState<Record<string, UploadStatus>>({});
   const [groceryUploadStates, setGroceryUploadStates] =
     useState<Record<string, UploadStatus>>({});
+  const [activeSection, setActiveSection] = useState("users");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -460,89 +461,148 @@ export default function AdminPage() {
     return null;
   }
 
+  const navItems: Array<{ id: typeof activeSection; label: string }> = [
+    { id: "users", label: "Users" },
+    { id: "sales", label: "Sales / Revenue" },
+    { id: "requests", label: "Plan Requests" },
+  ];
+
+  const planRequestUsers = users.filter(
+    (user) =>
+      user.packageTier &&
+      (user.mealPlanStatus ?? "Not Started") !== "Delivered"
+  );
+
   return (
-    <div className="relative isolate min-h-screen bg-background text-foreground">
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1.1 }}
-        className="pointer-events-none absolute inset-0"
+    <div className="flex min-h-screen bg-background text-foreground">
+      <motion.aside
+        initial={{ x: -40, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="hidden w-64 flex-col border-r border-border/70 bg-muted/40 px-6 py-10 shadow-[0_0_80px_-40px_rgba(215,38,61,0.6)] backdrop-blur lg:sticky lg:top-0 lg:flex lg:h-screen"
       >
-        <div className="absolute -top-36 left-1/2 h-[680px] w-[680px] -translate-x-1/2 rounded-full bg-accent/30 blur-3xl" />
-        <div className={`absolute inset-0 ${baseBackground}`} />
-      </motion.div>
+        <span className="font-bold uppercase tracking-[0.48em] text-foreground">
+          MacroMinded
+        </span>
+        <p className="mt-2 text-[0.65rem] font-medium uppercase tracking-[0.3em] text-foreground/60">
+          Admin navigation
+        </p>
 
-      <section className="relative mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-16 sm:py-20">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="font-display text-3xl uppercase tracking-[0.24em] text-foreground sm:text-4xl">
-              Admin Control Tower
-            </h1>
-            <p className="mt-2 text-xs uppercase tracking-[0.32em] text-foreground/60 sm:text-sm">
-              Oversee athlete progress, deliver plans, and manage operations.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => void fetchUsers()}
-            className="rounded-full border border-border/80 bg-muted/60 px-5 py-2 text-xs font-semibold uppercase tracking-[0.32em] text-foreground transition hover:border-accent hover:bg-accent hover:text-background"
-          >
-            Refresh Data
-          </button>
-        </header>
+        <nav className="mt-10 flex flex-col gap-3">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => {
+                setActiveSection(item.id);
+                document
+                  .getElementById(item.id)
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+              className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
+                activeSection === item.id
+                  ? "border-accent bg-accent text-background"
+                  : "border-border/70 text-foreground/70 hover:border-accent hover:text-accent"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+      </motion.aside>
 
-        {feedback && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-3xl border border-accent/40 bg-muted/70 px-6 py-4 text-center text-xs font-semibold uppercase tracking-[0.28em] text-accent"
-          >
-            {feedback}
-          </motion.div>
-        )}
+      <div className="relative isolate flex-1">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.1 }}
+          className="pointer-events-none absolute inset-0"
+        >
+          <div className="absolute -top-36 left-1/2 h-[680px] w-[680px] -translate-x-1/2 rounded-full bg-accent/30 blur-3xl" />
+          <div className={`absolute inset-0 ${baseBackground}`} />
+        </motion.div>
 
-        <div className="relative overflow-hidden rounded-3xl border border-border/80 bg-muted/60 px-6 py-8 shadow-[0_0_90px_-45px_rgba(215,38,61,0.6)] backdrop-blur">
-          <div className="pointer-events-none absolute inset-x-0 -top-24 h-32 bg-gradient-to-b from-accent/35 via-accent/10 to-transparent blur-3xl" />
-          <div className="relative flex flex-col gap-6">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <h2 className="font-display text-xs uppercase tracking-[0.45em] text-accent">
-                Athlete Roster
+        <div className="relative flex flex-col gap-10 px-6 py-10 sm:py-16 lg:px-10">
+          <header className="flex flex-col gap-4 rounded-3xl border border-border/70 bg-muted/60 px-6 py-6 shadow-[0_0_70px_-35px_rgba(215,38,61,0.6)] backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="font-bold text-2xl uppercase tracking-[0.32em] text-foreground sm:text-3xl">
+                MacroMinded Admin
+              </h1>
+              <p className="mt-2 text-[0.7rem] font-medium uppercase tracking-[0.3em] text-foreground/60">
+                Control tower for athletes, sales, and fulfillment.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => void fetchUsers()}
+                className="rounded-full border border-border/70 px-4 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-foreground/70 transition hover:border-accent hover:text-accent"
+              >
+                Refresh Data
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  await auth.signOut();
+                  router.replace("/login");
+                }}
+                className="rounded-full border border-accent bg-accent px-4 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-background transition hover:bg-transparent hover:text-accent"
+              >
+                Logout
+              </button>
+            </div>
+          </header>
+
+          {feedback && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-3xl border border-accent/40 bg-muted/70 px-6 py-4 text-center text-xs font-semibold uppercase tracking-[0.28em] text-accent"
+            >
+              {feedback}
+            </motion.div>
+          )}
+
+          <section id="users" className="flex flex-col gap-8">
+            <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="font-bold text-xl uppercase tracking-[0.32em] text-foreground">
+                Users
               </h2>
-              <p className="text-[0.65rem] uppercase tracking-[0.3em] text-foreground/50">
+              <p className="text-[0.65rem] font-medium uppercase tracking-[0.3em] text-foreground/60">
                 {loadingUsers
                   ? "Fetching user data..."
                   : `${users.length} users loaded`}
               </p>
-            </div>
+            </header>
 
-            <div className="overflow-x-auto rounded-2xl border border-border/70 bg-background/20">
-              <table className="min-w-full divide-y divide-border/60 text-left">
-                <thead className="uppercase tracking-[0.3em] text-foreground/60 text-[0.6rem]">
-                  <tr className="text-foreground/60">
-                    <th className="px-5 py-4 font-medium">Name</th>
-                    <th className="px-5 py-4 font-medium">Email</th>
-                    <th className="px-5 py-4 font-medium">Package</th>
-                    <th className="px-5 py-4 font-medium">Status</th>
-                    <th className="px-5 py-4 font-medium">Meal Plan</th>
-                    <th className="px-5 py-4 font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/70 text-[0.7rem] uppercase tracking-[0.24em] text-foreground/80">
-                  {loadingUsers ? (
-                    <tr>
-                      <td colSpan={6} className="px-5 py-6 text-center">
-                        Loading users...
-                      </td>
+            <div className="overflow-hidden rounded-3xl border border-border/80 bg-muted/60 shadow-[0_0_90px_-45px_rgba(215,38,61,0.6)] backdrop-blur">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-border/60 text-left">
+                  <thead className="uppercase tracking-[0.3em] text-foreground/60 text-[0.6rem]">
+                    <tr className="text-foreground/60">
+                      <th className="px-5 py-4 font-medium">Name</th>
+                      <th className="px-5 py-4 font-medium">Email</th>
+                      <th className="px-5 py-4 font-medium">Package</th>
+                      <th className="px-5 py-4 font-medium">Status</th>
+                      <th className="px-5 py-4 font-medium">Meal Plan</th>
+                      <th className="px-5 py-4 font-medium">Actions</th>
                     </tr>
-                  ) : users.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="px-5 py-6 text-center">
-                        No users found.
-                      </td>
-                    </tr>
-                  ) : (
-                    users.map((userRecord) => {
-                      return (
+                  </thead>
+                  <tbody className="divide-y divide-border/70 text-[0.7rem] uppercase tracking-[0.24em] text-foreground/80">
+                    {loadingUsers ? (
+                      <tr>
+                        <td colSpan={6} className="px-5 py-6 text-center">
+                          Loading users...
+                        </td>
+                      </tr>
+                    ) : users.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-5 py-6 text-center">
+                          No users found.
+                        </td>
+                      </tr>
+                    ) : (
+                      users.map((userRecord) => (
                         <tr
                           key={userRecord.id}
                           className={
@@ -585,27 +645,117 @@ export default function AdminPage() {
                             </button>
                           </td>
                         </tr>
-                      );
-                    })
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {selectedUser && (
+              <UserDetailPanel
+                user={selectedUser}
+                onPdfInputChange={handlePdfInputChange(selectedUser)}
+                onImagesInputChange={handleImagesInputChange(selectedUser)}
+                onGroceryInputChange={handleGroceryInputChange(selectedUser)}
+                pdfStatus={pdfUploadStates[selectedUser.id]}
+                imageStatus={imageUploadStates[selectedUser.id]}
+                groceryStatus={groceryUploadStates[selectedUser.id]}
+              />
+            )}
+          </section>
+
+          <section
+            id="sales"
+            className="flex flex-col gap-4 rounded-3xl border border-border/80 bg-muted/60 px-6 py-8 shadow-[0_0_90px_-45px_rgba(215,38,61,0.6)] backdrop-blur"
+          >
+            <h2 className="font-display text-xl uppercase tracking-[0.32em] text-foreground">
+              Sales / Revenue
+            </h2>
+            <p className="text-[0.7rem] uppercase tracking-[0.3em] text-foreground/60">
+              Stripe analytics coming soon. Monitor topline performance here.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                { label: "Total Sales", value: "$0", hint: "Live data planned" },
+                { label: "Active Subscriptions", value: "0", hint: "Stripe sync" },
+                { label: "MRR", value: "$0", hint: "Monthly recurring revenue" },
+                { label: "Refund Requests", value: "0", hint: "Support queue" },
+              ].map(({ label, value, hint }) => (
+                <div
+                  key={label}
+                  className="rounded-2xl border border-border/70 bg-background/20 px-5 py-5"
+                >
+                  <p className="text-[0.7rem] uppercase tracking-[0.3em] text-foreground/60">
+                    {label}
+                  </p>
+                  <p className="mt-2 text-xl font-semibold uppercase tracking-[0.24em] text-foreground">
+                    {value}
+                  </p>
+                  <p className="mt-1 text-[0.6rem] uppercase tracking-[0.3em] text-foreground/40">
+                    {hint}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section
+            id="requests"
+            className="flex flex-col gap-4 rounded-3xl border border-border/80 bg-muted/60 px-6 py-8 shadow-[0_0_90px_-45px_rgba(215,38,61,0.6)] backdrop-blur"
+          >
+            <h2 className="font-display text-xl uppercase tracking-[0.32em] text-foreground">
+              Plan Requests
+            </h2>
+            <p className="text-[0.7rem] uppercase tracking-[0.3em] text-foreground/60">
+              Athletes awaiting initial plans or updates.
+            </p>
+            <div className="overflow-hidden rounded-2xl border border-border/70">
+              <table className="min-w-full divide-y divide-border/70 text-left text-[0.7rem] uppercase tracking-[0.26em] text-foreground/70">
+                <thead className="bg-background/40 text-foreground/50">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">User</th>
+                    <th className="px-4 py-3 font-medium">Package</th>
+                    <th className="px-4 py-3 font-medium">Status</th>
+                    <th className="px-4 py-3 font-medium">Requested</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {planRequestUsers.map((pendingUser) => (
+                    <tr
+                      key={pendingUser.id}
+                      className="border-t border-border/60 text-foreground/80"
+                    >
+                      <td className="px-4 py-3">
+                        {pendingUser.displayName ?? pendingUser.email ?? "User"}
+                      </td>
+                      <td className="px-4 py-3">
+                        {pendingUser.packageTier ?? "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        {pendingUser.mealPlanStatus ?? "Not Started"}
+                      </td>
+                      <td className="px-4 py-3 text-foreground/40">
+                        Auto-tracked soon
+                      </td>
+                    </tr>
+                  ))}
+                  {planRequestUsers.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-4 py-6 text-center text-foreground/40"
+                      >
+                        No pending requests right now.
+                      </td>
+                    </tr>
                   )}
                 </tbody>
               </table>
             </div>
-          </div>
+          </section>
         </div>
-
-        {selectedUser && (
-          <UserDetailPanel
-            user={selectedUser}
-            onPdfInputChange={handlePdfInputChange(selectedUser)}
-            onImagesInputChange={handleImagesInputChange(selectedUser)}
-            pdfStatus={pdfUploadStates[selectedUser.id]}
-            imageStatus={imageUploadStates[selectedUser.id]}
-            onGroceryInputChange={handleGroceryInputChange(selectedUser)}
-            groceryStatus={groceryUploadStates[selectedUser.id]}
-          />
-        )}
-      </section>
+      </div>
     </div>
   );
 }
@@ -653,20 +803,22 @@ function UserDetailPanel({
   };
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-border/80 bg-muted/60 px-6 py-10 shadow-[0_0_90px_-45px_rgba(215,38,61,0.6)] backdrop-blur">
-      <div className="pointer-events-none absolute inset-x-0 -top-24 h-32 bg-gradient-to-b from-accent/35 via-accent/10 to-transparent blur-3xl" />
+    <motion.div
+      whileHover={{ scale: 1.02 }}
+      className="relative overflow-hidden rounded-3xl border border-border/70 bg-muted/60 px-6 py-8 shadow-[0_0_90px_-45px_rgba(215,38,61,0.6)] backdrop-blur"
+    >
+      <div className="pointer-events-none absolute inset-x-0 -top-24 h-32 bg-gradient-to-b from-background/20 via-background/5 to-transparent blur-3xl" />
       <div className="relative flex flex-col gap-8">
         <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-left">
-            <h3 className="font-display text-xs uppercase tracking-[0.45em] text-accent">
+            <h3 className="font-bold uppercase tracking-[0.32em] text-foreground">
               {user.displayName ?? user.email ?? "Selected User"}
             </h3>
-            <p className="text-[0.7rem] uppercase tracking-[0.3em] text-foreground/60">
-              {user.email ?? "No email"} · Tier:{" "}
-              {user.packageTier ?? "Not assigned"}
+            <p className="text-[0.7rem] font-medium uppercase tracking-[0.3em] text-foreground/60">
+              {user.email ?? "No email"} · Tier: {user.packageTier ?? "Not assigned"}
             </p>
           </div>
-          <div className="rounded-full border border-border/70 px-4 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-foreground/70">
+          <div className="rounded-full border border-border/70 px-4 py-2 text-[0.6rem] font-medium uppercase tracking-[0.3em] text-foreground/70">
             Status: {user.mealPlanStatus ?? "Not Started"}
           </div>
         </header>
@@ -674,127 +826,65 @@ function UserDetailPanel({
         {profileEntries.length > 0 && (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {profileEntries.map(([key, value]) => (
-              <div
+              <motion.div
                 key={key}
-                className="flex flex-col gap-1 rounded-2xl border border-border/60 bg-background/20 px-4 py-4 text-left text-[0.65rem] uppercase tracking-[0.28em] text-foreground/70"
+                whileHover={{ scale: 1.02 }}
+                className="flex flex-col gap-1 rounded-2xl border border-border/60 bg-background/20 px-4 py-4 text-left text-[0.65rem] font-medium uppercase tracking-[0.28em] text-foreground/70"
               >
                 <span className="text-foreground/50">
                   {key.replace(/([A-Z])/g, " $1").toUpperCase()}
                 </span>
-                <span className="text-xs tracking-[0.2em] text-foreground">
+                <span className="text-xs font-bold tracking-[0.2em] text-foreground">
                   {String(value)}
                 </span>
-              </div>
+              </motion.div>
             ))}
           </div>
         )}
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="flex flex-col gap-4 rounded-2xl border border-border/70 bg-background/20 px-5 py-6 text-left">
-            <h4 className="font-display text-xs uppercase tracking-[0.4em] text-accent">
-              Upload Meal Plan PDF
-            </h4>
-            <p className="text-[0.65rem] uppercase tracking-[0.3em] text-foreground/60">
-              Upload the final PDF delivered to the client. This replaces any
-              existing plan file.
-            </p>
-            <label className="inline-flex cursor-pointer items-center justify-center rounded-full border border-border/70 px-4 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-foreground/70 transition hover:border-accent hover:text-accent">
-              Select PDF
-              <input
-                type="file"
-                accept="application/pdf"
-                className="hidden"
-                onChange={onPdfInputChange}
-              />
-            </label>
-            {pdfStatus && (
-              <span className="text-[0.6rem] uppercase tracking-[0.28em] text-foreground/50">
-                {renderStatus(pdfStatus)}
-              </span>
-            )}
-            {user.mealPlanFileURL && (
-              <a
-                href={user.mealPlanFileURL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[0.65rem] uppercase tracking-[0.3em] text-accent underline"
-              >
-                View current plan PDF
-              </a>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-4 rounded-2xl border border-border/70 bg-background/20 px-5 py-6 text-left">
-            <h4 className="font-display text-xs uppercase tracking-[0.4em] text-accent">
-              Upload Supporting Images
-            </h4>
-            <p className="text-[0.65rem] uppercase tracking-[0.3em] text-foreground/60">
-              Optional gallery for meal photos, macro breakdowns, or coaching
-              notes. Up to 10 images per upload.
-            </p>
-            <label className="inline-flex cursor-pointer items-center justify-center rounded-full border border-border/70 px-4 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-foreground/70 transition hover:border-accent hover:text-accent">
-              Select Images
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={onImagesInputChange}
-              />
-            </label>
-            {imageStatus && (
-              <span className="text-[0.6rem] uppercase tracking-[0.28em] text-foreground/50">
-                {renderStatus(imageStatus)}
-              </span>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-4 rounded-2xl border border-border/70 bg-background/20 px-5 py-6 text-left">
-            <h4 className="font-display text-xs uppercase tracking-[0.4em] text-accent">
-              Upload Grocery List PDF
-            </h4>
-            <p className="text-[0.65rem] uppercase tracking-[0.3em] text-foreground/60">
-              Optional companion grocery list to accompany the meal plan.
-            </p>
-            <label className="inline-flex cursor-pointer items-center justify-center rounded-full border border-border/70 px-4 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-foreground/70 transition hover:border-accent hover:text-accent">
-              Select PDF
-              <input
-                type="file"
-                accept="application/pdf"
-                className="hidden"
-                onChange={onGroceryInputChange}
-              />
-            </label>
-            {groceryStatus && (
-              <span className="text-[0.6rem] uppercase tracking-[0.28em] text-foreground/50">
-                {renderStatus(groceryStatus)}
-              </span>
-            )}
-            {user.groceryListURL && (
-              <a
-                href={user.groceryListURL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[0.65rem] uppercase tracking-[0.3em] text-accent underline"
-              >
-                View current grocery list
-              </a>
-            )}
-          </div>
+          <CardUpload
+            title="Upload Meal Plan PDF"
+            description="Required — replaces existing file."
+            onChange={onPdfInputChange}
+            accept="application/pdf"
+            status={renderStatus(pdfStatus)}
+            currentUrl={user.mealPlanFileURL}
+            ctaLabel="Select PDF"
+          />
+          <CardUpload
+            title="Upload Supporting Images"
+            description="Optional — upload lifestyle shots or plan breakdown visuals."
+            onChange={onImagesInputChange}
+            accept="image/*"
+            multiple
+            status={renderStatus(imageStatus)}
+            ctaLabel="Select Images"
+          />
+          <CardUpload
+            title="Upload Grocery List"
+            description="Optional grocery list PDF for the client."
+            onChange={onGroceryInputChange}
+            accept="application/pdf"
+            status={renderStatus(groceryStatus)}
+            currentUrl={user.groceryListURL}
+            ctaLabel="Select PDF"
+          />
         </div>
 
         {mealPlanImages.length > 0 && (
           <div className="flex flex-col gap-4">
-            <h4 className="font-display text-xs uppercase tracking-[0.4em] text-accent">
+            <h4 className="font-bold uppercase tracking-[0.32em] text-foreground">
               Meal Plan Gallery
             </h4>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {mealPlanImages.map((url) => (
-                <a
+                <motion.a
                   key={url}
                   href={url}
                   target="_blank"
                   rel="noopener noreferrer"
+                  whileHover={{ scale: 1.02 }}
                   className="group relative overflow-hidden rounded-2xl border border-border/70"
                 >
                   <img
@@ -802,13 +892,72 @@ function UserDetailPanel({
                     alt="Meal plan supporting"
                     className="h-32 w-full object-cover transition group-hover:scale-105"
                   />
-                </a>
+                </motion.a>
               ))}
             </div>
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
+  );
+}
+
+function CardUpload({
+  title,
+  description,
+  accept,
+  onChange,
+  multiple,
+  status,
+  currentUrl,
+  ctaLabel,
+}: {
+  title: string;
+  description: string;
+  accept: string;
+  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  multiple?: boolean;
+  status?: string | null;
+  currentUrl?: string | null;
+  ctaLabel: string;
+}) {
+  return (
+    <motion.div
+      whileHover={{ scale: 1.02 }}
+      className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-background/20 px-5 py-5 text-left"
+    >
+      <h4 className="font-bold uppercase tracking-[0.32em] text-foreground">
+        {title}
+      </h4>
+      <p className="text-[0.65rem] font-medium uppercase tracking-[0.3em] text-foreground/60">
+        {description}
+      </p>
+      <label className="inline-flex cursor-pointer items-center justify-center rounded-full border border-border/70 px-4 py-2 text-[0.6rem] font-medium uppercase tracking-[0.3em] text-foreground/70 transition hover:border-accent hover:text-accent">
+        {ctaLabel}
+        <input
+          type="file"
+          accept={accept}
+          multiple={multiple}
+          onChange={onChange}
+          className="hidden"
+        />
+      </label>
+      {status && (
+        <span className="text-[0.6rem] font-medium uppercase tracking-[0.28em] text-foreground/60">
+          {status}
+        </span>
+      )}
+      {currentUrl && (
+        <a
+          href={currentUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[0.65rem] font-medium uppercase tracking-[0.3em] text-accent underline"
+        >
+          View current file
+        </a>
+      )}
+    </motion.div>
   );
 }
 
