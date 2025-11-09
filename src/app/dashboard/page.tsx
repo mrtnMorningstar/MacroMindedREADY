@@ -207,17 +207,17 @@ function LockedPreview() {
           Unlock Your Plan
         </span>
         <h2 className="max-w-3xl font-display text-3xl uppercase tracking-[0.24em]">
-          Your personalized meal plans are waiting
+          Awaiting payment confirmation
         </h2>
         <p className="max-w-2xl text-xs uppercase tracking-[0.32em] text-foreground/60 sm:text-sm">
-          Select a MacroMinded plan to unlock your dashboard, receive tailored
-          macros, and access weekly coach check-ins.
+          Your dashboard will unlock once your payment is confirmed. Refresh in
+          about 30 seconds after completing checkout.
         </p>
         <Link
           href="/packages"
           className="rounded-full border border-accent bg-accent px-8 py-3 text-xs font-semibold uppercase tracking-[0.32em] text-background transition hover:border-foreground hover:bg-transparent hover:text-accent"
         >
-          Buy a Plan
+          View Packages
         </Link>
       </div>
     </motion.div>
