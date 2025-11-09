@@ -9,9 +9,10 @@ import {
   signOut,
   type User,
 } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, type Timestamp } from "firebase/firestore";
 
 import { auth, db } from "@/lib/firebase";
+import MealPlanGallery from "@/components/MealPlanGallery";
 
 const heroEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
 const containerVariants: Variants = {
@@ -42,6 +43,10 @@ type UserDashboardData = {
   packageTier?: string | null;
   mealPlanStatus?: MealPlanStatus | null;
   profile?: Profile | null;
+  mealPlanFileURL?: string | null;
+  mealPlanImageURLs?: string[] | null;
+  mealPlanDeliveredAt?: Timestamp | { seconds: number; nanoseconds: number } | Date | null;
+  groceryListURL?: string | null;
 };
 
 export default function DashboardPage() {
@@ -95,10 +100,57 @@ export default function DashboardPage() {
 
   const statusIndex = progressSteps.indexOf(selectedStatus);
 
+  const deliveredAtDate = useMemo(() => {
+    const value = data?.mealPlanDeliveredAt;
+    if (!value) return null;
+
+    if (value instanceof Date) {
+      return value;
+    }
+
+    if (typeof (value as Timestamp).toDate === "function") {
+      return (value as Timestamp).toDate();
+    }
+
+    if (
+      typeof (value as { seconds: number }).seconds === "number" &&
+      typeof (value as { nanoseconds: number }).nanoseconds === "number"
+    ) {
+      const { seconds, nanoseconds } = value as {
+        seconds: number;
+        nanoseconds: number;
+      };
+      return new Date(seconds * 1000 + Math.floor(nanoseconds / 1_000_000));
+    }
+
+    return null;
+  }, [data?.mealPlanDeliveredAt]);
+
+  const daysSinceDelivery = useMemo(() => {
+    if (!deliveredAtDate) return null;
+    const diffMs = Date.now() - deliveredAtDate.getTime();
+    if (diffMs < 0) {
+      return 0;
+    }
+    return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  }, [deliveredAtDate]);
+
   const handleSignOut = async () => {
     await signOut(auth);
     router.replace("/login");
   };
+
+  const goal = data?.profile?.goal ?? null;
+
+  const nextCheckInDate = useMemo(() => {
+    if (!deliveredAtDate) return null;
+    const tier = data?.packageTier ?? "";
+    if (!["Pro", "Elite"].includes(tier)) return null;
+    const daysToAdd = tier === "Elite" ? 7 : 7;
+    const next = new Date(deliveredAtDate);
+    next.setDate(next.getDate() + daysToAdd);
+    return next;
+  }, [deliveredAtDate, data?.packageTier]);
 
   return (
     <div className="relative isolate min-h-screen bg-background text-foreground">
@@ -137,17 +189,23 @@ export default function DashboardPage() {
                 {user?.email
                   ? `Signed in as ${user.email}`
                   : "Stay in sync with your coaching team."}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleSignOut}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleSignOut}
               className="rounded-full border border-border/80 bg-muted/60 px-5 py-2 text-xs font-semibold uppercase tracking-[0.32em] text-foreground transition hover:border-accent hover:bg-accent hover:text-background"
             >
               Sign Out
             </button>
           </motion.div>
         </header>
+
+        <DashboardMetrics
+          goal={goal}
+          daysSinceDelivery={daysSinceDelivery}
+          nextCheckInDate={nextCheckInDate}
+        />
 
         {loading ? (
           <motion.div
@@ -183,13 +241,19 @@ export default function DashboardPage() {
             />
             <ProfileSummary profile={data.profile ?? {}} />
             <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-              <MealPlanPlaceholder />
+              <MealPlanSection
+                status={selectedStatus}
+                fileUrl={data.mealPlanFileURL}
+                imageUrls={data.mealPlanImageURLs}
+                daysSinceDelivery={daysSinceDelivery}
+                groceryListUrl={data.groceryListURL}
+              />
               <ProgressTracker statusIndex={statusIndex} />
             </div>
           </motion.div>
         )}
       </section>
-    </div>
+        </div>
   );
 }
 
@@ -208,7 +272,7 @@ function LockedPreview() {
         </span>
         <h2 className="max-w-3xl font-display text-3xl uppercase tracking-[0.24em]">
           Awaiting payment confirmation
-        </h2>
+          </h2>
         <p className="max-w-2xl text-xs uppercase tracking-[0.32em] text-foreground/60 sm:text-sm">
           Your dashboard will unlock once your payment is confirmed. Refresh in
           about 30 seconds after completing checkout.
@@ -315,7 +379,33 @@ function ProfileSummary({ profile }: { profile: Profile }) {
   );
 }
 
-function MealPlanPlaceholder() {
+function MealPlanSection({
+  status,
+  fileUrl,
+  imageUrls,
+  daysSinceDelivery,
+  groceryListUrl,
+}: {
+  status: MealPlanStatus;
+  fileUrl?: string | null;
+  imageUrls?: string[] | null;
+  daysSinceDelivery: number | null;
+  groceryListUrl?: string | null;
+}) {
+  const isDelivered = status === "Delivered";
+  const images = imageUrls ?? [];
+
+  const deliveryLabel =
+    daysSinceDelivery === null
+      ? null
+      : daysSinceDelivery <= 0
+        ? "Plan delivered today"
+        : daysSinceDelivery === 1
+          ? "Plan delivered 1 day ago"
+          : `Plan delivered ${daysSinceDelivery} days ago`;
+  const showRefreshCTA =
+    daysSinceDelivery !== null && daysSinceDelivery > 30;
+
   return (
     <div className="relative overflow-hidden rounded-3xl border border-border/80 bg-muted/60 px-8 py-10 backdrop-blur">
       <div className="pointer-events-none absolute inset-x-0 -top-24 h-32 bg-gradient-to-b from-accent/35 via-accent/10 to-transparent blur-3xl" />
@@ -323,14 +413,171 @@ function MealPlanPlaceholder() {
         <h3 className="font-display text-xs uppercase tracking-[0.45em] text-accent">
           Meal Plan Delivery
         </h3>
-        <p className="text-xs uppercase tracking-[0.3em] text-foreground/60 sm:text-sm">
-          Once your plan is ready, it will appear here as a downloadable file.
-          Watch your inbox for coach updates.
-        </p>
-        <div className="mt-4 flex h-36 items-center justify-center rounded-2xl border border-dashed border-border/70 bg-background/20 text-[0.65rem] uppercase tracking-[0.3em] text-foreground/50">
-          Meal plan file pending upload
-        </div>
+        {!isDelivered ? (
+          <>
+            <p className="text-xs uppercase tracking-[0.3em] text-foreground/60 sm:text-sm">
+              Your dashboard will unlock automatically once our coaches deliver
+              your plan. Refresh shortly after checkout to see updates.
+            </p>
+            <div className="mt-4 flex h-36 items-center justify-center rounded-2xl border border-dashed border-border/70 bg-background/20 text-[0.65rem] uppercase tracking-[0.3em] text-foreground/50">
+              Meal plan file pending upload
+            </div>
+          </>
+        ) : (
+          <>
+            {deliveryLabel && (
+              <span className="inline-flex w-fit items-center justify-center rounded-full border border-accent/60 bg-accent/10 px-4 py-1 text-[0.55rem] uppercase tracking-[0.32em] text-accent">
+                {deliveryLabel}
+              </span>
+            )}
+            {fileUrl ? (
+              <a
+                href={fileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center rounded-full border border-accent bg-accent px-6 py-3 text-xs font-semibold uppercase tracking-[0.32em] text-background transition hover:bg-transparent hover:text-accent"
+              >
+                Download Meal Plan PDF
+              </a>
+            ) : (
+              <p className="text-xs uppercase tracking-[0.3em] text-foreground/60 sm:text-sm">
+                PDF delivery is being prepared. Check back soon.
+              </p>
+            )}
+
+            {groceryListUrl && (
+              <a
+                href={groceryListUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex w-fit items-center justify-center rounded-full border border-border/70 px-5 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-foreground/80 transition hover:border-accent hover:text-accent"
+              >
+                Download Grocery List
+              </a>
+            )}
+
+            {showRefreshCTA && (
+              <button
+                type="button"
+                className="inline-flex w-fit items-center justify-center rounded-full border border-border/70 px-5 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-foreground/70 transition hover:border-accent hover:text-accent"
+              >
+                Request Updated Meal Plan
+              </button>
+            )}
+
+            {images.length > 0 ? (
+              <MealPlanGallery images={images} />
+            ) : (
+              <p className="text-[0.65rem] uppercase tracking-[0.3em] text-foreground/50">
+                Image gallery coming soon.
+              </p>
+            )}
+          </>
+        )}
       </div>
+    </div>
+  );
+}
+
+function DashboardMetrics({
+  goal,
+  daysSinceDelivery,
+  nextCheckInDate,
+}: {
+  goal: string | null;
+  daysSinceDelivery: number | null;
+  nextCheckInDate: Date | null;
+}) {
+  const progressValue =
+    daysSinceDelivery !== null && daysSinceDelivery >= 0
+      ? Math.min(100, daysSinceDelivery)
+      : 0;
+  const progressPercent = `${progressValue}%`;
+
+  return (
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      transition={{ duration: 0.7, delay: 0.15, ease: heroEase }}
+      className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4"
+    >
+      <MetricCard
+        title="Current Goal"
+        value={goal ?? "No goal set"}
+        subtitle="Based on your macro intake profile."
+      />
+      <MetricCard
+        title="Daily Calories"
+        value="Coming soon"
+        subtitle="Coach-calculated calorie target."
+      />
+      <MetricCard
+        title="Macro Targets"
+        value="Protein / Fat / Carbs"
+        subtitle="Detailed targets launching shortly."
+      />
+      <div className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-border/80 bg-muted/60 px-6 py-8 text-center shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] backdrop-blur">
+        <div className="relative h-24 w-24">
+          <div className="absolute inset-0 rounded-full border border-border/60" />
+          <div
+            className="absolute inset-0 rounded-full border-[10px] border-accent/30"
+            style={{
+              clipPath: "polygon(50% 50%, 0 0, 0 100%)",
+            }}
+          />
+          <div
+            className="absolute inset-0 rounded-full border-[10px] border-accent"
+            style={{
+              clipPath: `polygon(50% 50%, 50% 0%, ${progressValue}% 0%, 50% 50%)`,
+            }}
+          />
+          <div className="absolute inset-4 flex items-center justify-center rounded-full bg-background/80 text-sm font-semibold">
+            {daysSinceDelivery !== null ? (
+              <span>{daysSinceDelivery}d</span>
+            ) : (
+              <span>0d</span>
+            )}
+          </div>
+        </div>
+        <span className="text-xs uppercase tracking-[0.3em] text-foreground/70">
+          Days Since Delivery
+        </span>
+      </div>
+
+      {nextCheckInDate && (
+        <MetricCard
+          title="Next Check-in"
+          value={nextCheckInDate.toLocaleDateString()}
+          subtitle="Your coach will follow up on this date."
+        />
+      )}
+    </motion.div>
+  );
+}
+
+function MetricCard({
+  title,
+  value,
+  subtitle,
+}: {
+  title: string;
+  value: string;
+  subtitle?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-3 rounded-3xl border border-border/80 bg-muted/60 px-6 py-8 shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] backdrop-blur">
+      <h3 className="font-display text-xs uppercase tracking-[0.4em] text-accent">
+        {title}
+      </h3>
+      <p className="text-xl font-semibold uppercase tracking-[0.22em] text-foreground">
+        {value}
+      </p>
+      {subtitle && (
+        <p className="text-[0.65rem] uppercase tracking-[0.3em] text-foreground/50">
+          {subtitle}
+        </p>
+      )}
     </div>
   );
 }
