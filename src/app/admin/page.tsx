@@ -479,7 +479,7 @@ export default function AdminPage() {
         initial={{ x: -40, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="hidden w-64 flex-col border-r border-border/70 bg-muted/40 px-6 py-10 shadow-[0_0_80px_-40px_rgba(215,38,61,0.6)] backdrop-blur lg:fixed lg:left-0 lg:top-0 lg:flex lg:h-full"
+        className="hidden h-screen w-64 flex-col border-r border-border/70 bg-muted/40 px-6 py-10 shadow-[0_0_80px_-40px_rgba(215,38,61,0.6)] backdrop-blur lg:fixed lg:left-0 lg:top-0 lg:flex"
       >
         <span className="font-bold uppercase tracking-[0.48em] text-foreground">
           MacroMinded
@@ -488,21 +488,23 @@ export default function AdminPage() {
           Admin navigation
         </p>
 
-        <nav className="mt-10 flex flex-1 flex-col gap-3 overflow-y-auto pr-1">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setActiveSection(item.id)}
-              className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
-                activeSection === item.id
-                  ? "border-border/60 text-foreground"
-                  : "border-border/70 text-foreground/70 hover:border-accent hover:text-accent"
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
+        <nav className="mt-10 flex-1 overflow-y-auto pr-1">
+          <div className="flex flex-col gap-3">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setActiveSection(item.id)}
+                className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
+                  activeSection === item.id
+                    ? "border-border/60 text-foreground"
+                    : "border-border/70 text-foreground/70 hover:border-accent hover:text-accent"
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
         </nav>
       </motion.aside>
 
