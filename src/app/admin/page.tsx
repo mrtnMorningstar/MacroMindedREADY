@@ -65,9 +65,6 @@ export default function AdminPage() {
     useState<Record<string, UploadStatus>>({});
   const [groceryUploadStates, setGroceryUploadStates] =
     useState<Record<string, UploadStatus>>({});
-  const [groceryUploadStates, setGroceryUploadStates] = useState<
-    Record<string, UploadStatus>
-  >({});
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
