@@ -167,6 +167,7 @@ export default function AdminUserDetailPage() {
         mealPlanStatus: "Delivered",
         mealPlanDeliveredAt: serverTimestamp(),
       };
+      let mealPlanUrl: string | null = null;
 
       // Upload PDF
       const pdfRef = ref(storage, `mealPlans/${userId}/plan.pdf`);
@@ -186,7 +187,8 @@ export default function AdminUserDetailPage() {
           );
         }
       );
-      updates.mealPlanFileURL = await getDownloadURL(pdfSnapshot.ref);
+      mealPlanUrl = await getDownloadURL(pdfSnapshot.ref);
+      updates.mealPlanFileURL = mealPlanUrl;
 
       // Upload images
       const imageUrls: string[] = [];
@@ -203,8 +205,12 @@ export default function AdminUserDetailPage() {
               (snap) => {
                 const base = 30;
                 const weight = 40;
-                const progressValue = base +
-                  Math.round(((completed + snap.bytesTransferred / snap.totalBytes) / imageFiles.length) * weight);
+                const progressValue =
+                  base +
+                  Math.round(
+                    ((completed + snap.bytesTransferred / snap.totalBytes) / imageFiles.length) *
+                      weight
+                  );
                 setProgress(progressValue);
               },
               reject,
@@ -236,8 +242,8 @@ export default function AdminUserDetailPage() {
               (snap) => {
                 const base = 70;
                 const weight = 30;
-                const progressValue = base +
-                  Math.round((snap.bytesTransferred / snap.totalBytes) * weight);
+                const progressValue =
+                  base + Math.round((snap.bytesTransferred / snap.totalBytes) * weight);
                 setProgress(progressValue);
               },
               reject,
@@ -250,6 +256,21 @@ export default function AdminUserDetailPage() {
 
       const userRef = doc(db, "users", userId);
       await updateDoc(userRef, updates);
+
+      // Trigger email notification when we have a recipient and plan URL.
+      if (userData.email && mealPlanUrl) {
+        try {
+          await fetch("/api/notifications/meal-plan", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email: userData.email, downloadLink: mealPlanUrl }),
+          });
+        } catch (error) {
+          console.error("Failed to trigger meal plan email", error);
+        }
+      }
 
       setFeedback("Meal plan assets uploaded successfully.");
       setPdfFile(null);
