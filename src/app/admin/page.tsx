@@ -61,12 +61,10 @@ export default function AdminPage() {
   const [pdfUploadStates, setPdfUploadStates] = useState<
     Record<string, UploadStatus>
   >({});
-  const [imageUploadStates, setImageUploadStates] = useState<
-    Record<string, UploadStatus>
-  >({});
-  const [groceryUploadStates, setGroceryUploadStates] = useState<
-    Record<string, UploadStatus>
-  >({});
+  const [imageUploadStates, setImageUploadStates] =
+    useState<Record<string, UploadStatus>>({});
+  const [groceryUploadStates, setGroceryUploadStates] =
+    useState<Record<string, UploadStatus>>({});
   const [groceryUploadStates, setGroceryUploadStates] = useState<
     Record<string, UploadStatus>
   >({});
