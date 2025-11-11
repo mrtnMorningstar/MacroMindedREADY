@@ -1,47 +1,47 @@
 import { config } from "dotenv";
-import { initializeApp } from "firebase/app";
-import { getFirestore, doc, setDoc } from "firebase/firestore";
+import { getAuth } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
+import { getApp, getApps, initializeApp, cert } from "firebase-admin/app";
 
 config({ path: ".env.local" });
 
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-};
+const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
 
-const missingKeys = Object.entries(firebaseConfig)
-  .filter(([, value]) => !value)
-  .map(([key]) => key);
-
-if (missingKeys.length > 0) {
+if (!projectId || !clientEmail || !privateKey) {
   throw new Error(
-    `Missing Firebase config env vars: ${missingKeys.join(", ")}`
+    "Missing admin credentials. Ensure NEXT_PUBLIC_FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY are set."
   );
 }
 
-const ADMIN_UID = "71EgfWqyQOPQOvtE1MrJNV9wLxQ2";
+const ADMIN_UID = process.argv[2];
+
+if (!ADMIN_UID) {
+  throw new Error("Usage: ts-node scripts/setAdmin.ts <uid>");
+}
+
+const app = getApps().length
+  ? getApp()
+  : initializeApp({
+      credential: cert({
+        projectId,
+        clientEmail,
+        privateKey,
+      }),
+    });
+
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 async function main() {
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  await setDoc(
-    doc(db, "users", ADMIN_UID),
-    {
-      role: "admin",
-    },
-    { merge: true }
-  );
-
-  console.log(`✅ Set role=admin for user ${ADMIN_UID}`);
+  await db.doc(`users/${ADMIN_UID}`).set({ role: "admin" }, { merge: true });
+  await auth.setCustomUserClaims(ADMIN_UID, { admin: true });
+  console.log(`✅ Grant admin role and claim to ${ADMIN_UID}`);
 }
 
 void main().catch((error) => {
-  console.error("Failed to set admin role:", error);
+  console.error("Failed to assign admin:", error);
   process.exit(1);
 });
 

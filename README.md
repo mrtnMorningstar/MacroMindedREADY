@@ -24,6 +24,8 @@ Update `.env.local` with the credentials from your Firebase console:
 - `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
 - `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
 - `NEXT_PUBLIC_FIREBASE_APP_ID`
+- `FIREBASE_CLIENT_EMAIL` (service account email for admin SDK)
+- `FIREBASE_PRIVATE_KEY` (service account private key; wrap in double quotes and replace newlines with `\n`)
 
 > These variables must be available at build time locally and on Vercel. Use Vercel Project Settings → Environment Variables to configure the same keys for production.
 
@@ -43,6 +45,19 @@ Visit [http://localhost:3000](http://localhost:3000) to see the app. Register a 
 - `lib/firebase.ts` initializes the Firebase SDK once per environment and exports configured instances for `auth`, `db`, and `storage`.
 - Authentication uses Firebase email/password providers for the login and registration pages located in `src/app/(auth)/login` and `src/app/(auth)/register`.
 - `src/app/dashboard/layout.tsx` protects all dashboard routes by redirecting unauthenticated users to the login flow.
+
+### Granting admin access
+
+The admin dashboard and Storage uploads expect a custom Firebase Auth claim named `admin`. To grant admin access to a user:
+
+1. Download a Firebase service account JSON (Project Settings → Service accounts) and copy the `client_email` and `private_key` values into `.env.local` as `FIREBASE_CLIENT_EMAIL` and `FIREBASE_PRIVATE_KEY` (replace literal newlines with `\n`).
+2. Run the helper script with the target UID:
+
+```bash
+npx ts-node scripts/setAdmin.ts <FIREBASE_UID>
+```
+
+This script updates the user's Firestore role and assigns the `admin` custom claim, which is required by the Storage security rules.
 
 ## Deploy to Vercel
 
