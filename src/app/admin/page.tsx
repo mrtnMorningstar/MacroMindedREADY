@@ -13,7 +13,7 @@ import {
   collection,
   doc,
   getDoc,
-  getDocs,
+  onSnapshot,
   updateDoc,
   serverTimestamp,
 } from "firebase/firestore";
@@ -99,47 +99,47 @@ export default function AdminPage() {
     return () => unsubscribe();
   }, [router]);
 
-  const fetchUsers = useCallback(async () => {
-    try {
-      setLoadingUsers(true);
-      setFeedback(null);
-      const snapshot = await getDocs(collection(db, "users"));
-      const records: UserRecord[] = snapshot.docs.map((docSnapshot) => {
-        const data = docSnapshot.data();
-        return {
-          id: docSnapshot.id,
-          email: data?.email ?? null,
-          displayName: data?.displayName ?? null,
-          packageTier: data?.packageTier ?? null,
-          mealPlanStatus: data?.mealPlanStatus ?? null,
-          mealPlanFileURL: data?.mealPlanFileURL ?? null,
-          mealPlanImageURLs: (data?.mealPlanImageURLs as string[] | null) ?? null,
-          profile: (data?.profile as UserProfile | null) ?? null,
-          mealPlanDeliveredAt: data?.mealPlanDeliveredAt ?? null,
-          groceryListURL: data?.groceryListURL ?? null,
-        };
-      });
-
-      setUsers(records);
-      setSelectedUserId((prev) => {
-        if (prev && records.some((record) => record.id === prev)) {
-          return prev;
-        }
-        return records[0]?.id ?? null;
-      });
-    } catch (error) {
-      console.error("Failed to fetch users:", error);
-      setFeedback("Unable to load user data. Please refresh the page.");
-    } finally {
-      setLoadingUsers(false);
-    }
-  }, []);
-
   useEffect(() => {
-    if (isAdmin) {
-      void fetchUsers();
-    }
-  }, [isAdmin, fetchUsers]);
+    if (!isAdmin) return;
+
+    setLoadingUsers(true);
+    const unsubscribe = onSnapshot(
+      collection(db, "users"),
+      (snapshot) => {
+        const records: UserRecord[] = snapshot.docs.map((docSnapshot) => {
+          const data = docSnapshot.data();
+          return {
+            id: docSnapshot.id,
+            email: data?.email ?? null,
+            displayName: data?.displayName ?? null,
+            packageTier: data?.packageTier ?? null,
+            mealPlanStatus: data?.mealPlanStatus ?? null,
+            mealPlanFileURL: data?.mealPlanFileURL ?? null,
+            mealPlanImageURLs: (data?.mealPlanImageURLs as string[] | null) ?? null,
+            profile: (data?.profile as UserProfile | null) ?? null,
+            mealPlanDeliveredAt: data?.mealPlanDeliveredAt ?? null,
+            groceryListURL: data?.groceryListURL ?? null,
+          };
+        });
+
+        setUsers(records);
+        setSelectedUserId((prev) => {
+          if (prev && records.some((record) => record.id === prev)) {
+            return prev;
+          }
+          return records[0]?.id ?? null;
+        });
+        setLoadingUsers(false);
+      },
+      (error) => {
+        console.error("Failed to subscribe to users:", error);
+        setFeedback("Unable to load user data. Please refresh the page.");
+        setLoadingUsers(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [isAdmin]);
 
   const uploadPdfForUser = useCallback(
     async (user: UserRecord, file: File) => {
@@ -175,7 +175,6 @@ export default function AdminPage() {
 
         const downloadURL = await getDownloadURL(snapshot.ref);
         const userRef = doc(db, "users", user.id);
-
         const updatePayload: Record<string, unknown> = {
           mealPlanFileURL: downloadURL,
           mealPlanStatus: "Delivered",
@@ -191,7 +190,6 @@ export default function AdminPage() {
           [user.id]: { status: "success", progress: 100 },
         }));
         setFeedback("Meal plan PDF uploaded.");
-        await fetchUsers();
       } catch (error) {
         console.error("PDF upload failed:", error);
         setPdfUploadStates((prev) => ({
@@ -204,7 +202,7 @@ export default function AdminPage() {
         }));
       }
     },
-    [fetchUsers]
+    [setFeedback]
   );
 
   const uploadImagesForUser = useCallback(
@@ -303,7 +301,6 @@ export default function AdminPage() {
           [user.id]: { status: "success", progress: 100 },
         }));
         setFeedback("Supporting images uploaded.");
-        await fetchUsers();
       } catch (error) {
         console.error("Image upload failed:", error);
         setImageUploadStates((prev) => ({
@@ -316,7 +313,7 @@ export default function AdminPage() {
         }));
       }
     },
-    [fetchUsers]
+    []
   );
 
   const handlePdfInputChange = useCallback(
@@ -403,7 +400,6 @@ export default function AdminPage() {
           [user.id]: { status: "success", progress: 100 },
         }));
         setFeedback("Grocery list uploaded.");
-        await fetchUsers();
       } catch (error) {
         console.error("Grocery list upload failed:", error);
         setGroceryUploadStates((prev) => ({
@@ -416,7 +412,7 @@ export default function AdminPage() {
         }));
       }
     },
-    [fetchUsers]
+    []
   );
 
   const handleGroceryInputChange = useCallback(
@@ -532,18 +528,11 @@ export default function AdminPage() {
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={() => void fetchUsers()}
-                className="rounded-full border border-border/70 px-4 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-foreground/70 transition hover:border-accent hover:text-accent"
-              >
-                Refresh Data
-              </button>
-              <button
-                type="button"
                 onClick={async () => {
                   await auth.signOut();
                   router.replace("/login");
                 }}
-                className="rounded-full border border-accent bg-accent px-4 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-background transition hover:bg-transparent hover:text-accent"
+                className="rounded-full border border-accent bg-accent px-4 py-2 text-[0.6rem] font-medium uppercase tracking-[0.3em] text-background transition hover:bg-transparent hover:text-accent"
               >
                 Logout
               </button>

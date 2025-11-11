@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { collection, getDocs, type DocumentData } from "firebase/firestore";
+import { collection, onSnapshot, type DocumentData } from "firebase/firestore";
 
 import { db } from "@/lib/firebase";
 import Link from "next/link";
@@ -27,12 +27,10 @@ export default function AdminRequestsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadRequests = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const usersRef = collection(db, "users");
-        const snapshot = await getDocs(usersRef);
+    setLoading(true);
+    const unsubscribe = onSnapshot(
+      collection(db, "users"),
+      (snapshot) => {
         const pending: PendingUser[] = snapshot.docs
           .map((docSnapshot) => {
             const data = docSnapshot.data() as DocumentData;
@@ -58,15 +56,16 @@ export default function AdminRequestsPage() {
           .filter(Boolean) as PendingUser[];
 
         setUsers(pending);
-      } catch (fetchError) {
+        setLoading(false);
+      },
+      (fetchError) => {
         console.error("Failed to fetch pending users", fetchError);
         setError("Unable to load plan requests.");
-      } finally {
         setLoading(false);
       }
-    };
+    );
 
-    void loadRequests();
+    return () => unsubscribe();
   }, []);
 
   const getDaysSince = useMemo(
