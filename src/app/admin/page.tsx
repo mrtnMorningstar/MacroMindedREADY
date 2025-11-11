@@ -16,6 +16,8 @@ import {
   onSnapshot,
   updateDoc,
   serverTimestamp,
+  Timestamp,
+  type QuerySnapshot,
 } from "firebase/firestore";
 import {
   getDownloadURL,
@@ -154,26 +156,24 @@ export default function AdminPage() {
           contentType: file.type,
         });
 
-        const snapshot: UploadTaskSnapshot = await new Promise(
-          (resolve, reject) => {
-            uploadTask.on(
-              "state_changed",
-              (snap) => {
-                const progress = Math.round(
-                  (snap.bytesTransferred / snap.totalBytes) * 100
-                );
-                setPdfUploadStates((prev) => ({
-                  ...prev,
-                  [user.id]: { status: "uploading", progress },
-                }));
-              },
-              reject,
-              () => resolve(uploadTask.snapshot)
-            );
-          }
-        );
+        await new Promise<void>((resolve, reject) => {
+          uploadTask.on(
+            "state_changed",
+            (snap) => {
+              const progress = Math.round(
+                (snap.bytesTransferred / snap.totalBytes) * 100
+              );
+              setPdfUploadStates((prev) => ({
+                ...prev,
+                [user.id]: { status: "uploading", progress },
+              }));
+            },
+            reject,
+            resolve
+          );
+        });
 
-        const downloadURL = await getDownloadURL(snapshot.ref);
+        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
         const userRef = doc(db, "users", user.id);
         const updatePayload: Record<string, unknown> = {
           mealPlanFileURL: downloadURL,
@@ -243,13 +243,10 @@ export default function AdminPage() {
       try {
         const urls: string[] = [];
         const total = filtered.length;
-        let completed = 0;
 
-        for (const file of filtered) {
-          const imageRef = ref(
-            storage,
-            `mealPlans/${user.id}/images/${file.name}`
-          );
+        for (let index = 0; index < filtered.length; index += 1) {
+          const file = filtered[index];
+          const imageRef = ref(storage, `mealPlans/${user.id}/images/${file.name}`);
           const uploadTask = uploadBytesResumable(imageRef, file, {
             contentType: file.type,
           });
@@ -259,9 +256,7 @@ export default function AdminPage() {
               "state_changed",
               (snap) => {
                 const progress = Math.round(
-                  ((completed + snap.bytesTransferred / snap.totalBytes) /
-                    total) *
-                    100
+                  ((index + snap.bytesTransferred / snap.totalBytes) / total) * 100
                 );
                 setImageUploadStates((prev) => ({
                   ...prev,
@@ -269,19 +264,12 @@ export default function AdminPage() {
                 }));
               },
               reject,
-              async () => {
-                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                urls.push(downloadURL);
-                completed += 1;
-                const progress = Math.round((completed / total) * 100);
-                setImageUploadStates((prev) => ({
-                  ...prev,
-                  [user.id]: { status: "uploading", progress },
-                }));
-                resolve();
-              }
+              () => resolve()
             );
           });
+
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          urls.push(downloadURL);
         }
 
         const existingImages = user.mealPlanImageURLs ?? [];
@@ -313,7 +301,7 @@ export default function AdminPage() {
         }));
       }
     },
-    []
+    [setFeedback]
   );
 
   const handlePdfInputChange = useCallback(
@@ -364,26 +352,24 @@ export default function AdminPage() {
           contentType: file.type,
         });
 
-        const snapshot: UploadTaskSnapshot = await new Promise(
-          (resolve, reject) => {
-            uploadTask.on(
-              "state_changed",
-              (snap) => {
-                const progress = Math.round(
-                  (snap.bytesTransferred / snap.totalBytes) * 100
-                );
-                setGroceryUploadStates((prev) => ({
-                  ...prev,
-                  [user.id]: { status: "uploading", progress },
-                }));
-              },
-              reject,
-              () => resolve(uploadTask.snapshot)
-            );
-          }
-        );
+        await new Promise<void>((resolve, reject) => {
+          uploadTask.on(
+            "state_changed",
+            (snap) => {
+              const progress = Math.round(
+                (snap.bytesTransferred / snap.totalBytes) * 100
+              );
+              setGroceryUploadStates((prev) => ({
+                ...prev,
+                [user.id]: { status: "uploading", progress },
+              }));
+            },
+            reject,
+            resolve
+          );
+        });
 
-        const downloadURL = await getDownloadURL(snapshot.ref);
+        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
         const userRef = doc(db, "users", user.id);
         const updatePayload: Record<string, unknown> = {
           groceryListURL: downloadURL,
@@ -412,7 +398,7 @@ export default function AdminPage() {
         }));
       }
     },
-    []
+    [setFeedback]
   );
 
   const handleGroceryInputChange = useCallback(
