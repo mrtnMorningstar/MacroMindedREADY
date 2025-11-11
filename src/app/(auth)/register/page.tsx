@@ -9,7 +9,7 @@ import {
   onAuthStateChanged,
   updateProfile,
 } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { FirebaseError } from "firebase/app";
 
 import { auth, db } from "@/lib/firebase";
@@ -85,22 +85,8 @@ export default function RegisterPage() {
           email,
           displayName: trimmedName,
           packageTier: null,
-          mealPlanStatus: "Not Started",
-          mealPlanFileURL: null,
-          profile: {
-            name: trimmedName,
-            height: "",
-            weight: "",
-            age: "",
-            gender: "",
-            activityLevel: "",
-            goal: "",
-            dietaryRestrictions: "",
-            allergies: "",
-            preferences: "",
-          },
           role: "member",
-          createdAt: new Date().toISOString(),
+          createdAt: serverTimestamp(),
         },
         { merge: true }
       );
