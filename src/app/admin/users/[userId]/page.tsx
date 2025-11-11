@@ -258,17 +258,22 @@ export default function AdminUserDetailPage() {
       await updateDoc(userRef, updates);
 
       // Trigger email notification when we have a recipient and plan URL.
-      if (userData.email && mealPlanUrl) {
+      if (userData.email) {
         try {
-          await fetch("/api/notifications/meal-plan", {
+          await fetch("/api/mark-plan-delivered", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ email: userData.email, downloadLink: mealPlanUrl }),
+            body: JSON.stringify({
+              userId,
+              email: userData.email,
+              name: userData.displayName ?? userData.profile?.name ?? undefined,
+              mealPlanUrl,
+            }),
           });
         } catch (error) {
-          console.error("Failed to trigger meal plan email", error);
+          console.error("Failed to mark meal plan as delivered", error);
         }
       }
 

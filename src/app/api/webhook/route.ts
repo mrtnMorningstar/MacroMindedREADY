@@ -9,6 +9,7 @@ import {
   setDoc,
   where,
   serverTimestamp,
+  type DocumentReference,
 } from "firebase/firestore";
 
 import { getStripe } from "@/lib/stripe";
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
         throw new Error("Missing plan metadata on session.");
       }
 
-      let userDocRef;
+      let userDocRef: DocumentReference | null = null;
 
       if (userId) {
         userDocRef = doc(db, "users", userId);
@@ -82,6 +83,8 @@ export async function POST(request: Request) {
         throw new Error("No user found for completed checkout session.");
       }
 
+      const resolvedUserId = userDocRef.id;
+
       await setDoc(
         userDocRef,
         {
@@ -92,6 +95,22 @@ export async function POST(request: Request) {
         },
         { merge: true }
       );
+
+      const planType = plan === "Basic" || plan === "Pro" || plan === "Elite" ? plan : "Basic";
+      const purchasesRef = collection(db, "purchases");
+      const purchaseRef = doc(purchasesRef);
+
+      await setDoc(purchaseRef, {
+        userId: resolvedUserId,
+        planType,
+        status: "paid",
+        mealPlanUrl: null,
+        createdAt: serverTimestamp(),
+        deliveredAt: null,
+        stripeSessionId: session.id,
+        email,
+        amount: session.amount_total ? session.amount_total / 100 : null,
+      });
     }
 
     return NextResponse.json({ received: true });
