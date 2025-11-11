@@ -497,7 +497,6 @@ function DashboardMetrics({
     daysSinceDelivery !== null && daysSinceDelivery >= 0
       ? Math.min(100, daysSinceDelivery)
       : 0;
-  const progressPercent = `${progressValue}%`;
 
   return (
     <motion.div

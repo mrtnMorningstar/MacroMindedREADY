@@ -27,7 +27,6 @@ export default function AdminRequestsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setLoading(true);
     const unsubscribe = onSnapshot(
       collection(db, "users"),
       (snapshot) => {

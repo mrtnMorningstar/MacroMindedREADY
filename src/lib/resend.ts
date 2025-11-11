@@ -5,14 +5,6 @@ type SendMealPlanPayload = {
   downloadLink: string;
 };
 
-function getEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`${name} environment variable is not set.`);
-  }
-  return value;
-}
-
 const resendApiKey = process.env.RESEND_API_KEY ?? null;
 const emailFrom = process.env.EMAIL_FROM ?? null;
 

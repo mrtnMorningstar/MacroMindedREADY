@@ -8,13 +8,7 @@ import {
   type ChangeEvent,
 } from "react";
 import { motion } from "framer-motion";
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-  type DocumentData,
-} from "firebase/firestore";
+import { collection, getDocs, type DocumentData } from "firebase/firestore";
 import Link from "next/link";
 
 import { db } from "@/lib/firebase";
