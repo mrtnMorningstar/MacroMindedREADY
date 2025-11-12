@@ -1,5 +1,5 @@
 import { db } from "@/lib/firebase";
-import { collection, addDoc, query, where, getDocs, orderBy, limit, Timestamp } from "firebase/firestore";
+import { collection, addDoc, query, where, getDocs, Timestamp } from "firebase/firestore";
 
 export async function createPurchase(userId: string, planType: string) {
   return await addDoc(collection(db, "purchases"), {
@@ -23,30 +23,30 @@ export async function getActivePurchase(userId: string) {
 }
 
 export async function getUserPurchase(userId: string) {
-  try {
-    // Try to get the latest purchase with ordering (requires index)
-    const q = query(
-      collection(db, "purchases"),
-      where("userId", "==", userId),
-      orderBy("createdAt", "desc"),
-      limit(1)
-    );
-    const snapshot = await getDocs(q);
-    if (!snapshot.empty) {
-      return snapshot.docs[0]?.data() || null;
-    }
-  } catch (error: unknown) {
-    // If index doesn't exist, fall back to getting any purchase
-    console.warn("Ordered query failed, falling back to simple query:", error);
+  // Get all purchases for this user (no ordering to avoid index requirement)
+  const q = query(
+    collection(db, "purchases"),
+    where("userId", "==", userId)
+  );
+  const snapshot = await getDocs(q);
+  
+  if (snapshot.empty) {
+    return null;
   }
   
-  // Fallback: get any purchase for this user (no ordering required)
-  const fallbackQuery = query(
-    collection(db, "purchases"),
-    where("userId", "==", userId),
-    limit(1)
-  );
-  const fallbackSnapshot = await getDocs(fallbackQuery);
-  return fallbackSnapshot.docs[0]?.data() || null;
+  // Sort in memory to get the latest purchase
+  const purchases = snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+  
+  // Sort by createdAt descending (latest first)
+  purchases.sort((a, b) => {
+    const aTime = a.createdAt?.toMillis?.() ?? a.createdAt?.seconds ?? 0;
+    const bTime = b.createdAt?.toMillis?.() ?? b.createdAt?.seconds ?? 0;
+    return bTime - aTime;
+  });
+  
+  return purchases[0] || null;
 }
 
