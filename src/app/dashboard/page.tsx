@@ -86,6 +86,16 @@ export default function DashboardPage() {
           } else {
             setPurchase(userPurchase);
           }
+          
+          // Debug logging (remove in production)
+          if (process.env.NODE_ENV === "development") {
+            console.log("Dashboard unlock check:", {
+              hasPurchase: !!userPurchase,
+              hasPackageTier: !!userData.packageTier,
+              packageTier: userData.packageTier,
+              purchaseStatus: userPurchase?.status,
+            });
+          }
         } catch (err) {
           console.error("Failed to load dashboard data:", err);
           setError("We couldn't load your dashboard. Please refresh.");
@@ -276,6 +286,10 @@ export default function DashboardPage() {
 }
 
 function LockedDashboardScreen() {
+  const handleRefresh = () => {
+    window.location.reload();
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -295,12 +309,21 @@ function LockedDashboardScreen() {
           Your dashboard will unlock once your payment is confirmed. Refresh in
           about 30 seconds after completing checkout.
         </p>
-        <Link
-          href="/packages"
-          className="rounded-full border border-accent bg-accent px-8 py-3 text-xs font-semibold uppercase tracking-[0.32em] text-background transition hover:border-foreground hover:bg-transparent hover:text-accent"
-        >
-          View Packages
-        </Link>
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          <button
+            type="button"
+            onClick={handleRefresh}
+            className="rounded-full border border-border/70 bg-background/20 px-6 py-3 text-xs font-semibold uppercase tracking-[0.32em] text-foreground transition hover:border-accent hover:bg-accent/10 hover:text-accent"
+          >
+            Refresh Dashboard
+          </button>
+          <Link
+            href="/packages"
+            className="rounded-full border border-accent bg-accent px-8 py-3 text-xs font-semibold uppercase tracking-[0.32em] text-background transition hover:border-foreground hover:bg-transparent hover:text-accent"
+          >
+            View Packages
+          </Link>
+        </div>
       </div>
     </motion.div>
   );
