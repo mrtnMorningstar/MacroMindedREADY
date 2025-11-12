@@ -94,6 +94,7 @@ export default function DashboardPage() {
             packageTier: userData.packageTier,
             purchaseStatus: (userPurchase as { status?: string } | null)?.status,
             userId: firebaseUser.uid,
+            willUnlock: !!(userPurchase || userData.packageTier),
           });
         } catch (err) {
           console.error("Failed to load dashboard data:", err);
@@ -245,7 +246,10 @@ export default function DashboardPage() {
             {error}
           </motion.div>
         ) : !purchase && !data?.packageTier ? (
-          <LockedDashboardScreen />
+          (() => {
+            console.log("Showing locked screen - purchase:", purchase, "packageTier:", data?.packageTier);
+            return <LockedDashboardScreen />;
+          })()
         ) : !data ? (
           <motion.div
             initial={{ opacity: 0, y: 12 }}
