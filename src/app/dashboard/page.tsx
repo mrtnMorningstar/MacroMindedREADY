@@ -92,7 +92,7 @@ export default function DashboardPage() {
             hasPurchase: !!userPurchase,
             hasPackageTier: !!userData.packageTier,
             packageTier: userData.packageTier,
-            purchaseStatus: userPurchase?.status,
+            purchaseStatus: (userPurchase as { status?: string } | null)?.status,
             userId: firebaseUser.uid,
           });
         } catch (err) {
