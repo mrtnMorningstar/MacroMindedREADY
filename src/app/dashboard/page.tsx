@@ -12,6 +12,7 @@ import {
 import { doc, getDoc, type Timestamp } from "firebase/firestore";
 
 import { auth, db } from "@/lib/firebase";
+import { getActivePurchase } from "@/lib/purchases";
 import MealPlanGallery from "@/components/MealPlanGallery";
 
 const heroEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -53,6 +54,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [data, setData] = useState<UserDashboardData | null>(null);
+  const [purchase, setPurchase] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,6 +70,9 @@ export default function DashboardPage() {
         setLoading(true);
         setError(null);
         try {
+          const activePurchase = await getActivePurchase(firebaseUser.uid);
+          setPurchase(activePurchase);
+
           const userDocRef = doc(db, "users", firebaseUser.uid);
           const snapshot = await getDoc(userDocRef);
           if (!snapshot.exists()) {
@@ -78,7 +83,7 @@ export default function DashboardPage() {
           }
         } catch (err) {
           console.error("Failed to load dashboard data:", err);
-          setError("We couldn’t load your dashboard. Please refresh.");
+          setError("We couldn't load your dashboard. Please refresh.");
           setData({});
         } finally {
           setLoading(false);
@@ -225,8 +230,8 @@ export default function DashboardPage() {
           >
             {error}
           </motion.div>
-        ) : !data?.packageTier ? (
-          <LockedPreview />
+        ) : !purchase ? (
+          <LockedDashboardScreen />
         ) : (
           <motion.div
             initial="hidden"
@@ -257,7 +262,7 @@ export default function DashboardPage() {
   );
 }
 
-function LockedPreview() {
+function LockedDashboardScreen() {
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
