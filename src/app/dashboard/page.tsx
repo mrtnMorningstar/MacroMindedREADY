@@ -70,16 +70,21 @@ export default function DashboardPage() {
         setLoading(true);
         setError(null);
         try {
-          const userPurchase = await getUserPurchase(firebaseUser.uid);
-          setPurchase(userPurchase);
-
           const userDocRef = doc(db, "users", firebaseUser.uid);
           const snapshot = await getDoc(userDocRef);
-          if (!snapshot.exists()) {
-            setData({});
+          let userData: UserDashboardData = {};
+          if (snapshot.exists()) {
+            userData = (snapshot.data() as UserDashboardData) ?? {};
+          }
+          setData(userData);
+
+          // Check for purchase, but also allow access if user has packageTier
+          const userPurchase = await getUserPurchase(firebaseUser.uid);
+          // If no purchase found but user has packageTier, create a mock purchase object
+          if (!userPurchase && userData.packageTier) {
+            setPurchase({ planType: userData.packageTier, status: "paid" });
           } else {
-            const payload = snapshot.data() as UserDashboardData;
-            setData(payload ?? {});
+            setPurchase(userPurchase);
           }
         } catch (err) {
           console.error("Failed to load dashboard data:", err);
@@ -230,7 +235,7 @@ export default function DashboardPage() {
           >
             {error}
           </motion.div>
-        ) : !purchase ? (
+        ) : !purchase && !data?.packageTier ? (
           <LockedDashboardScreen />
         ) : !data ? (
           <motion.div
