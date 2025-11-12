@@ -149,7 +149,6 @@ export default function MacroFormPage() {
               allergies: formValues.allergies,
               preferences: formValues.preferences,
             },
-            mealPlanStatus: "In Progress",
           },
           { merge: true }
         );
@@ -157,9 +156,11 @@ export default function MacroFormPage() {
         router.push("/dashboard");
       } catch (error) {
         console.error("Failed to save macro form:", error);
-        setGlobalError(
-          "Unable to save your details. Please try again or contact support."
-        );
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Unable to save your details. Please try again or contact support.";
+        setGlobalError(errorMessage);
       } finally {
         setSubmitting(false);
       }
