@@ -12,7 +12,7 @@ import {
 import { doc, getDoc, type Timestamp } from "firebase/firestore";
 
 import { auth, db } from "@/lib/firebase";
-import { getActivePurchase } from "@/lib/purchases";
+import { getUserPurchase } from "@/lib/purchases";
 import MealPlanGallery from "@/components/MealPlanGallery";
 
 const heroEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -70,8 +70,8 @@ export default function DashboardPage() {
         setLoading(true);
         setError(null);
         try {
-          const activePurchase = await getActivePurchase(firebaseUser.uid);
-          setPurchase(activePurchase);
+          const userPurchase = await getUserPurchase(firebaseUser.uid);
+          setPurchase(userPurchase);
 
           const userDocRef = doc(db, "users", firebaseUser.uid);
           const snapshot = await getDoc(userDocRef);

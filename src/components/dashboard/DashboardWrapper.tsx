@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getActivePurchase } from "@/lib/purchases";
+import { getUserPurchase } from "@/lib/purchases";
 import type { User } from "firebase/auth";
 
 type Purchase = {
@@ -20,7 +20,7 @@ export default function DashboardWrapper({ user }: DashboardWrapperProps) {
 
   useEffect(() => {
     async function fetchPurchase() {
-      const res = await getActivePurchase(user.uid);
+      const res = await getUserPurchase(user.uid);
       setPurchase(res);
       setLoading(false);
     }
