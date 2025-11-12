@@ -87,15 +87,14 @@ export default function DashboardPage() {
             setPurchase(userPurchase);
           }
           
-          // Debug logging (remove in production)
-          if (process.env.NODE_ENV === "development") {
-            console.log("Dashboard unlock check:", {
-              hasPurchase: !!userPurchase,
-              hasPackageTier: !!userData.packageTier,
-              packageTier: userData.packageTier,
-              purchaseStatus: userPurchase?.status,
-            });
-          }
+          // Debug logging
+          console.log("Dashboard unlock check:", {
+            hasPurchase: !!userPurchase,
+            hasPackageTier: !!userData.packageTier,
+            packageTier: userData.packageTier,
+            purchaseStatus: userPurchase?.status,
+            userId: firebaseUser.uid,
+          });
         } catch (err) {
           console.error("Failed to load dashboard data:", err);
           setError("We couldn't load your dashboard. Please refresh.");
