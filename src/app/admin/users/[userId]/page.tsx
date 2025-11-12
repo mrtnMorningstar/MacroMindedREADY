@@ -19,6 +19,7 @@ import {
   getDownloadURL,
   ref,
   uploadBytesResumable,
+  deleteObject,
   type UploadTaskSnapshot,
 } from "firebase/storage";
 import { onAuthStateChanged } from "firebase/auth";
@@ -150,6 +151,87 @@ export default function AdminUserDetailPage() {
     if (diffMs < 0) return 0;
     return Math.floor(diffMs / (1000 * 60 * 60 * 24));
   }, []);
+
+  const deleteMealPlanFile = useCallback(async () => {
+    if (!userId || !userData?.mealPlanFileURL) return;
+    if (!confirm("Are you sure you want to delete the meal plan PDF?")) return;
+
+    try {
+      const pdfRef = ref(storage, `mealPlans/${userId}/plan.pdf`);
+      await deleteObject(pdfRef);
+      const userRef = doc(db, "users", userId);
+      await updateDoc(userRef, {
+        mealPlanFileURL: null,
+      });
+      setUserData((prev) => (prev ? { ...prev, mealPlanFileURL: null } : null));
+      setFeedback("Meal plan PDF deleted.");
+    } catch (error) {
+      console.error("Failed to delete meal plan PDF", error);
+      setFeedback("Failed to delete meal plan PDF.");
+    }
+  }, [userId, userData?.mealPlanFileURL]);
+
+  const deleteGroceryList = useCallback(async () => {
+    if (!userId || !userData?.groceryListURL) return;
+    if (!confirm("Are you sure you want to delete the grocery list?")) return;
+
+    try {
+      const groceryRef = ref(storage, `mealPlans/${userId}/grocery-list.pdf`);
+      await deleteObject(groceryRef);
+      const userRef = doc(db, "users", userId);
+      await updateDoc(userRef, {
+        groceryListURL: null,
+      });
+      setUserData((prev) => (prev ? { ...prev, groceryListURL: null } : null));
+      setFeedback("Grocery list deleted.");
+    } catch (error) {
+      console.error("Failed to delete grocery list", error);
+      setFeedback("Failed to delete grocery list.");
+    }
+  }, [userId, userData?.groceryListURL]);
+
+  const deleteImage = useCallback(
+    async (imageUrl: string) => {
+      if (!userId) return;
+      if (!confirm("Are you sure you want to delete this image?")) return;
+
+      try {
+        // Extract the file path from the URL
+        const urlObj = new URL(imageUrl);
+        const pathMatch = urlObj.pathname.match(/mealPlans%2F([^%]+)%2Fimages%2F(.+)/);
+        if (!pathMatch) {
+          // Try alternative path format
+          const altMatch = urlObj.pathname.match(/mealPlans\/([^/]+)\/images\/(.+)/);
+          if (altMatch) {
+            const [, userIdFromPath, fileName] = altMatch;
+            const imageRef = ref(storage, `mealPlans/${userIdFromPath}/images/${decodeURIComponent(fileName)}`);
+            await deleteObject(imageRef);
+          } else {
+            throw new Error("Could not extract file path from URL");
+          }
+        } else {
+          const [, userIdFromPath, fileName] = pathMatch;
+          const imageRef = ref(storage, `mealPlans/${userIdFromPath}/images/${decodeURIComponent(fileName)}`);
+          await deleteObject(imageRef);
+        }
+
+        const userRef = doc(db, "users", userId);
+        const currentImages = userData?.mealPlanImageURLs ?? [];
+        const updatedImages = currentImages.filter((url) => url !== imageUrl);
+        await updateDoc(userRef, {
+          mealPlanImageURLs: updatedImages,
+        });
+        setUserData((prev) =>
+          prev ? { ...prev, mealPlanImageURLs: updatedImages } : null
+        );
+        setFeedback("Image deleted.");
+      } catch (error) {
+        console.error("Failed to delete image", error);
+        setFeedback("Failed to delete image.");
+      }
+    },
+    [userId, userData?.mealPlanImageURLs]
+  );
 
   const handleSubmit = async () => {
     if (!userId || !userData) return;
@@ -424,24 +506,44 @@ export default function AdminUserDetailPage() {
 
         <div className="mt-4 flex flex-wrap gap-3">
           {userData.mealPlanFileURL && (
-            <a
-              href={userData.mealPlanFileURL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-full border border-accent bg-accent px-4 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-background transition hover:bg-transparent hover:text-accent"
-            >
-              Download Meal Plan
-            </a>
+            <div className="flex items-center gap-2">
+              <a
+                href={userData.mealPlanFileURL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-full border border-accent bg-accent px-4 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-background transition hover:bg-transparent hover:text-accent"
+              >
+                Download Meal Plan
+              </a>
+              <button
+                type="button"
+                onClick={deleteMealPlanFile}
+                className="rounded-full border border-red-500/70 px-3 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-red-500/70 transition hover:border-red-500 hover:bg-red-500/10 hover:text-red-500"
+                title="Delete meal plan PDF"
+              >
+                ×
+              </button>
+            </div>
           )}
           {userData.groceryListURL && (
-            <a
-              href={userData.groceryListURL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-full border border-border/70 px-4 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-foreground/70 transition hover:border-accent hover:text-accent"
-            >
-              Download Grocery List
-            </a>
+            <div className="flex items-center gap-2">
+              <a
+                href={userData.groceryListURL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-full border border-border/70 px-4 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-foreground/70 transition hover:border-accent hover:text-accent"
+              >
+                Download Grocery List
+              </a>
+              <button
+                type="button"
+                onClick={deleteGroceryList}
+                className="rounded-full border border-red-500/70 px-3 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-red-500/70 transition hover:border-red-500 hover:bg-red-500/10 hover:text-red-500"
+                title="Delete grocery list"
+              >
+                ×
+              </button>
+            </div>
           )}
         </div>
       </motion.section>

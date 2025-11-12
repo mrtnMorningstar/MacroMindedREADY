@@ -23,6 +23,7 @@ import {
   getDownloadURL,
   ref,
   uploadBytesResumable,
+  deleteObject,
   type UploadTaskSnapshot,
 } from "firebase/storage";
 import { onAuthStateChanged } from "firebase/auth";
@@ -424,6 +425,85 @@ export default function AdminPage() {
     [uploadGroceryListForUser]
   );
 
+  const deleteMealPlanFile = useCallback(
+    async (user: UserRecord) => {
+      if (!user.mealPlanFileURL) return;
+      if (!confirm("Are you sure you want to delete the meal plan PDF?")) return;
+
+      try {
+        const pdfRef = ref(storage, `mealPlans/${user.id}/plan.pdf`);
+        await deleteObject(pdfRef);
+        const userRef = doc(db, "users", user.id);
+        await updateDoc(userRef, {
+          mealPlanFileURL: null,
+        });
+        setFeedback("Meal plan PDF deleted.");
+      } catch (error) {
+        console.error("Failed to delete meal plan PDF", error);
+        setFeedback("Failed to delete meal plan PDF.");
+      }
+    },
+    []
+  );
+
+  const deleteGroceryList = useCallback(
+    async (user: UserRecord) => {
+      if (!user.groceryListURL) return;
+      if (!confirm("Are you sure you want to delete the grocery list?")) return;
+
+      try {
+        const groceryRef = ref(storage, `mealPlans/${user.id}/grocery-list.pdf`);
+        await deleteObject(groceryRef);
+        const userRef = doc(db, "users", user.id);
+        await updateDoc(userRef, {
+          groceryListURL: null,
+        });
+        setFeedback("Grocery list deleted.");
+      } catch (error) {
+        console.error("Failed to delete grocery list", error);
+        setFeedback("Failed to delete grocery list.");
+      }
+    },
+    []
+  );
+
+  const deleteImage = useCallback(
+    async (user: UserRecord, imageUrl: string) => {
+      if (!confirm("Are you sure you want to delete this image?")) return;
+
+      try {
+        const urlObj = new URL(imageUrl);
+        const pathMatch = urlObj.pathname.match(/mealPlans%2F([^%]+)%2Fimages%2F(.+)/);
+        if (!pathMatch) {
+          const altMatch = urlObj.pathname.match(/mealPlans\/([^/]+)\/images\/(.+)/);
+          if (altMatch) {
+            const [, userIdFromPath, fileName] = altMatch;
+            const imageRef = ref(storage, `mealPlans/${userIdFromPath}/images/${decodeURIComponent(fileName)}`);
+            await deleteObject(imageRef);
+          } else {
+            throw new Error("Could not extract file path from URL");
+          }
+        } else {
+          const [, userIdFromPath, fileName] = pathMatch;
+          const imageRef = ref(storage, `mealPlans/${userIdFromPath}/images/${decodeURIComponent(fileName)}`);
+          await deleteObject(imageRef);
+        }
+
+        const userRef = doc(db, "users", user.id);
+        const currentImages = user.mealPlanImageURLs ?? [];
+        const updatedImages = currentImages.filter((url) => url !== imageUrl);
+        await updateDoc(userRef, {
+          mealPlanImageURLs: updatedImages,
+        });
+        setFeedback("Image deleted.");
+      } catch (error) {
+        console.error("Failed to delete image", error);
+        setFeedback("Failed to delete image.");
+      }
+    },
+    []
+  );
+
   const selectedUser = useMemo(
     () => users.find((user) => user.id === selectedUserId) ?? null,
     [users, selectedUserId]
@@ -633,6 +713,9 @@ export default function AdminPage() {
                 pdfStatus={pdfUploadStates[selectedUser.id]}
                 imageStatus={imageUploadStates[selectedUser.id]}
                 groceryStatus={groceryUploadStates[selectedUser.id]}
+                onDeleteMealPlan={() => deleteMealPlanFile(selectedUser)}
+                onDeleteGroceryList={() => deleteGroceryList(selectedUser)}
+                onDeleteImage={(imageUrl) => deleteImage(selectedUser, imageUrl)}
               />
             )}
           </section>
@@ -740,6 +823,9 @@ type UserDetailPanelProps = {
   pdfStatus?: UploadStatus;
   imageStatus?: UploadStatus;
   groceryStatus?: UploadStatus;
+  onDeleteMealPlan: () => void;
+  onDeleteGroceryList: () => void;
+  onDeleteImage: (imageUrl: string) => void;
 };
 
 function UserDetailPanel({
@@ -750,6 +836,9 @@ function UserDetailPanel({
   pdfStatus,
   imageStatus,
   groceryStatus,
+  onDeleteMealPlan,
+  onDeleteGroceryList,
+  onDeleteImage,
 }: UserDetailPanelProps) {
   const profileEntries = useMemo(() => {
     if (!user.profile) return [];
@@ -823,6 +912,7 @@ function UserDetailPanel({
             status={renderStatus(pdfStatus)}
             currentUrl={user.mealPlanFileURL}
             ctaLabel="Select PDF"
+            onDelete={user.mealPlanFileURL ? onDeleteMealPlan : undefined}
           />
           <CardUpload
             title="Upload Supporting Images"
@@ -841,6 +931,7 @@ function UserDetailPanel({
             status={renderStatus(groceryStatus)}
             currentUrl={user.groceryListURL}
             ctaLabel="Select PDF"
+            onDelete={user.groceryListURL ? onDeleteGroceryList : undefined}
           />
         </div>
 
@@ -851,20 +942,32 @@ function UserDetailPanel({
             </h4>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {mealPlanImages.map((url) => (
-                <motion.a
+                <motion.div
                   key={url}
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   whileHover={{ scale: 1.02 }}
                   className="group relative overflow-hidden rounded-2xl border border-border/70"
                 >
-                  <img
-                    src={url}
-                    alt="Meal plan supporting"
-                    className="h-32 w-full object-cover transition group-hover:scale-105"
-                  />
-                </motion.a>
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block"
+                  >
+                    <img
+                      src={url}
+                      alt="Meal plan supporting"
+                      className="h-32 w-full object-cover transition group-hover:scale-105"
+                    />
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => onDeleteImage(url)}
+                    className="absolute right-2 top-2 rounded-full border border-red-500/70 bg-red-500/20 px-2 py-1 text-xs font-bold uppercase tracking-[0.2em] text-red-500/70 transition hover:border-red-500 hover:bg-red-500/40 hover:text-red-500"
+                    title="Delete image"
+                  >
+                    ×
+                  </button>
+                </motion.div>
               ))}
             </div>
           </div>
@@ -883,6 +986,7 @@ function CardUpload({
   status,
   currentUrl,
   ctaLabel,
+  onDelete,
 }: {
   title: string;
   description: string;
@@ -892,6 +996,7 @@ function CardUpload({
   status?: string | null;
   currentUrl?: string | null;
   ctaLabel: string;
+  onDelete?: () => void;
 }) {
   return (
     <motion.div
@@ -920,14 +1025,26 @@ function CardUpload({
         </span>
       )}
       {currentUrl && (
-        <a
-          href={currentUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[0.65rem] font-medium uppercase tracking-[0.3em] text-accent underline"
-        >
-          View current file
-        </a>
+        <div className="flex items-center gap-2">
+          <a
+            href={currentUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[0.65rem] font-medium uppercase tracking-[0.3em] text-accent underline"
+          >
+            View current file
+          </a>
+          {onDelete && (
+            <button
+              type="button"
+              onClick={onDelete}
+              className="rounded-full border border-red-500/70 px-2 py-1 text-[0.6rem] font-bold uppercase tracking-[0.2em] text-red-500/70 transition hover:border-red-500 hover:bg-red-500/10 hover:text-red-500"
+              title="Delete file"
+            >
+              ×
+            </button>
+          )}
+        </div>
       )}
     </motion.div>
   );
