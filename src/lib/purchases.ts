@@ -35,15 +35,21 @@ export async function getUserPurchase(userId: string) {
   }
   
   // Sort in memory to get the latest purchase
-  const purchases = snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
+  const purchases = snapshot.docs.map((doc) => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      ...data,
+      createdAt: data.createdAt,
+    };
+  });
   
   // Sort by createdAt descending (latest first)
   purchases.sort((a, b) => {
-    const aTime = a.createdAt?.toMillis?.() ?? a.createdAt?.seconds ?? 0;
-    const bTime = b.createdAt?.toMillis?.() ?? b.createdAt?.seconds ?? 0;
+    const aCreatedAt = a.createdAt as { toMillis?: () => number; seconds?: number } | undefined;
+    const bCreatedAt = b.createdAt as { toMillis?: () => number; seconds?: number } | undefined;
+    const aTime = aCreatedAt?.toMillis?.() ?? aCreatedAt?.seconds ?? 0;
+    const bTime = bCreatedAt?.toMillis?.() ?? bCreatedAt?.seconds ?? 0;
     return bTime - aTime;
   });
   
