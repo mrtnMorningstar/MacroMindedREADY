@@ -232,6 +232,14 @@ export default function DashboardPage() {
           </motion.div>
         ) : !purchase ? (
           <LockedDashboardScreen />
+        ) : !data ? (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-3xl border border-accent/40 bg-muted/70 px-6 py-6 text-center text-xs font-semibold uppercase tracking-[0.3em] text-accent"
+          >
+            Unable to load dashboard data. Please refresh.
+          </motion.div>
         ) : (
           <motion.div
             initial="hidden"
