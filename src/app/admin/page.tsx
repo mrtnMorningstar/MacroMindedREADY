@@ -586,19 +586,6 @@ export default function AdminPage() {
     return null;
   }
 
-  const navItems: Array<{ id: typeof activeSection; label: string }> = [
-    { id: "users", label: "Users" },
-    { id: "referrals", label: "Referrals" },
-    { id: "sales", label: "Sales / Revenue" },
-    { id: "requests", label: "Plan Requests" },
-  ];
-
-  const planRequestUsers = users.filter(
-    (user) =>
-      user.packageTier &&
-      (user.mealPlanStatus ?? "Not Started") !== "Delivered"
-  );
-
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       <motion.aside
