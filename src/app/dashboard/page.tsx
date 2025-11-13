@@ -100,7 +100,7 @@ export default function DashboardPage() {
   }, [data?.mealPlanDeliveredAt]);
 
   const daysSinceDelivery = useMemo(() => {
-    if (!deliveredAtDate) return null;
+    if (!deliveredAtDate || !(deliveredAtDate instanceof Date)) return null;
     const diffMs = Date.now() - deliveredAtDate.getTime();
     if (diffMs < 0) {
       return 0;
@@ -109,7 +109,7 @@ export default function DashboardPage() {
   }, [deliveredAtDate]);
 
   const nextCheckInDate = useMemo(() => {
-    if (!deliveredAtDate) return null;
+    if (!deliveredAtDate || !(deliveredAtDate instanceof Date)) return null;
     const tier = data?.packageTier ?? "";
     if (!["Pro", "Elite"].includes(tier)) return null;
     const daysToAdd = tier === "Elite" ? 7 : 7;
@@ -745,6 +745,47 @@ function ReferralsCard({
     );
   }
 
+  // Always render AnimatePresence to avoid hooks violations
+  const copyButtonContent = (
+    <AnimatePresence mode="wait">
+      {copied ? (
+        <motion.span
+          key="copied"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0, opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="flex items-center gap-2"
+        >
+          <svg
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+          Copied!
+        </motion.span>
+      ) : (
+        <motion.span
+          key="copy"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0, opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          Copy Link
+        </motion.span>
+      )}
+    </AnimatePresence>
+  );
+
   return (
     <motion.div
       whileHover={{ scale: 1.02 }}
@@ -835,43 +876,7 @@ function ReferralsCard({
               whileTap={{ scale: 0.95 }}
               className="relative shrink-0 rounded-full border border-accent bg-accent px-6 py-3 text-xs font-bold uppercase tracking-[0.32em] text-background transition hover:bg-accent/90"
             >
-              <AnimatePresence mode="wait">
-                {copied ? (
-                  <motion.span
-                    key="copied"
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="flex items-center gap-2"
-                  >
-                    <svg
-                      className="h-4 w-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    Copied!
-                  </motion.span>
-                ) : (
-                  <motion.span
-                    key="copy"
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    Copy Link
-                  </motion.span>
-                )}
-              </AnimatePresence>
+              {copyButtonContent}
             </motion.button>
           </div>
           <p className="text-[0.65rem] font-medium uppercase tracking-[0.18em] text-foreground/50">
