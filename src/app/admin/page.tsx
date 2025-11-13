@@ -516,38 +516,13 @@ export default function AdminPage() {
     []
   );
 
+  // All hooks must be called before any early returns
   const selectedUser = useMemo(
     () => users.find((user) => user.id === selectedUserId) ?? null,
     [users, selectedUserId]
   );
 
-  if (checkingAuth) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
-        <p className="text-xs uppercase tracking-[0.3em] text-foreground/60">
-          Validating access...
-        </p>
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return null;
-  }
-
-  const navItems: Array<{ id: typeof activeSection; label: string }> = [
-    { id: "users", label: "Users" },
-    { id: "sales", label: "Sales / Revenue" },
-    { id: "requests", label: "Plan Requests" },
-  ];
-
-  const planRequestUsers = users.filter(
-    (user) =>
-      user.packageTier &&
-      (user.mealPlanStatus ?? "Not Started") !== "Delivered"
-  );
-
-  // Calculate referral statistics
+  // Calculate referral statistics - must be called before early returns
   const referralStats = useMemo(() => {
     if (!Array.isArray(users) || users.length === 0) {
       return {
@@ -593,6 +568,33 @@ export default function AdminPage() {
       };
     }
   }, [users]);
+
+  // Early returns must come AFTER all hooks
+  if (checkingAuth) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
+        <p className="text-xs uppercase tracking-[0.3em] text-foreground/60">
+          Validating access...
+        </p>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return null;
+  }
+
+  const navItems: Array<{ id: typeof activeSection; label: string }> = [
+    { id: "users", label: "Users" },
+    { id: "sales", label: "Sales / Revenue" },
+    { id: "requests", label: "Plan Requests" },
+  ];
+
+  const planRequestUsers = users.filter(
+    (user) =>
+      user.packageTier &&
+      (user.mealPlanStatus ?? "Not Started") !== "Delivered"
+  );
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
