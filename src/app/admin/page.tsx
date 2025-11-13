@@ -569,6 +569,94 @@ export default function AdminPage() {
     }
   }, [users]);
 
+  // Build referral relationships map - must be called before early returns
+  const referralRelationships = useMemo(() => {
+    if (!Array.isArray(users) || users.length === 0) {
+      return [];
+    }
+
+    // Map referral codes to users
+    const codeToUser = new Map<string, UserRecord>();
+    users.forEach((user) => {
+      if (user.referralCode && typeof user.referralCode === "string") {
+        codeToUser.set(user.referralCode, user);
+      }
+    });
+
+    // Build relationships: who referred whom
+    const relationships: Array<{
+      referrer: UserRecord;
+      referred: UserRecord;
+    }> = [];
+
+    users.forEach((user) => {
+      if (user.referredBy && typeof user.referredBy === "string") {
+        const referrer = codeToUser.get(user.referredBy);
+        if (referrer) {
+          relationships.push({ referrer, referred: user });
+        }
+      }
+    });
+
+    return relationships;
+  }, [users]);
+
+  // Group users by referrer - must be called before early returns
+  const usersByReferrer = useMemo(() => {
+    const map = new Map<string, UserRecord[]>();
+    
+    referralRelationships.forEach(({ referrer, referred }) => {
+      const code = referrer.referralCode;
+      if (code && typeof code === "string") {
+        if (!map.has(code)) {
+          map.set(code, []);
+        }
+        map.get(code)!.push(referred);
+      }
+    });
+
+    return Array.from(map.entries()).map(([code, referredUsers]) => {
+      const referrer = users.find((u) => u.referralCode === code);
+      return {
+        referrer: referrer!,
+        code,
+        referredUsers,
+        credits: referrer?.referralCredits ?? 0,
+      };
+    });
+  }, [referralRelationships, users]);
+
+  // State for referral management
+  const [referralSearch, setReferralSearch] = useState("");
+  const [editingCredits, setEditingCredits] = useState<Record<string, number>>({});
+
+  // Function to update referral credits
+  const updateReferralCredits = useCallback(
+    async (userId: string, newCredits: number) => {
+      if (newCredits < 0) {
+        setFeedback("Credits cannot be negative.");
+        return;
+      }
+
+      try {
+        const userRef = doc(db, "users", userId);
+        await updateDoc(userRef, {
+          referralCredits: newCredits,
+        });
+        setFeedback(`Referral credits updated to ${newCredits}.`);
+        setEditingCredits((prev) => {
+          const next = { ...prev };
+          delete next[userId];
+          return next;
+        });
+      } catch (error) {
+        console.error("Failed to update referral credits:", error);
+        setFeedback("Failed to update referral credits.");
+      }
+    },
+    []
+  );
+
   // Early returns must come AFTER all hooks
   if (checkingAuth) {
     return (
@@ -586,6 +674,7 @@ export default function AdminPage() {
 
   const navItems: Array<{ id: typeof activeSection; label: string }> = [
     { id: "users", label: "Users" },
+    { id: "referrals", label: "Referrals" },
     { id: "sales", label: "Sales / Revenue" },
     { id: "requests", label: "Plan Requests" },
   ];
@@ -730,7 +819,7 @@ export default function AdminPage() {
           </motion.section>
           )}
 
-          <section id="users" className="flex flex-col gap-8">
+          <section id="users" className={`flex flex-col gap-8 ${activeSection !== "users" ? "hidden" : ""}`}>
             <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="font-bold text-xl uppercase tracking-[0.32em] text-foreground">
                 Users
@@ -848,9 +937,323 @@ export default function AdminPage() {
             )}
           </section>
 
+          {/* Referrals Management Section */}
+          <section
+            id="referrals"
+            className={`flex flex-col gap-6 ${activeSection !== "referrals" ? "hidden" : ""}`}
+          >
+            <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="font-bold text-xl uppercase tracking-[0.32em] text-foreground">
+                  Referral Management
+                </h2>
+                <p className="mt-2 text-[0.65rem] font-medium uppercase tracking-[0.3em] text-foreground/60">
+                  Manage referral codes, credits, and relationships
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  placeholder="Search by code or name..."
+                  value={referralSearch}
+                  onChange={(e) => setReferralSearch(e.target.value)}
+                  className="rounded-full border border-border/70 bg-background/40 px-4 py-2 text-[0.65rem] uppercase tracking-[0.2em] text-foreground placeholder:text-foreground/40 focus:border-accent focus:outline-none"
+                />
+              </div>
+            </header>
+
+            {/* Top Referrers */}
+            <div className="rounded-3xl border border-border/80 bg-muted/60 px-6 py-6 shadow-[0_0_90px_-45px_rgba(215,38,61,0.6)] backdrop-blur">
+              <h3 className="mb-4 font-bold text-lg uppercase tracking-[0.32em] text-foreground">
+                Top Referrers
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-border/60 text-left">
+                  <thead className="uppercase tracking-[0.3em] text-foreground/60 text-[0.6rem]">
+                    <tr>
+                      <th className="px-4 py-3 font-medium">Referrer</th>
+                      <th className="px-4 py-3 font-medium">Code</th>
+                      <th className="px-4 py-3 font-medium">Referred Users</th>
+                      <th className="px-4 py-3 font-medium">Credits</th>
+                      <th className="px-4 py-3 font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/70 text-[0.7rem] uppercase tracking-[0.24em] text-foreground/80">
+                    {usersByReferrer
+                      .filter((item) => {
+                        if (!referralSearch) return true;
+                        const search = referralSearch.toLowerCase();
+                        return (
+                          item.code.toLowerCase().includes(search) ||
+                          item.referrer.displayName?.toLowerCase().includes(search) ||
+                          item.referrer.email?.toLowerCase().includes(search)
+                        );
+                      })
+                      .sort((a, b) => b.referredUsers.length - a.referredUsers.length)
+                      .map((item) => {
+                        const isEditing = editingCredits[item.referrer.id] !== undefined;
+                        const displayCredits = isEditing
+                          ? editingCredits[item.referrer.id]
+                          : item.credits;
+
+                        return (
+                          <tr key={item.code} className="hover:bg-background/20">
+                            <td className="px-4 py-3">
+                              <div className="flex flex-col">
+                                <span className="font-semibold">
+                                  {item.referrer.displayName ?? "Unnamed"}
+                                </span>
+                                <span className="text-[0.65rem] text-foreground/60">
+                                  {item.referrer.email}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <code className="rounded border border-border/60 bg-background/40 px-2 py-1 text-[0.65rem] font-mono">
+                                {item.code}
+                              </code>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="font-bold text-accent">
+                                {item.referredUsers.length}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              {isEditing ? (
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={displayCredits}
+                                    onChange={(e) =>
+                                      setEditingCredits((prev) => ({
+                                        ...prev,
+                                        [item.referrer.id]: parseInt(e.target.value, 10) || 0,
+                                      }))
+                                    }
+                                    className="w-20 rounded border border-border/70 bg-background/40 px-2 py-1 text-[0.7rem] text-foreground focus:border-accent focus:outline-none"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      updateReferralCredits(
+                                        item.referrer.id,
+                                        editingCredits[item.referrer.id]
+                                      )
+                                    }
+                                    className="rounded border border-accent bg-accent px-2 py-1 text-[0.6rem] uppercase tracking-[0.2em] text-background transition hover:bg-transparent hover:text-accent"
+                                  >
+                                    Save
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setEditingCredits((prev) => {
+                                        const next = { ...prev };
+                                        delete next[item.referrer.id];
+                                        return next;
+                                      })
+                                    }
+                                    className="rounded border border-border/70 px-2 py-1 text-[0.6rem] uppercase tracking-[0.2em] text-foreground/60 transition hover:border-accent hover:text-accent"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold">{displayCredits}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setEditingCredits((prev) => ({
+                                        ...prev,
+                                        [item.referrer.id]: item.credits,
+                                      }))
+                                    }
+                                    className="rounded border border-border/70 px-2 py-1 text-[0.6rem] uppercase tracking-[0.2em] text-foreground/60 transition hover:border-accent hover:text-accent"
+                                  >
+                                    Edit
+                                  </button>
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-4 py-3">
+                              <button
+                                type="button"
+                                onClick={() => router.push(`/admin/users/${item.referrer.id}`)}
+                                className="rounded-full border border-border/70 px-3 py-1 text-[0.6rem] uppercase tracking-[0.2em] text-foreground/70 transition hover:border-accent hover:text-accent"
+                              >
+                                View Profile
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    {usersByReferrer.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-6 text-center text-foreground/60">
+                          No referrers found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Referral Relationships */}
+            <div className="rounded-3xl border border-border/80 bg-muted/60 px-6 py-6 shadow-[0_0_90px_-45px_rgba(215,38,61,0.6)] backdrop-blur">
+              <h3 className="mb-4 font-bold text-lg uppercase tracking-[0.32em] text-foreground">
+                Referral Relationships
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-border/60 text-left">
+                  <thead className="uppercase tracking-[0.3em] text-foreground/60 text-[0.6rem]">
+                    <tr>
+                      <th className="px-4 py-3 font-medium">Referrer</th>
+                      <th className="px-4 py-3 font-medium">Referred User</th>
+                      <th className="px-4 py-3 font-medium">Referred By Code</th>
+                      <th className="px-4 py-3 font-medium">Package Tier</th>
+                      <th className="px-4 py-3 font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/70 text-[0.7rem] uppercase tracking-[0.24em] text-foreground/80">
+                    {referralRelationships
+                      .filter((rel) => {
+                        if (!referralSearch) return true;
+                        const search = referralSearch.toLowerCase();
+                        return (
+                          rel.referrer.referralCode?.toLowerCase().includes(search) ||
+                          rel.referrer.displayName?.toLowerCase().includes(search) ||
+                          rel.referrer.email?.toLowerCase().includes(search) ||
+                          rel.referred.displayName?.toLowerCase().includes(search) ||
+                          rel.referred.email?.toLowerCase().includes(search) ||
+                          rel.referred.referredBy?.toLowerCase().includes(search)
+                        );
+                      })
+                      .map((rel, idx) => (
+                        <tr key={`${rel.referrer.id}-${rel.referred.id}-${idx}`} className="hover:bg-background/20">
+                          <td className="px-4 py-3">
+                            <div className="flex flex-col">
+                              <span className="font-semibold">
+                                {rel.referrer.displayName ?? "Unnamed"}
+                              </span>
+                              <span className="text-[0.65rem] text-foreground/60">
+                                {rel.referrer.email}
+                              </span>
+                              {rel.referrer.referralCode && (
+                                <code className="mt-1 inline-block rounded border border-border/60 bg-background/40 px-2 py-0.5 text-[0.6rem] font-mono">
+                                  {rel.referrer.referralCode}
+                                </code>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex flex-col">
+                              <span className="font-semibold">
+                                {rel.referred.displayName ?? "Unnamed"}
+                              </span>
+                              <span className="text-[0.65rem] text-foreground/60">
+                                {rel.referred.email}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <code className="rounded border border-border/60 bg-background/40 px-2 py-1 text-[0.65rem] font-mono">
+                              {rel.referred.referredBy}
+                            </code>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="font-medium">
+                              {rel.referred.packageTier ?? "—"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <button
+                              type="button"
+                              onClick={() => router.push(`/admin/users/${rel.referred.id}`)}
+                              className="rounded-full border border-border/70 px-3 py-1 text-[0.6rem] uppercase tracking-[0.2em] text-foreground/70 transition hover:border-accent hover:text-accent"
+                            >
+                              View
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    {referralRelationships.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-6 text-center text-foreground/60">
+                          No referral relationships found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Users Without Referral Codes */}
+            <div className="rounded-3xl border border-border/80 bg-muted/60 px-6 py-6 shadow-[0_0_90px_-45px_rgba(215,38,61,0.6)] backdrop-blur">
+              <h3 className="mb-4 font-bold text-lg uppercase tracking-[0.32em] text-foreground">
+                Users Without Referral Codes
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-border/60 text-left">
+                  <thead className="uppercase tracking-[0.3em] text-foreground/60 text-[0.6rem]">
+                    <tr>
+                      <th className="px-4 py-3 font-medium">User</th>
+                      <th className="px-4 py-3 font-medium">Email</th>
+                      <th className="px-4 py-3 font-medium">Package</th>
+                      <th className="px-4 py-3 font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/70 text-[0.7rem] uppercase tracking-[0.24em] text-foreground/80">
+                    {users
+                      .filter(
+                        (user) =>
+                          !user.referralCode ||
+                          (typeof user.referralCode === "string" && user.referralCode.trim() === "")
+                      )
+                      .slice(0, 10)
+                      .map((user) => (
+                        <tr key={user.id} className="hover:bg-background/20">
+                          <td className="px-4 py-3">
+                            <span className="font-semibold">
+                              {user.displayName ?? "Unnamed"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">{user.email ?? "—"}</td>
+                          <td className="px-4 py-3">{user.packageTier ?? "—"}</td>
+                          <td className="px-4 py-3">
+                            <button
+                              type="button"
+                              onClick={() => router.push(`/admin/users/${user.id}`)}
+                              className="rounded-full border border-border/70 px-3 py-1 text-[0.6rem] uppercase tracking-[0.2em] text-foreground/70 transition hover:border-accent hover:text-accent"
+                            >
+                              Generate Code
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    {users.filter(
+                      (user) =>
+                        !user.referralCode ||
+                        (typeof user.referralCode === "string" && user.referralCode.trim() === "")
+                    ).length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="px-4 py-6 text-center text-foreground/60">
+                          All users have referral codes.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
           <section
             id="sales"
-            className="flex flex-col gap-4 rounded-3xl border border-border/80 bg-muted/60 px-6 py-8 shadow-[0_0_90px_-45px_rgba(215,38,61,0.6)] backdrop-blur"
+            className={`flex flex-col gap-4 rounded-3xl border border-border/80 bg-muted/60 px-6 py-8 shadow-[0_0_90px_-45px_rgba(215,38,61,0.6)] backdrop-blur ${activeSection !== "sales" ? "hidden" : ""}`}
           >
             <h2 className="font-display text-xl uppercase tracking-[0.32em] text-foreground">
               Sales / Revenue
@@ -885,7 +1288,7 @@ export default function AdminPage() {
 
           <section
             id="requests"
-            className="flex flex-col gap-4 rounded-3xl border border-border/80 bg-muted/60 px-6 py-8 shadow-[0_0_90px_-45px_rgba(215,38,61,0.6)] backdrop-blur"
+            className={`flex flex-col gap-4 rounded-3xl border border-border/80 bg-muted/60 px-6 py-8 shadow-[0_0_90px_-45px_rgba(215,38,61,0.6)] backdrop-blur ${activeSection !== "requests" ? "hidden" : ""}`}
           >
             <h2 className="font-display text-xl uppercase tracking-[0.32em] text-foreground">
               Plan Requests
