@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion, type Variants } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import {
   onAuthStateChanged,
   signOut,
@@ -48,6 +48,8 @@ type UserDashboardData = {
   mealPlanImageURLs?: string[] | null;
   mealPlanDeliveredAt?: Timestamp | { seconds: number; nanoseconds: number } | Date | null;
   groceryListURL?: string | null;
+  referralCode?: string | null;
+  referralCredits?: number | null;
 };
 
 export default function DashboardPage() {
@@ -271,6 +273,10 @@ export default function DashboardPage() {
               packageTier={data.packageTier}
             />
             <ProfileSummary profile={data.profile ?? {}} />
+            <ReferralsCard
+              referralCode={data.referralCode}
+              referralCredits={data.referralCredits ?? 0}
+            />
             <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
               <MealPlanSection
                 status={selectedStatus}
@@ -665,6 +671,150 @@ function ProgressTracker({ statusIndex }: { statusIndex: number }) {
             </div>
           );
         })}
+      </div>
+    </motion.div>
+  );
+}
+
+function ReferralsCard({
+  referralCode,
+  referralCredits,
+}: {
+  referralCode?: string | null;
+  referralCredits: number;
+}) {
+  const [copied, setCopied] = useState(false);
+  const shareLink = referralCode
+    ? `https://macrominded.net/register?ref=${referralCode}`
+    : "";
+
+  const handleCopyLink = async () => {
+    if (!shareLink) return;
+
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy link:", err);
+    }
+  };
+
+  if (!referralCode) {
+    return null;
+  }
+
+  return (
+    <motion.div
+      whileHover={{ scale: 1.02 }}
+      className="relative overflow-hidden rounded-3xl border border-border/70 bg-muted/60 px-8 py-8 backdrop-blur shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)]"
+    >
+      <div className="pointer-events-none absolute inset-x-0 -top-24 h-32 bg-gradient-to-b from-background/20 via-background/5 to-transparent blur-3xl" />
+      <div className="relative flex flex-col gap-6">
+        <h3 className="font-bold uppercase tracking-[0.34em] text-foreground">
+          Referrals
+        </h3>
+
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-medium uppercase tracking-[0.28em] text-foreground/70">
+              Your Referral Code
+            </span>
+            <div className="flex items-center gap-3">
+              <code className="rounded-2xl border border-border/60 bg-background/40 px-4 py-3 text-sm font-bold uppercase tracking-[0.2em] text-foreground">
+                {referralCode}
+              </code>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-medium uppercase tracking-[0.28em] text-foreground/70">
+              Successful Referrals
+            </span>
+            <p className="text-2xl font-bold uppercase tracking-[0.2em] text-foreground">
+              {referralCredits}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-border/60 bg-background/20 px-5 py-4">
+            <h4 className="mb-3 text-xs font-bold uppercase tracking-[0.28em] text-foreground">
+              Rewards
+            </h4>
+            <ul className="flex flex-col gap-2 text-[0.7rem] font-medium uppercase tracking-[0.2em] text-foreground/70">
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-accent">•</span>
+                <span>Every referral = 1 credit</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-accent">•</span>
+                <span>
+                  1 credit = 1 free meal plan revision OR $5 discount coupon code
+                  <span className="block mt-1 text-[0.65rem] tracking-[0.18em] text-foreground/50">
+                    (Admin applied manually)
+                  </span>
+                </span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-medium uppercase tracking-[0.28em] text-foreground/70">
+              Share Link
+            </span>
+            <div className="flex items-center gap-3">
+              <input
+                type="text"
+                readOnly
+                value={shareLink}
+                className="flex-1 rounded-2xl border border-border/60 bg-background/40 px-4 py-3 text-xs font-medium tracking-[0.2em] text-foreground/70"
+              />
+              <motion.button
+                type="button"
+                onClick={handleCopyLink}
+                whileTap={{ scale: 0.95 }}
+                className="relative rounded-full border border-accent bg-accent px-6 py-3 text-xs font-bold uppercase tracking-[0.32em] text-background transition hover:bg-accent/90"
+              >
+                <AnimatePresence mode="wait">
+                  {copied ? (
+                    <motion.span
+                      key="copied"
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="flex items-center gap-2"
+                    >
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                      Copied!
+                    </motion.span>
+                  ) : (
+                    <motion.span
+                      key="copy"
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      Copy Link
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </motion.button>
+            </div>
+          </div>
+        </div>
       </div>
     </motion.div>
   );

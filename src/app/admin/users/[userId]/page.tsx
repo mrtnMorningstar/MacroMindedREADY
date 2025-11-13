@@ -64,6 +64,7 @@ export default function AdminUserDetailPage() {
     mealPlanDeliveredAt?: Date | null;
     createdAt?: Date | null;
     profile?: UserProfile | null;
+    referralCredits?: number | null;
   } | null>(null);
 
   const [pdfFile, setPdfFile] = useState<File | null>(null);
@@ -132,6 +133,7 @@ export default function AdminUserDetailPage() {
           mealPlanDeliveredAt,
           createdAt,
           profile: (data?.profile as UserProfile | null) ?? null,
+          referralCredits: data?.referralCredits ?? 0,
         });
         setFeedback(null);
       } catch (error) {
@@ -232,6 +234,42 @@ export default function AdminUserDetailPage() {
     },
     [userId, userData?.mealPlanImageURLs]
   );
+
+  const redeemReferralCredit = useCallback(async () => {
+    if (!userId || !userData) return;
+    
+    const currentCredits = userData.referralCredits ?? 0;
+    if (currentCredits < 1) {
+      setFeedback("User has no referral credits to redeem.");
+      return;
+    }
+
+    if (!confirm("Redeem one referral credit? This will reduce credits by 1 and mark a plan revision as requested.")) {
+      return;
+    }
+
+    try {
+      const userRef = doc(db, "users", userId);
+      await updateDoc(userRef, {
+        referralCredits: currentCredits - 1,
+        revisionRequested: true,
+      });
+      
+      setUserData((prev) =>
+        prev
+          ? {
+              ...prev,
+              referralCredits: currentCredits - 1,
+            }
+          : null
+      );
+      
+      setFeedback("Referral credit redeemed. Plan update now required.");
+    } catch (error) {
+      console.error("Failed to redeem referral credit", error);
+      setFeedback("Failed to redeem referral credit.");
+    }
+  }, [userId, userData]);
 
   const handleSubmit = async () => {
     if (!userId || !userData) return;
@@ -483,6 +521,10 @@ export default function AdminUserDetailPage() {
             label="Days Since Delivery"
             value={deliveryDays !== null ? `${deliveryDays} days` : "—"}
           />
+          <OverviewItem
+            label="Referral Credits"
+            value={userData.referralCredits?.toString() ?? "0"}
+          />
         </div>
 
         {userData.profile && (
@@ -544,6 +586,15 @@ export default function AdminUserDetailPage() {
                 ×
               </button>
             </div>
+          )}
+          {userData.referralCredits && userData.referralCredits > 0 && (
+            <button
+              type="button"
+              onClick={redeemReferralCredit}
+              className="rounded-full border border-accent bg-accent px-4 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.3em] text-background transition hover:bg-transparent hover:text-accent"
+            >
+              Redeem One Referral Credit
+            </button>
           )}
         </div>
       </motion.section>

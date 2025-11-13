@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, type Variants } from "framer-motion";
 import {
   createUserWithEmailAndPassword,
@@ -13,6 +13,7 @@ import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { FirebaseError } from "firebase/app";
 
 import { auth, db } from "@/lib/firebase";
+import { generateUniqueReferralCode } from "@/lib/referral";
 
 const heroEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
@@ -27,12 +28,16 @@ const containerVariants: Variants = {
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Get referral code from URL query parameter
+  const referredBy = searchParams.get("ref") || null;
 
   const isDisabled = useMemo(
     () =>
@@ -79,6 +84,9 @@ export default function RegisterPage() {
         displayName: trimmedName,
       });
 
+      // Generate unique referral code for the new user
+      const userReferralCode = await generateUniqueReferralCode(trimmedName);
+
       await setDoc(
         doc(db, "users", credential.user.uid),
         {
@@ -86,6 +94,9 @@ export default function RegisterPage() {
           displayName: trimmedName,
           packageTier: null,
           role: "member",
+          referralCode: userReferralCode,
+          referredBy: referredBy,
+          referralCredits: 0,
           createdAt: serverTimestamp(),
         },
         { merge: true }

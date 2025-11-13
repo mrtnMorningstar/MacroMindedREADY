@@ -80,6 +80,11 @@ export async function POST(request: Request) {
 
       console.log("Updating user document:", resolvedUserId);
 
+      // Get user document to check for referredBy
+      const userDoc = await adminDb.collection("users").doc(resolvedUserId).get();
+      const userData = userDoc.data();
+      const referredBy = userData?.referredBy;
+
       await adminDb.collection("users").doc(resolvedUserId).set(
         {
           packageTier: plan,
@@ -91,6 +96,30 @@ export async function POST(request: Request) {
       );
 
       console.log("User document updated successfully");
+
+      // Handle referral credit
+      if (referredBy) {
+        console.log("Processing referral credit for referrer:", referredBy);
+        
+        // Find referrer
+        const refQuery = await adminDb
+          .collection("users")
+          .where("referralCode", "==", referredBy)
+          .get();
+
+        if (!refQuery.empty) {
+          const refDoc = refQuery.docs[0];
+          const currentCredits = refDoc.data().referralCredits || 0;
+          
+          await refDoc.ref.update({
+            referralCredits: currentCredits + 1,
+          });
+          
+          console.log(`Referral credit added. Referrer now has ${currentCredits + 1} credits.`);
+        } else {
+          console.warn(`Referrer with code ${referredBy} not found.`);
+        }
+      }
 
       const planType = plan === "Basic" || plan === "Pro" || plan === "Elite" ? plan : "Basic";
 
