@@ -1,19 +1,9 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import {
-  collection,
-  doc,
-  getDocs,
-  limit,
-  query,
-  setDoc,
-  where,
-  serverTimestamp,
-  type DocumentReference,
-} from "firebase/firestore";
+import { FieldValue } from "firebase-admin/firestore";
 
 import { getStripe } from "@/lib/stripe";
-import { db } from "@/lib/firebase";
+import { adminDb } from "@/lib/firebase-admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -68,38 +58,33 @@ export async function POST(request: Request) {
         throw new Error("Missing plan metadata on session.");
       }
 
-      let userDocRef: DocumentReference | null = null;
+      let resolvedUserId: string | null = null;
 
       if (userId) {
-        userDocRef = doc(db, "users", userId);
+        resolvedUserId = userId;
       } else if (email) {
-        const usersRef = collection(db, "users");
-        const userQuery = query(
-          usersRef,
-          where("email", "==", email),
-          limit(1)
-        );
-        const snapshot = await getDocs(userQuery);
-        const match = snapshot.docs[0];
-        if (match) {
-          userDocRef = doc(db, "users", match.id);
+        const usersSnapshot = await adminDb
+          .collection("users")
+          .where("email", "==", email)
+          .limit(1)
+          .get();
+        
+        if (!usersSnapshot.empty) {
+          resolvedUserId = usersSnapshot.docs[0].id;
         }
       }
 
-      if (!userDocRef) {
+      if (!resolvedUserId) {
         throw new Error("No user found for completed checkout session.");
       }
 
-      const resolvedUserId = userDocRef.id;
-
       console.log("Updating user document:", resolvedUserId);
 
-      await setDoc(
-        userDocRef,
+      await adminDb.collection("users").doc(resolvedUserId).set(
         {
           packageTier: plan,
           mealPlanStatus: "Not Started",
-          purchaseDate: serverTimestamp(),
+          purchaseDate: FieldValue.serverTimestamp(),
           email,
         },
         { merge: true }
@@ -108,17 +93,15 @@ export async function POST(request: Request) {
       console.log("User document updated successfully");
 
       const planType = plan === "Basic" || plan === "Pro" || plan === "Elite" ? plan : "Basic";
-      const purchasesRef = collection(db, "purchases");
-      const purchaseRef = doc(purchasesRef);
 
       console.log("Creating purchase document");
 
-      await setDoc(purchaseRef, {
+      await adminDb.collection("purchases").add({
         userId: resolvedUserId,
         planType,
         status: "paid",
         mealPlanUrl: null,
-        createdAt: serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
         deliveredAt: null,
         stripeSessionId: session.id,
         email,
