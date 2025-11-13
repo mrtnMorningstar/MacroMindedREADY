@@ -81,17 +81,20 @@ export default function DashboardPage() {
             userData = (snapshot.data() as UserDashboardData) ?? {};
             
             // Generate referral code if user doesn't have one (for existing users)
-            if (!userData.referralCode && userData.displayName) {
+            if (!userData.referralCode && userData.displayName && typeof userData.displayName === "string" && userData.displayName.trim().length > 0) {
               try {
                 const newReferralCode = await generateUniqueReferralCode(userData.displayName);
-                await setDoc(userDocRef, {
-                  referralCode: newReferralCode,
-                  referralCredits: userData.referralCredits ?? 0,
-                }, { merge: true });
-                userData.referralCode = newReferralCode;
-                userData.referralCredits = userData.referralCredits ?? 0;
+                if (newReferralCode && typeof newReferralCode === "string") {
+                  await setDoc(userDocRef, {
+                    referralCode: newReferralCode,
+                    referralCredits: userData.referralCredits ?? 0,
+                  }, { merge: true });
+                  userData.referralCode = newReferralCode;
+                  userData.referralCredits = userData.referralCredits ?? 0;
+                }
               } catch (error) {
                 console.error("Failed to generate referral code:", error);
+                // Don't block dashboard loading if referral code generation fails
               }
             }
           }
