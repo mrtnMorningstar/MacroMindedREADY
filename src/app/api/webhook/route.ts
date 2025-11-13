@@ -57,6 +57,13 @@ export async function POST(request: Request) {
         session.customer_email ??
         "";
 
+      console.log("Processing checkout.session.completed:", {
+        sessionId: session.id,
+        plan,
+        userId,
+        email,
+      });
+
       if (!plan) {
         throw new Error("Missing plan metadata on session.");
       }
@@ -85,6 +92,8 @@ export async function POST(request: Request) {
 
       const resolvedUserId = userDocRef.id;
 
+      console.log("Updating user document:", resolvedUserId);
+
       await setDoc(
         userDocRef,
         {
@@ -96,9 +105,13 @@ export async function POST(request: Request) {
         { merge: true }
       );
 
+      console.log("User document updated successfully");
+
       const planType = plan === "Basic" || plan === "Pro" || plan === "Elite" ? plan : "Basic";
       const purchasesRef = collection(db, "purchases");
       const purchaseRef = doc(purchasesRef);
+
+      console.log("Creating purchase document");
 
       await setDoc(purchaseRef, {
         userId: resolvedUserId,
@@ -111,15 +124,28 @@ export async function POST(request: Request) {
         email,
         amount: session.amount_total ? session.amount_total / 100 : null,
       });
+
+      console.log("Purchase document created successfully");
     }
 
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("Webhook handling failed:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to handle webhook.";
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
+    // Log detailed error for debugging
+    console.error("Error details:", {
+      message: errorMessage,
+      stack: errorStack,
+      eventType: event?.type,
+      sessionId: (event?.data?.object as Stripe.Checkout.Session)?.id,
+    });
+    
     return NextResponse.json(
       {
-        error:
-          error instanceof Error ? error.message : "Failed to handle webhook.",
+        error: errorMessage,
+        ...(process.env.NODE_ENV === "development" && { stack: errorStack }),
       },
       { status: 500 }
     );
