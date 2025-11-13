@@ -547,9 +547,9 @@ function MealPlanSection({
               </button>
             )}
 
-            {images.length > 0 ? (
-              <MealPlanGallery images={images} />
-            ) : (
+            {/* Always render MealPlanGallery to maintain consistent hook calls */}
+            <MealPlanGallery images={images.length > 0 ? images : []} />
+            {images.length === 0 && (
               <p className="text-[0.65rem] font-medium uppercase tracking-[0.3em] text-foreground/50">
                 Image gallery coming soon.
               </p>

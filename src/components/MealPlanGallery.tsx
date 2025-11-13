@@ -12,8 +12,10 @@ export default function MealPlanGallery({
   images,
   title = "Meal Plan Gallery",
 }: MealPlanGalleryProps) {
+  // Hooks must be called before any conditional returns
   const [activeImage, setActiveImage] = useState<string | null>(null);
 
+  // Always render the component structure to maintain consistent hook calls
   if (!images.length) {
     return null;
   }
