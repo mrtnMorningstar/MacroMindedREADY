@@ -42,6 +42,7 @@ type Profile = {
 };
 
 type UserDashboardData = {
+  displayName?: string | null;
   packageTier?: string | null;
   mealPlanStatus?: MealPlanStatus | null;
   profile?: Profile | null;
