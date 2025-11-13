@@ -65,6 +65,8 @@ export default function AdminUserDetailPage() {
     createdAt?: Date | null;
     profile?: UserProfile | null;
     referralCredits?: number | null;
+    referralCode?: string | null;
+    referredBy?: string | null;
   } | null>(null);
 
   const [pdfFile, setPdfFile] = useState<File | null>(null);
@@ -134,6 +136,8 @@ export default function AdminUserDetailPage() {
           createdAt,
           profile: (data?.profile as UserProfile | null) ?? null,
           referralCredits: data?.referralCredits ?? 0,
+          referralCode: data?.referralCode ?? null,
+          referredBy: data?.referredBy ?? null,
         });
         setFeedback(null);
       } catch (error) {
@@ -524,6 +528,14 @@ export default function AdminUserDetailPage() {
           <OverviewItem
             label="Referral Credits"
             value={userData.referralCredits?.toString() ?? "0"}
+          />
+          <OverviewItem
+            label="Referral Code"
+            value={userData.referralCode ?? "Not generated"}
+          />
+          <OverviewItem
+            label="Referred By"
+            value={userData.referredBy ?? "No referral"}
           />
         </div>
 

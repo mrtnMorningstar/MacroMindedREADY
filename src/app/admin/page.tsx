@@ -43,6 +43,9 @@ type UserRecord = {
   profile?: UserProfile | null;
   mealPlanDeliveredAt?: unknown;
   groceryListURL?: string | null;
+  referralCode?: string | null;
+  referralCredits?: number | null;
+  referredBy?: string | null;
 };
 
 type UploadStatus = {
@@ -122,6 +125,9 @@ export default function AdminPage() {
             profile: (data?.profile as UserProfile | null) ?? null,
             mealPlanDeliveredAt: data?.mealPlanDeliveredAt ?? null,
             groceryListURL: data?.groceryListURL ?? null,
+            referralCode: data?.referralCode ?? null,
+            referralCredits: data?.referralCredits ?? 0,
+            referredBy: data?.referredBy ?? null,
           };
         });
 
@@ -535,6 +541,20 @@ export default function AdminPage() {
       (user.mealPlanStatus ?? "Not Started") !== "Delivered"
   );
 
+  // Calculate referral statistics
+  const referralStats = useMemo(() => {
+    const totalReferrals = users.reduce((sum, user) => sum + (user.referralCredits ?? 0), 0);
+    const usersWithReferrals = users.filter((user) => (user.referralCredits ?? 0) > 0).length;
+    const usersReferred = users.filter((user) => user.referredBy).length;
+    const totalReferralCodes = users.filter((user) => user.referralCode).length;
+    return {
+      totalReferrals,
+      usersWithReferrals,
+      usersReferred,
+      totalReferralCodes,
+    };
+  }, [users]);
+
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       <motion.aside
@@ -615,6 +635,58 @@ export default function AdminPage() {
             </motion.div>
           )}
 
+          {/* Referral Statistics */}
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4"
+          >
+            <div className="rounded-3xl border border-border/70 bg-muted/60 px-6 py-6 shadow-[0_0_50px_-30px_rgba(215,38,61,0.5)] backdrop-blur">
+              <h3 className="text-xs font-bold uppercase tracking-[0.34em] text-foreground">
+                Total Referrals
+              </h3>
+              <p className="mt-2 text-2xl font-bold uppercase tracking-[0.2em] text-foreground">
+                {referralStats.totalReferrals}
+              </p>
+              <p className="mt-1 text-[0.7rem] font-medium uppercase tracking-[0.28em] text-foreground/60">
+                Credits earned
+              </p>
+            </div>
+            <div className="rounded-3xl border border-border/70 bg-muted/60 px-6 py-6 shadow-[0_0_50px_-30px_rgba(215,38,61,0.5)] backdrop-blur">
+              <h3 className="text-xs font-bold uppercase tracking-[0.34em] text-foreground">
+                Active Referrers
+              </h3>
+              <p className="mt-2 text-2xl font-bold uppercase tracking-[0.2em] text-foreground">
+                {referralStats.usersWithReferrals}
+              </p>
+              <p className="mt-1 text-[0.7rem] font-medium uppercase tracking-[0.28em] text-foreground/60">
+                Users with credits
+              </p>
+            </div>
+            <div className="rounded-3xl border border-border/70 bg-muted/60 px-6 py-6 shadow-[0_0_50px_-30px_rgba(215,38,61,0.5)] backdrop-blur">
+              <h3 className="text-xs font-bold uppercase tracking-[0.34em] text-foreground">
+                Referred Users
+              </h3>
+              <p className="mt-2 text-2xl font-bold uppercase tracking-[0.2em] text-foreground">
+                {referralStats.usersReferred}
+              </p>
+              <p className="mt-1 text-[0.7rem] font-medium uppercase tracking-[0.28em] text-foreground/60">
+                Signed up via referral
+              </p>
+            </div>
+            <div className="rounded-3xl border border-border/70 bg-muted/60 px-6 py-6 shadow-[0_0_50px_-30px_rgba(215,38,61,0.5)] backdrop-blur">
+              <h3 className="text-xs font-bold uppercase tracking-[0.34em] text-foreground">
+                Referral Codes
+              </h3>
+              <p className="mt-2 text-2xl font-bold uppercase tracking-[0.2em] text-foreground">
+                {referralStats.totalReferralCodes}
+              </p>
+              <p className="mt-1 text-[0.7rem] font-medium uppercase tracking-[0.28em] text-foreground/60">
+                Codes generated
+              </p>
+            </div>
+          </motion.section>
+
           <section id="users" className="flex flex-col gap-8">
             <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="font-bold text-xl uppercase tracking-[0.32em] text-foreground">
@@ -637,19 +709,20 @@ export default function AdminPage() {
                       <th className="px-5 py-4 font-medium">Package</th>
                       <th className="px-5 py-4 font-medium">Status</th>
                       <th className="px-5 py-4 font-medium">Meal Plan</th>
+                      <th className="px-5 py-4 font-medium">Referrals</th>
                       <th className="px-5 py-4 font-medium">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/70 text-[0.7rem] uppercase tracking-[0.24em] text-foreground/80">
                     {loadingUsers ? (
                       <tr>
-                        <td colSpan={6} className="px-5 py-6 text-center">
+                        <td colSpan={7} className="px-5 py-6 text-center">
                           Loading users...
                         </td>
                       </tr>
                     ) : users.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-5 py-6 text-center">
+                        <td colSpan={7} className="px-5 py-6 text-center">
                           No users found.
                         </td>
                       </tr>
@@ -686,6 +759,18 @@ export default function AdminPage() {
                             ) : (
                               <span className="text-foreground/40">Pending</span>
                             )}
+                          </td>
+                          <td className="px-5 py-4">
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs">
+                                Credits: <span className="font-semibold">{userRecord.referralCredits ?? 0}</span>
+                              </span>
+                              {userRecord.referralCode && (
+                                <span className="text-[0.65rem] text-foreground/60">
+                                  Code: {userRecord.referralCode}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-5 py-4">
                             <button
