@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import {
   onAuthStateChanged,
   signOut,
@@ -272,18 +272,7 @@ export default function DashboardPage() {
             {error}
           </motion.div>
         ) : !purchase && !data?.packageTier ? (
-          (() => {
-            console.log("Showing locked screen - purchase:", purchase, "packageTier:", data?.packageTier);
-            return <LockedDashboardScreen />;
-          })()
-        ) : !data ? (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-3xl border border-accent/40 bg-muted/70 px-6 py-6 text-center text-xs font-semibold uppercase tracking-[0.3em] text-accent"
-          >
-            Unable to load dashboard data. Please refresh.
-          </motion.div>
+          <LockedDashboardScreen />
         ) : (
           <motion.div
             initial="hidden"
@@ -292,26 +281,38 @@ export default function DashboardPage() {
             transition={{ duration: 0.7, delay: 0.1, ease: heroEase }}
             className="grid gap-8"
           >
-            <StatusOverview
-              status={selectedStatus}
-              packageTier={data.packageTier}
-            />
-            <ProfileSummary profile={data.profile ?? {}} />
             {/* Always render ReferralsCard to maintain consistent hook calls */}
             <ReferralsCard
               referralCode={data?.referralCode ?? null}
               referralCredits={data?.referralCredits ?? 0}
             />
-            <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-              <MealPlanSection
-                status={selectedStatus}
-                fileUrl={data.mealPlanFileURL}
-                imageUrls={data.mealPlanImageURLs}
-                daysSinceDelivery={daysSinceDelivery}
-                groceryListUrl={data.groceryListURL}
-              />
-              <ProgressTracker statusIndex={statusIndex} />
-            </div>
+            {data ? (
+              <>
+                <StatusOverview
+                  status={selectedStatus}
+                  packageTier={data.packageTier}
+                />
+                <ProfileSummary profile={data.profile ?? {}} />
+                <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+                  <MealPlanSection
+                    status={selectedStatus}
+                    fileUrl={data.mealPlanFileURL}
+                    imageUrls={data.mealPlanImageURLs}
+                    daysSinceDelivery={daysSinceDelivery}
+                    groceryListUrl={data.groceryListURL}
+                  />
+                  <ProgressTracker statusIndex={statusIndex} />
+                </div>
+              </>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-3xl border border-accent/40 bg-muted/70 px-6 py-6 text-center text-xs font-semibold uppercase tracking-[0.3em] text-accent"
+              >
+                Unable to load dashboard data. Please refresh.
+              </motion.div>
+            )}
           </motion.div>
         )}
       </section>
