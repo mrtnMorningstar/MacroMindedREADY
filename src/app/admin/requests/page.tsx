@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { collection, onSnapshot, type DocumentData } from "firebase/firestore";
-
-import { db } from "@/lib/firebase";
+import { collection, onSnapshot, doc, getDoc, type DocumentData } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 import Link from "next/link";
+
+import { auth, db } from "@/lib/firebase";
 
 type PendingUser = {
   id: string;
@@ -21,12 +23,52 @@ const containerVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
+const baseBackground = "bg-[radial-gradient(circle_at_top,#161616_0%,rgba(0,0,0,0.92)_60%,#000_98%)]";
+
 export default function AdminRequestsPage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<PendingUser[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (!currentUser) {
+        router.replace("/login");
+        setCheckingAuth(false);
+        return;
+      }
+      try {
+        const docRef = doc(db, "users", currentUser.uid);
+        const currentSnapshot = await getDoc(docRef);
+        const role = currentSnapshot.data()?.role;
+
+        if (role !== "admin") {
+          router.replace("/dashboard");
+          setCheckingAuth(false);
+          return;
+        }
+
+        setIsAdmin(true);
+      } catch (error) {
+        console.error("Failed to verify admin role:", error);
+        router.replace("/dashboard");
+        setCheckingAuth(false);
+        return;
+      } finally {
+        setCheckingAuth(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+
     const unsubscribe = onSnapshot(
       collection(db, "users"),
       (snapshot) => {
@@ -65,7 +107,7 @@ export default function AdminRequestsPage() {
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [isAdmin]);
 
   const getDaysSince = useMemo(
     () =>
@@ -78,27 +120,119 @@ export default function AdminRequestsPage() {
     []
   );
 
+  if (checkingAuth) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
+        <p className="text-xs uppercase tracking-[0.3em] text-foreground/60">
+          Validating access...
+        </p>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return null;
+  }
+
   return (
-    <div className="flex min-h-screen flex-col gap-8 bg-background px-6 py-10 text-foreground sm:py-14 lg:px-10">
-      <motion.header
-        initial="hidden"
-        animate="visible"
-        variants={containerVariants}
-        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-        className="flex flex-col gap-4 rounded-3xl border border-border/70 bg-muted/60 px-6 py-6 shadow-[0_0_70px_-35px_rgba(215,38,61,0.6)] backdrop-blur sm:flex-row sm:items-center sm:justify-between"
+    <div className="flex min-h-screen bg-background text-foreground">
+      {/* Sidebar */}
+      <motion.aside
+        initial={{ x: -40, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="hidden h-[calc(100vh-5rem)] w-64 flex-col border-r border-border/70 bg-muted/40 px-6 py-10 shadow-[0_0_80px_-40px_rgba(215,38,61,0.6)] backdrop-blur lg:fixed lg:left-0 lg:top-20 lg:flex"
       >
-        <div>
-          <h1 className="font-bold text-2xl uppercase tracking-[0.32em] text-foreground sm:text-3xl">
-            Plan Requests
-          </h1>
-          <p className="mt-2 text-[0.7rem] font-medium uppercase tracking-[0.3em] text-foreground/60">
-            Clients awaiting meal plan delivery or updates.
-          </p>
-        </div>
-        <div className="rounded-full border border-border/70 px-4 py-2 text-[0.6rem] font-medium uppercase tracking-[0.3em] text-foreground/70">
-          Pending: {users.length}
-        </div>
-      </motion.header>
+        <span className="font-bold uppercase tracking-[0.48em] text-foreground">
+          MacroMinded
+        </span>
+        <p className="mt-2 text-[0.65rem] font-medium uppercase tracking-[0.3em] text-foreground/60">
+          Admin navigation
+        </p>
+
+        <nav className="mt-10 flex-1 overflow-y-auto pr-1">
+          <div className="flex flex-col gap-3">
+            <Link
+              href="/admin"
+              className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
+                pathname === "/admin"
+                  ? "border-accent/60 bg-accent/20 text-accent"
+                  : "border-border/70 text-foreground/70 hover:border-accent hover:text-accent"
+              }`}
+            >
+              Users
+            </Link>
+            <Link
+              href="/admin/referrals"
+              className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
+                pathname === "/admin/referrals"
+                  ? "border-accent/60 bg-accent/20 text-accent"
+                  : "border-border/70 text-foreground/70 hover:border-accent hover:text-accent"
+              }`}
+            >
+              Referrals
+            </Link>
+            <Link
+              href="/admin/sales"
+              className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
+                pathname === "/admin/sales"
+                  ? "border-accent/60 bg-accent/20 text-accent"
+                  : "border-border/70 text-foreground/70 hover:border-accent hover:text-accent"
+              }`}
+            >
+              Sales / Revenue
+            </Link>
+            <Link
+              href="/admin/requests"
+              className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
+                pathname === "/admin/requests"
+                  ? "border-accent/60 bg-accent/20 text-accent"
+                  : "border-border/70 text-foreground/70 hover:border-accent hover:text-accent"
+              }`}
+            >
+              Plan Requests
+            </Link>
+          </div>
+        </nav>
+      </motion.aside>
+
+      <div className="relative isolate flex-1 lg:ml-64">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.1 }}
+          className="pointer-events-none absolute inset-0"
+        >
+          <div className="absolute -top-36 left-1/2 h-[680px] w-[680px] -translate-x-1/2 rounded-full bg-accent/30 blur-3xl" />
+          <div className={`absolute inset-0 ${baseBackground}`} />
+        </motion.div>
+
+        <div className="relative flex flex-col gap-10 px-6 py-10 sm:py-16 lg:px-10">
+          <header className="flex flex-col gap-4 rounded-3xl border border-border/70 bg-muted/60 px-6 py-6 shadow-[0_0_70px_-35px_rgba(215,38,61,0.6)] backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="font-bold text-2xl uppercase tracking-[0.32em] text-foreground sm:text-3xl">
+                Plan Requests
+              </h1>
+              <p className="mt-2 text-[0.7rem] font-medium uppercase tracking-[0.3em] text-foreground/60">
+                Clients awaiting meal plan delivery or updates.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <div className="rounded-full border border-border/70 px-4 py-2 text-[0.6rem] font-medium uppercase tracking-[0.3em] text-foreground/70">
+                Pending: {users.length}
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  await auth.signOut();
+                  router.replace("/login");
+                }}
+                className="rounded-full border border-accent bg-accent px-4 py-2 text-[0.6rem] font-medium uppercase tracking-[0.3em] text-background transition hover:bg-transparent hover:text-accent"
+              >
+                Logout
+              </button>
+            </div>
+          </header>
 
       {error && (
         <div className="rounded-3xl border border-border/70 bg-muted/70 px-6 py-4 text-center text-xs font-medium uppercase tracking-[0.28em] text-foreground/70">
@@ -162,6 +296,8 @@ export default function AdminRequestsPage() {
           ))}
         </motion.div>
       )}
+        </div>
+      </div>
     </div>
   );
 }
