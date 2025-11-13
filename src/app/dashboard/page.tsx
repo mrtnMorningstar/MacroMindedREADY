@@ -55,12 +55,68 @@ type UserDashboardData = {
 };
 
 export default function DashboardPage() {
+  // All hooks must be called unconditionally at the top level
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [data, setData] = useState<UserDashboardData | null>(null);
   const [purchase, setPurchase] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // useMemo hooks must be called unconditionally
+  const selectedStatus: MealPlanStatus = useMemo(() => {
+    if (!data || !data.mealPlanStatus) return "Not Started";
+    return progressSteps.includes(data.mealPlanStatus)
+      ? data.mealPlanStatus
+      : "Not Started";
+  }, [data]);
+
+  const statusIndex = progressSteps.indexOf(selectedStatus);
+
+  const deliveredAtDate = useMemo(() => {
+    const value = data?.mealPlanDeliveredAt;
+    if (!value) return null;
+
+    if (value instanceof Date) {
+      return value;
+    }
+
+    if (typeof (value as Timestamp).toDate === "function") {
+      return (value as Timestamp).toDate();
+    }
+
+    if (
+      typeof (value as { seconds: number }).seconds === "number" &&
+      typeof (value as { nanoseconds: number }).nanoseconds === "number"
+    ) {
+      const { seconds, nanoseconds } = value as {
+        seconds: number;
+        nanoseconds: number;
+      };
+      return new Date(seconds * 1000 + Math.floor(nanoseconds / 1_000_000));
+    }
+
+    return null;
+  }, [data?.mealPlanDeliveredAt]);
+
+  const daysSinceDelivery = useMemo(() => {
+    if (!deliveredAtDate) return null;
+    const diffMs = Date.now() - deliveredAtDate.getTime();
+    if (diffMs < 0) {
+      return 0;
+    }
+    return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  }, [deliveredAtDate]);
+
+  const nextCheckInDate = useMemo(() => {
+    if (!deliveredAtDate) return null;
+    const tier = data?.packageTier ?? "";
+    if (!["Pro", "Elite"].includes(tier)) return null;
+    const daysToAdd = tier === "Elite" ? 7 : 7;
+    const next = new Date(deliveredAtDate);
+    next.setDate(next.getDate() + daysToAdd);
+    return next;
+  }, [deliveredAtDate, data?.packageTier]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
@@ -135,66 +191,12 @@ export default function DashboardPage() {
     return () => unsubscribe();
   }, [router]);
 
-  const selectedStatus: MealPlanStatus = useMemo(() => {
-    if (!data || !data.mealPlanStatus) return "Not Started";
-    return progressSteps.includes(data.mealPlanStatus)
-      ? data.mealPlanStatus
-      : "Not Started";
-  }, [data]);
-
-  const statusIndex = progressSteps.indexOf(selectedStatus);
-
-  const deliveredAtDate = useMemo(() => {
-    const value = data?.mealPlanDeliveredAt;
-    if (!value) return null;
-
-    if (value instanceof Date) {
-      return value;
-    }
-
-    if (typeof (value as Timestamp).toDate === "function") {
-      return (value as Timestamp).toDate();
-    }
-
-    if (
-      typeof (value as { seconds: number }).seconds === "number" &&
-      typeof (value as { nanoseconds: number }).nanoseconds === "number"
-    ) {
-      const { seconds, nanoseconds } = value as {
-        seconds: number;
-        nanoseconds: number;
-      };
-      return new Date(seconds * 1000 + Math.floor(nanoseconds / 1_000_000));
-    }
-
-    return null;
-  }, [data?.mealPlanDeliveredAt]);
-
-  const daysSinceDelivery = useMemo(() => {
-    if (!deliveredAtDate) return null;
-    const diffMs = Date.now() - deliveredAtDate.getTime();
-    if (diffMs < 0) {
-      return 0;
-    }
-    return Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  }, [deliveredAtDate]);
-
   const handleSignOut = async () => {
     await signOut(auth);
     router.replace("/login");
   };
 
   const goal = data?.profile?.goal ?? null;
-
-  const nextCheckInDate = useMemo(() => {
-    if (!deliveredAtDate) return null;
-    const tier = data?.packageTier ?? "";
-    if (!["Pro", "Elite"].includes(tier)) return null;
-    const daysToAdd = tier === "Elite" ? 7 : 7;
-    const next = new Date(deliveredAtDate);
-    next.setDate(next.getDate() + daysToAdd);
-    return next;
-  }, [deliveredAtDate, data?.packageTier]);
 
   return (
     <div className="relative isolate min-h-screen bg-background text-foreground">
@@ -705,6 +707,7 @@ function ReferralsCard({
   referralCode?: string | null;
   referralCredits: number;
 }) {
+  // Hooks must be called before any conditional returns
   const [copied, setCopied] = useState(false);
   const shareLink = referralCode
     ? `https://macrominded.net/register?ref=${referralCode}`
