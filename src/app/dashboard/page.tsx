@@ -253,6 +253,12 @@ export default function DashboardPage() {
           nextCheckInDate={nextCheckInDate}
         />
 
+        {/* Always render ReferralsCard to maintain consistent hook calls */}
+        <ReferralsCard
+          referralCode={data?.referralCode ?? null}
+          referralCredits={data?.referralCredits ?? 0}
+        />
+
         {loading ? (
           <motion.div
             initial={{ opacity: 0 }}
@@ -281,11 +287,6 @@ export default function DashboardPage() {
             transition={{ duration: 0.7, delay: 0.1, ease: heroEase }}
             className="grid gap-8"
           >
-            {/* Always render ReferralsCard to maintain consistent hook calls */}
-            <ReferralsCard
-              referralCode={data?.referralCode ?? null}
-              referralCredits={data?.referralCredits ?? 0}
-            />
             {data ? (
               <>
                 <StatusOverview
