@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, type Variants } from "framer-motion";
@@ -26,7 +26,7 @@ const containerVariants: Variants = {
   },
 };
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [name, setName] = useState("");
@@ -275,6 +275,22 @@ export default function RegisterPage() {
         </motion.div>
       </section>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="relative isolate min-h-screen bg-background text-foreground">
+        <div className="flex min-h-screen items-center justify-center">
+          <p className="text-xs uppercase tracking-[0.3em] text-foreground/60">
+            Loading...
+          </p>
+        </div>
+      </div>
+    }>
+      <RegisterForm />
+    </Suspense>
   );
 }
 
