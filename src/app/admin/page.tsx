@@ -112,24 +112,30 @@ export default function AdminPage() {
     const unsubscribe = onSnapshot(
       collection(db, "users"),
       (snapshot) => {
-        const records: UserRecord[] = snapshot.docs.map((docSnapshot) => {
-          const data = docSnapshot.data();
-          return {
-            id: docSnapshot.id,
-            email: data?.email ?? null,
-            displayName: data?.displayName ?? null,
-            packageTier: data?.packageTier ?? null,
-            mealPlanStatus: data?.mealPlanStatus ?? null,
-            mealPlanFileURL: data?.mealPlanFileURL ?? null,
-            mealPlanImageURLs: (data?.mealPlanImageURLs as string[] | null) ?? null,
-            profile: (data?.profile as UserProfile | null) ?? null,
-            mealPlanDeliveredAt: data?.mealPlanDeliveredAt ?? null,
-            groceryListURL: data?.groceryListURL ?? null,
-            referralCode: data?.referralCode ?? null,
-            referralCredits: data?.referralCredits ?? 0,
-            referredBy: data?.referredBy ?? null,
-          };
-        });
+        const records: UserRecord[] = snapshot.docs
+          .map((docSnapshot) => {
+            const data = docSnapshot.data();
+            // Filter out admin users
+            if (data?.role === "admin") {
+              return null;
+            }
+            return {
+              id: docSnapshot.id,
+              email: data?.email ?? null,
+              displayName: data?.displayName ?? null,
+              packageTier: data?.packageTier ?? null,
+              mealPlanStatus: data?.mealPlanStatus ?? null,
+              mealPlanFileURL: data?.mealPlanFileURL ?? null,
+              mealPlanImageURLs: (data?.mealPlanImageURLs as string[] | null) ?? null,
+              profile: (data?.profile as UserProfile | null) ?? null,
+              mealPlanDeliveredAt: data?.mealPlanDeliveredAt ?? null,
+              groceryListURL: data?.groceryListURL ?? null,
+              referralCode: data?.referralCode ?? null,
+              referralCredits: data?.referralCredits ?? 0,
+              referredBy: data?.referredBy ?? null,
+            };
+          })
+          .filter((record): record is UserRecord => record !== null);
 
         setUsers(records);
         setSelectedUserId((prev) => {
@@ -543,16 +549,49 @@ export default function AdminPage() {
 
   // Calculate referral statistics
   const referralStats = useMemo(() => {
-    const totalReferrals = users.reduce((sum, user) => sum + (user.referralCredits ?? 0), 0);
-    const usersWithReferrals = users.filter((user) => (user.referralCredits ?? 0) > 0).length;
-    const usersReferred = users.filter((user) => user.referredBy).length;
-    const totalReferralCodes = users.filter((user) => user.referralCode).length;
-    return {
-      totalReferrals,
-      usersWithReferrals,
-      usersReferred,
-      totalReferralCodes,
-    };
+    if (!Array.isArray(users) || users.length === 0) {
+      return {
+        totalReferrals: 0,
+        usersWithReferrals: 0,
+        usersReferred: 0,
+        totalReferralCodes: 0,
+      };
+    }
+    
+    try {
+      const totalReferrals = users.reduce((sum, user) => {
+        const credits = typeof user.referralCredits === "number" ? user.referralCredits : 0;
+        return sum + credits;
+      }, 0);
+      
+      const usersWithReferrals = users.filter((user) => {
+        const credits = typeof user.referralCredits === "number" ? user.referralCredits : 0;
+        return credits > 0;
+      }).length;
+      
+      const usersReferred = users.filter((user) => {
+        return user.referredBy && typeof user.referredBy === "string" && user.referredBy.trim() !== "";
+      }).length;
+      
+      const totalReferralCodes = users.filter((user) => {
+        return user.referralCode && typeof user.referralCode === "string" && user.referralCode.trim() !== "";
+      }).length;
+      
+      return {
+        totalReferrals,
+        usersWithReferrals,
+        usersReferred,
+        totalReferralCodes,
+      };
+    } catch (error) {
+      console.error("Error calculating referral stats:", error);
+      return {
+        totalReferrals: 0,
+        usersWithReferrals: 0,
+        usersReferred: 0,
+        totalReferralCodes: 0,
+      };
+    }
   }, [users]);
 
   return (
@@ -636,11 +675,12 @@ export default function AdminPage() {
           )}
 
           {/* Referral Statistics */}
-          <motion.section
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4"
-          >
+          {!loadingUsers && (
+            <motion.section
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4"
+            >
             <div className="rounded-3xl border border-border/70 bg-muted/60 px-6 py-6 shadow-[0_0_50px_-30px_rgba(215,38,61,0.5)] backdrop-blur">
               <h3 className="text-xs font-bold uppercase tracking-[0.34em] text-foreground">
                 Total Referrals
@@ -686,6 +726,7 @@ export default function AdminPage() {
               </p>
             </div>
           </motion.section>
+          )}
 
           <section id="users" className="flex flex-col gap-8">
             <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
