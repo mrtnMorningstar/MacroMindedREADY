@@ -15,44 +15,47 @@ export default function MealPlanGallery({
   // Hooks must be called before any conditional returns
   const [activeImage, setActiveImage] = useState<string | null>(null);
 
-  // Always render the component structure to maintain consistent hook calls
-  if (!images.length) {
-    return null;
-  }
-
+  // Always render AnimatePresence to maintain consistent hook calls
+  // Even when there are no images, we render the component structure
   return (
-    <div className="flex flex-col gap-4">
-      <h4 className="font-display text-xs uppercase tracking-[0.4em] text-accent">
-        {title}
-      </h4>
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3"
-      >
-        {images.map((url) => (
-          <button
-            key={url}
-            type="button"
-            onClick={() => setActiveImage(url)}
-            className="group relative overflow-hidden rounded-2xl border border-border/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+    <>
+      {images.length > 0 ? (
+        <div className="flex flex-col gap-4">
+          <h4 className="font-display text-xs uppercase tracking-[0.4em] text-accent">
+            {title}
+          </h4>
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3"
           >
-            <motion.img
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5 }}
-              src={url}
-              alt="Meal plan preview"
-              className="h-32 w-full object-cover transition group-hover:scale-105"
-            />
-          </button>
-        ))}
-      </motion.div>
+            {images.map((url) => (
+              <button
+                key={url}
+                type="button"
+                onClick={() => setActiveImage(url)}
+                className="group relative overflow-hidden rounded-2xl border border-border/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+              >
+                <motion.img
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.5 }}
+                  src={url}
+                  alt="Meal plan preview"
+                  className="h-32 w-full object-cover transition group-hover:scale-105"
+                />
+              </button>
+            ))}
+          </motion.div>
+        </div>
+      ) : null}
 
-      <AnimatePresence>
+      {/* Always render AnimatePresence to maintain consistent hook calls */}
+      <AnimatePresence mode="wait">
         {activeImage && (
           <motion.div
+            key="modal"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -84,7 +87,7 @@ export default function MealPlanGallery({
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 }
 
