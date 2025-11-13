@@ -720,7 +720,6 @@ function ReferralsCard({
   };
 
   // Show card even if referralCode is missing (for existing users)
-  // Display a message to generate one if needed
   if (!referralCode) {
     return (
       <motion.div
@@ -728,12 +727,12 @@ function ReferralsCard({
         className="relative overflow-hidden rounded-3xl border border-border/70 bg-muted/60 px-8 py-8 backdrop-blur shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)]"
       >
         <div className="pointer-events-none absolute inset-x-0 -top-24 h-32 bg-gradient-to-b from-background/20 via-background/5 to-transparent blur-3xl" />
-        <div className="relative flex flex-col gap-6">
+        <div className="relative flex flex-col gap-4">
           <h3 className="font-bold uppercase tracking-[0.34em] text-foreground">
-            Referrals
+            Referral Program
           </h3>
           <p className="text-xs font-medium uppercase tracking-[0.28em] text-foreground/60">
-            Your referral code will be generated automatically. Please refresh the page or contact support if it doesn't appear.
+            Your referral code is being generated. Please refresh the page in a moment.
           </p>
         </div>
       </motion.div>
@@ -747,109 +746,131 @@ function ReferralsCard({
     >
       <div className="pointer-events-none absolute inset-x-0 -top-24 h-32 bg-gradient-to-b from-background/20 via-background/5 to-transparent blur-3xl" />
       <div className="relative flex flex-col gap-6">
-        <h3 className="font-bold uppercase tracking-[0.34em] text-foreground">
-          Referrals
-        </h3>
+        <div className="flex flex-col gap-2">
+          <h3 className="font-bold uppercase tracking-[0.34em] text-foreground">
+            Referral Program
+          </h3>
+          <p className="text-[0.7rem] font-medium uppercase tracking-[0.24em] text-foreground/60">
+            Share MacroMinded with friends and earn rewards for every successful referral.
+          </p>
+        </div>
 
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <span className="text-xs font-medium uppercase tracking-[0.28em] text-foreground/70">
+        <div className="grid gap-6 sm:grid-cols-2">
+          <div className="flex flex-col gap-3">
+            <span className="text-xs font-semibold uppercase tracking-[0.28em] text-foreground/70">
               Your Referral Code
             </span>
-            <div className="flex items-center gap-3">
-              <code className="rounded-2xl border border-border/60 bg-background/40 px-4 py-3 text-sm font-bold uppercase tracking-[0.2em] text-foreground">
-                {referralCode}
-              </code>
+            <code className="rounded-2xl border-2 border-accent/40 bg-background/40 px-5 py-4 text-base font-bold uppercase tracking-[0.2em] text-foreground">
+              {referralCode}
+            </code>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <span className="text-xs font-semibold uppercase tracking-[0.28em] text-foreground/70">
+              Total Referrals
+            </span>
+            <div className="flex items-baseline gap-2">
+              <p className="text-4xl font-bold uppercase tracking-[0.1em] text-foreground">
+                {referralCredits}
+              </p>
+              <span className="text-xs font-medium uppercase tracking-[0.2em] text-foreground/50">
+                {referralCredits === 1 ? "credit" : "credits"}
+              </span>
             </div>
           </div>
+        </div>
 
-          <div className="flex flex-col gap-2">
-            <span className="text-xs font-medium uppercase tracking-[0.28em] text-foreground/70">
-              Successful Referrals
-            </span>
-            <p className="text-2xl font-bold uppercase tracking-[0.2em] text-foreground">
-              {referralCredits}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-border/60 bg-background/20 px-5 py-4">
-            <h4 className="mb-3 text-xs font-bold uppercase tracking-[0.28em] text-foreground">
-              Rewards
-            </h4>
-            <ul className="flex flex-col gap-2 text-[0.7rem] font-medium uppercase tracking-[0.2em] text-foreground/70">
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 text-accent">•</span>
-                <span>Every referral = 1 credit</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 text-accent">•</span>
-                <span>
-                  1 credit = 1 free meal plan revision OR $5 discount coupon code
-                  <span className="block mt-1 text-[0.65rem] tracking-[0.18em] text-foreground/50">
-                    (Admin applied manually)
-                  </span>
+        <div className="rounded-2xl border border-border/60 bg-background/30 px-6 py-5">
+          <h4 className="mb-4 text-xs font-bold uppercase tracking-[0.28em] text-foreground">
+            How It Works
+          </h4>
+          <div className="flex flex-col gap-3 text-[0.7rem] font-medium uppercase tracking-[0.2em] text-foreground/80">
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/20 text-accent">
+                <span className="text-[0.65rem] font-bold">1</span>
+              </span>
+              <div>
+                <span className="font-semibold text-foreground">Share your referral link</span>
+                <span className="block mt-1 text-[0.65rem] tracking-[0.18em] text-foreground/60 normal-case">
+                  When someone signs up using your link, you earn 1 credit
                 </span>
-              </li>
-            </ul>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <span className="text-xs font-medium uppercase tracking-[0.28em] text-foreground/70">
-              Share Link
-            </span>
-            <div className="flex items-center gap-3">
-              <input
-                type="text"
-                readOnly
-                value={shareLink}
-                className="flex-1 rounded-2xl border border-border/60 bg-background/40 px-4 py-3 text-xs font-medium tracking-[0.2em] text-foreground/70"
-              />
-              <motion.button
-                type="button"
-                onClick={handleCopyLink}
-                whileTap={{ scale: 0.95 }}
-                className="relative rounded-full border border-accent bg-accent px-6 py-3 text-xs font-bold uppercase tracking-[0.32em] text-background transition hover:bg-accent/90"
-              >
-                <AnimatePresence mode="wait">
-                  {copied ? (
-                    <motion.span
-                      key="copied"
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="flex items-center gap-2"
-                    >
-                      <svg
-                        className="h-4 w-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                      Copied!
-                    </motion.span>
-                  ) : (
-                    <motion.span
-                      key="copy"
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      Copy Link
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </motion.button>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/20 text-accent">
+                <span className="text-[0.65rem] font-bold">2</span>
+              </span>
+              <div>
+                <span className="font-semibold text-foreground">Redeem your credits</span>
+                <span className="block mt-1 text-[0.65rem] tracking-[0.18em] text-foreground/60 normal-case">
+                  Each credit can be used for a free meal plan revision or a $5 discount on your next purchase
+                </span>
+              </div>
             </div>
           </div>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-[0.28em] text-foreground/70">
+              Your Referral Link
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <input
+              type="text"
+              readOnly
+              value={shareLink}
+              className="flex-1 rounded-2xl border border-border/60 bg-background/40 px-4 py-3 text-xs font-medium tracking-[0.2em] text-foreground/70"
+            />
+            <motion.button
+              type="button"
+              onClick={handleCopyLink}
+              whileTap={{ scale: 0.95 }}
+              className="relative shrink-0 rounded-full border border-accent bg-accent px-6 py-3 text-xs font-bold uppercase tracking-[0.32em] text-background transition hover:bg-accent/90"
+            >
+              <AnimatePresence mode="wait">
+                {copied ? (
+                  <motion.span
+                    key="copied"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex items-center gap-2"
+                  >
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    Copied!
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="copy"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    Copy Link
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
+          </div>
+          <p className="text-[0.65rem] font-medium uppercase tracking-[0.18em] text-foreground/50">
+            Share this link with friends, family, or on social media to start earning credits
+          </p>
         </div>
       </div>
     </motion.div>
