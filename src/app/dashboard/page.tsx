@@ -9,10 +9,11 @@ import {
   signOut,
   type User,
 } from "firebase/auth";
-import { doc, getDoc, type Timestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, type Timestamp } from "firebase/firestore";
 
 import { auth, db } from "@/lib/firebase";
 import { getUserPurchase } from "@/lib/purchases";
+import { generateUniqueReferralCode } from "@/lib/referral";
 import MealPlanGallery from "@/components/MealPlanGallery";
 
 const heroEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -77,6 +78,21 @@ export default function DashboardPage() {
           let userData: UserDashboardData = {};
           if (snapshot.exists()) {
             userData = (snapshot.data() as UserDashboardData) ?? {};
+            
+            // Generate referral code if user doesn't have one (for existing users)
+            if (!userData.referralCode && userData.displayName) {
+              try {
+                const newReferralCode = await generateUniqueReferralCode(userData.displayName);
+                await setDoc(userDocRef, {
+                  referralCode: newReferralCode,
+                  referralCredits: userData.referralCredits ?? 0,
+                }, { merge: true });
+                userData.referralCode = newReferralCode;
+                userData.referralCredits = userData.referralCredits ?? 0;
+              } catch (error) {
+                console.error("Failed to generate referral code:", error);
+              }
+            }
           }
           setData(userData);
 
@@ -97,6 +113,8 @@ export default function DashboardPage() {
             purchaseStatus: (userPurchase as { status?: string } | null)?.status,
             userId: firebaseUser.uid,
             willUnlock: !!(userPurchase || userData.packageTier),
+            referralCode: userData.referralCode,
+            referralCredits: userData.referralCredits,
           });
         } catch (err) {
           console.error("Failed to load dashboard data:", err);
@@ -700,8 +718,25 @@ function ReferralsCard({
     }
   };
 
+  // Show card even if referralCode is missing (for existing users)
+  // Display a message to generate one if needed
   if (!referralCode) {
-    return null;
+    return (
+      <motion.div
+        whileHover={{ scale: 1.02 }}
+        className="relative overflow-hidden rounded-3xl border border-border/70 bg-muted/60 px-8 py-8 backdrop-blur shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)]"
+      >
+        <div className="pointer-events-none absolute inset-x-0 -top-24 h-32 bg-gradient-to-b from-background/20 via-background/5 to-transparent blur-3xl" />
+        <div className="relative flex flex-col gap-6">
+          <h3 className="font-bold uppercase tracking-[0.34em] text-foreground">
+            Referrals
+          </h3>
+          <p className="text-xs font-medium uppercase tracking-[0.28em] text-foreground/60">
+            Your referral code will be generated automatically. Please refresh the page or contact support if it doesn't appear.
+          </p>
+        </div>
+      </motion.div>
+    );
   }
 
   return (
