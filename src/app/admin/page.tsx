@@ -133,7 +133,7 @@ export default function AdminPage() {
               referralCode: data?.referralCode ?? null,
               referralCredits: data?.referralCredits ?? 0,
               referredBy: data?.referredBy ?? null,
-            };
+            } as UserRecord | null;
           })
           .filter((record): record is UserRecord => record !== null);
 
