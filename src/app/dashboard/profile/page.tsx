@@ -8,6 +8,7 @@ import {
   SkeletonGrid,
 } from "@/components/dashboard/client-components";
 import { useDashboard } from "@/context/dashboard-context";
+import { CTA_BUTTON_CLASSES } from "@/lib/ui";
 
 export default function ProfilePage() {
   const { data, loading, error, isUnlocked } = useDashboard();
@@ -45,16 +46,15 @@ export default function ProfilePage() {
       <ProfileSummary profile={data?.profile ?? {}} />
 
       <div className="rounded-3xl border border-border/70 bg-muted/60 px-8 py-8 text-center text-xs font-medium uppercase tracking-[0.3em] text-foreground/60 backdrop-blur">
-        <p>
-          Need to refresh your stats?{" "}
+        <p>Need to refresh your stats? Keep your intake up to date so coaching stays precise.</p>
+        <div className="mt-4 flex justify-center">
           <Link
             href="/macro-form"
-            className="text-accent underline underline-offset-4"
+            className={`${CTA_BUTTON_CLASSES} w-full justify-center sm:w-auto`}
           >
-            Submit the macro intake form
-          </Link>{" "}
-          whenever your goals or measurements change.
-        </p>
+            Update Macro Intake
+          </Link>
+        </div>
       </div>
     </div>
   );

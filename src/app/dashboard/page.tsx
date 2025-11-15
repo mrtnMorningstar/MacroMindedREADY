@@ -17,6 +17,7 @@ import {
 } from "@/components/dashboard/client-components";
 import { useDashboard } from "@/context/dashboard-context";
 import { db } from "@/lib/firebase";
+import { CTA_BUTTON_CLASSES } from "@/lib/ui";
 import { progressSteps, type MealPlanStatus } from "@/types/dashboard";
 
 export default function DashboardOverviewPage() {
@@ -203,15 +204,16 @@ export default function DashboardOverviewPage() {
         />
 
         <div className="rounded-3xl border border-border/70 bg-muted/60 px-8 py-8 text-center text-xs font-medium uppercase tracking-[0.3em] text-foreground/60 backdrop-blur">
-          Need a plan adjustment?{" "}
-          <Link
-            href="/macro-form"
-            className="text-accent underline underline-offset-4"
-          >
-            Update your macro intake form
-          </Link>{" "}
-          to keep your plan accurate.
-      </div>
+          <p>Need a plan adjustment? Update your macro intake form to keep your plan accurate.</p>
+          <div className="mt-4 flex justify-center">
+            <Link
+              href="/macro-form"
+              className={`${CTA_BUTTON_CLASSES} w-full justify-center sm:w-auto`}
+            >
+              Open Macro Intake Form
+            </Link>
+          </div>
+        </div>
       </section>
 
       {showRequestModal && (

@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 
+import { CTA_BUTTON_CLASSES } from "@/lib/ui";
+
 const heroEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 export default function PackageSuccess() {
@@ -56,13 +58,13 @@ export default function PackageSuccess() {
         >
           <Link
             href="/dashboard"
-            className="rounded-full border border-accent bg-accent px-6 py-3 text-xs font-semibold uppercase tracking-[0.32em] text-background transition hover:bg-transparent hover:text-accent"
+            className={`${CTA_BUTTON_CLASSES} w-full justify-center sm:w-auto`}
           >
             Go to Dashboard
           </Link>
           <Link
             href="/macro-form"
-            className="rounded-full border border-foreground/30 px-6 py-3 text-xs font-semibold uppercase tracking-[0.32em] text-foreground transition hover:border-accent hover:text-accent"
+            className={`${CTA_BUTTON_CLASSES} w-full justify-center border-white/50 bg-transparent text-white hover:text-accent sm:w-auto`}
           >
             Complete Macro Intake
           </Link>

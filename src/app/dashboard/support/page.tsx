@@ -7,6 +7,7 @@ import {
   LockedDashboardScreen,
   SkeletonGrid,
 } from "@/components/dashboard/client-components";
+import { CTA_BUTTON_CLASSES } from "@/lib/ui";
 
 export default function SupportPage() {
   const { loading, error, isUnlocked } = useDashboard();
@@ -56,15 +57,17 @@ export default function SupportPage() {
             <span className="text-foreground">Response time:</span> 24 hours on
             weekdays
           </li>
-          <li>
-            <span className="text-foreground">Plan refresh:</span> Use the{" "}
+          <li className="flex flex-col gap-2">
+            <span className="text-foreground">Plan refresh:</span>
+            <span className="text-foreground/70">
+              Use the macro intake form whenever your goals or biometrics change.
+            </span>
             <Link
               href="/macro-form"
-              className="text-accent underline underline-offset-4"
+              className={`${CTA_BUTTON_CLASSES} w-full justify-center text-center sm:w-auto`}
             >
-              macro intake form
-            </Link>{" "}
-            when your goals or biometrics change.
+              Open Macro Intake Form
+            </Link>
           </li>
           <li>
             <span className="text-foreground">Emergency update?</span> Mention

@@ -8,6 +8,7 @@ import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { FirebaseError } from "firebase/app";
 
 import { auth } from "@/lib/firebase";
+import { CTA_BUTTON_CLASSES } from "@/lib/ui";
 
 const heroEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
@@ -106,19 +107,19 @@ export default function LoginPage() {
         >
           <div className="pointer-events-none absolute inset-x-0 -top-1/3 h-40 bg-gradient-to-b from-accent/40 via-accent/10 to-transparent blur-3xl" />
 
-          <header className="relative flex flex-col gap-2">
+          <header className="relative flex flex-col gap-3">
             <h2 className="font-display text-2xl uppercase tracking-[0.32em] text-foreground">
               Log In
             </h2>
             <p className="text-xs uppercase tracking-[0.28em] text-foreground/60">
-              Need an account?{" "}
-              <Link
-                href="/register"
-                className="text-accent transition hover:text-accent/80"
-              >
-                Register here
-              </Link>
+              Need an account? Join the roster below.
             </p>
+            <Link
+              href="/register"
+              className={`${CTA_BUTTON_CLASSES} w-full justify-center sm:w-auto`}
+            >
+              Register for Coaching
+            </Link>
           </header>
 
           <form className="relative mt-10 flex flex-col gap-6" onSubmit={handleSubmit}>
