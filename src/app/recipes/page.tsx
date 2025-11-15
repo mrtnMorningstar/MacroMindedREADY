@@ -217,8 +217,8 @@ export default function RecipesPage() {
                       className="object-cover transition duration-500 group-hover:scale-105"
                     />
                   ) : (
-                    <div className="flex h-full items-center justify-center bg-gradient-to-br from-[#111] to-[#1c1c1c] text-xs font-semibold uppercase tracking-[0.3em] text-white/40">
-                      Preview coming soon
+                    <div className="flex h-full items-center justify-center bg-gradient-to-br from-[#111] to-[#1c1c1c] text-xs font-semibold uppercase tracking-[0.3em] text-white/60">
+                      Coach photo in transit
                     </div>
                   )}
                 </div>

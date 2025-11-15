@@ -69,6 +69,7 @@ export default function AdminRecipesPage() {
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadingAsset, setUploadingAsset] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -201,12 +202,17 @@ export default function AdminRecipesPage() {
         return formState.imageURL;
       }
 
-      const storageRef = ref(
-        storage,
-        `recipes/${recipeId}/${Date.now()}-${imageFile.name}`
-      );
-      await uploadBytes(storageRef, imageFile);
-      return await getDownloadURL(storageRef);
+      setUploadingAsset(true);
+      try {
+        const storageRef = ref(
+          storage,
+          `recipes/${recipeId}/${Date.now()}-${imageFile.name}`
+        );
+        await uploadBytes(storageRef, imageFile);
+        return await getDownloadURL(storageRef);
+      } finally {
+        setUploadingAsset(false);
+      }
     },
     [formState.imageURL, imageFile]
   );
@@ -470,6 +476,11 @@ export default function AdminRecipesPage() {
                   className="rounded-2xl border border-border/70 bg-background/20 px-4 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
                 />
               </label>
+              {uploadingAsset && (
+                <p className="text-[0.65rem] uppercase tracking-[0.25em] text-foreground/60">
+                  Uploading high-res preview…
+                </p>
+              )}
               {formState.imageURL && !imageFile && (
                 <div className="rounded-2xl border border-border/70 bg-background/10 px-4 py-3 text-center text-[0.65rem] uppercase tracking-[0.25em] text-foreground/60">
                   Using existing image
@@ -478,7 +489,7 @@ export default function AdminRecipesPage() {
 
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || uploadingAsset}
                 className="rounded-full border border-accent bg-accent px-6 py-3 text-xs font-bold uppercase tracking-[0.32em] text-background transition hover:bg-transparent hover:text-accent disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSubmitting

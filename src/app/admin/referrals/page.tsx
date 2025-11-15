@@ -201,6 +201,16 @@ export default function AdminReferralsPage() {
             >
               Recipes
             </Link>
+        <Link
+          href="/admin/recipes"
+          className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
+            pathname === "/admin/recipes"
+              ? "border-accent/60 bg-accent/20 text-accent"
+              : "border-border/70 text-foreground/70 hover-border-accent hover:text-accent"
+          }`}
+        >
+          Recipes
+        </Link>
             <Link
               href="/admin/sales"
               className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
@@ -211,6 +221,16 @@ export default function AdminReferralsPage() {
             >
               Sales / Revenue
             </Link>
+        <Link
+          href="/admin/updates"
+          className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
+            pathname === "/admin/updates"
+              ? "border-accent/60 bg-accent/20 text-accent"
+              : "border-border/70 text-foreground/70 hover-border-accent hover:text-accent"
+          }`}
+        >
+          Plan Updates
+        </Link>
             <Link
               href="/admin/requests"
               className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${

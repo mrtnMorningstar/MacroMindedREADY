@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 
 import {
   DashboardMetrics,
@@ -15,6 +16,7 @@ import {
   useDeliveryMeta,
 } from "@/components/dashboard/client-components";
 import { useDashboard } from "@/context/dashboard-context";
+import { db } from "@/lib/firebase";
 import { progressSteps, type MealPlanStatus } from "@/types/dashboard";
 
 export default function DashboardOverviewPage() {
@@ -31,6 +33,11 @@ export default function DashboardOverviewPage() {
   const statusIndex = progressSteps.indexOf(status);
   const { daysSinceDelivery } = useDeliveryMeta(data?.mealPlanDeliveredAt ?? null);
   const goal = data?.profile?.goal ?? null;
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [requestText, setRequestText] = useState("");
+  const [requestSubmitting, setRequestSubmitting] = useState(false);
+  const [requestError, setRequestError] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   if (loading) {
     return (
@@ -52,8 +59,40 @@ export default function DashboardOverviewPage() {
     return <LockedDashboardScreen />;
   }
 
+  const handleSubmitPlanUpdateRequest = async () => {
+    if (!user?.uid || !requestText.trim()) {
+      setRequestError("Please describe what needs to change.");
+      return;
+    }
+    setRequestSubmitting(true);
+    setRequestError(null);
+    try {
+      await addDoc(collection(db, "planUpdateRequests"), {
+        userId: user.uid,
+        requestText: requestText.trim(),
+        date: serverTimestamp(),
+        handled: false,
+      });
+      setShowRequestModal(false);
+      setRequestText("");
+      setToastMessage("Thanks! Your coach has been notified.");
+      window.setTimeout(() => setToastMessage(null), 4000);
+    } catch (submitError) {
+      console.error("Failed to submit plan update request:", submitError);
+      setRequestError("We couldn't send your request. Please try again.");
+    } finally {
+      setRequestSubmitting(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-8">
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-40 rounded-2xl border border-accent/40 bg-background px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-accent shadow-[0_0_40px_-20px_rgba(215,38,61,0.6)]">
+          {toastMessage}
+        </div>
+      )}
+
       <header className="flex flex-col gap-4 text-center sm:text-left sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs font-medium uppercase tracking-[0.45em] text-foreground/70">
@@ -61,37 +100,98 @@ export default function DashboardOverviewPage() {
           </p>
           <h1 className="mt-2 text-3xl font-bold uppercase tracking-[0.22em] text-foreground sm:text-4xl">
             Welcome back, {user?.displayName ?? "Athlete"}
-          </h1>
-          <p className="mt-2 text-xs font-medium uppercase tracking-[0.3em] text-foreground/60 sm:text-sm">
+              </h1>
+              <p className="mt-2 text-xs font-medium uppercase tracking-[0.3em] text-foreground/60 sm:text-sm">
             {user?.email ?? "Stay connected to your coaching team."}
-          </p>
-        </div>
-        <button
-          type="button"
+              </p>
+            </div>
+            <button
+              type="button"
           onClick={signOutAndRedirect}
-          className="rounded-full border border-border/70 px-5 py-2 text-xs font-medium uppercase tracking-[0.3em] text-foreground/70 transition hover:border-accent hover:text-accent"
-        >
-          Sign Out
-        </button>
-      </header>
+              className="rounded-full border border-border/70 px-5 py-2 text-xs font-medium uppercase tracking-[0.3em] text-foreground/70 transition hover:border-accent hover:text-accent"
+            >
+              Sign Out
+            </button>
+        </header>
 
-      <DashboardMetrics
-        goal={goal}
-        daysSinceDelivery={daysSinceDelivery}
+        <DashboardMetrics
+          goal={goal}
+          daysSinceDelivery={daysSinceDelivery}
         nextCheckInDate={null}
       />
 
       <section className="grid gap-6">
         <StatusOverview status={status} packageTier={data?.packageTier} />
 
-        <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-          <MealPlanSection
-            status={status}
-            fileUrl={data?.mealPlanFileURL}
-            imageUrls={data?.mealPlanImageURLs}
-            daysSinceDelivery={daysSinceDelivery}
-            groceryListUrl={data?.groceryListURL}
-          />
+            <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+          <div className="flex flex-col gap-6">
+              <MealPlanSection
+              status={status}
+              fileUrl={data?.mealPlanFileURL}
+              imageUrls={data?.mealPlanImageURLs}
+                daysSinceDelivery={daysSinceDelivery}
+              groceryListUrl={data?.groceryListURL}
+            />
+
+            {(status === "Delivered" || (daysSinceDelivery ?? null) !== null) && (
+              <div className="rounded-3xl border border-border/70 bg-muted/60 px-8 py-8 shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] backdrop-blur">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.35em] text-foreground/60">
+                      Need an adjustment?
+                    </p>
+                    <h3 className="text-xl font-bold uppercase tracking-[0.28em] text-foreground">
+                      Request a plan update
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRequestText("");
+                      setRequestError(null);
+                      setShowRequestModal(true);
+                    }}
+                    className="rounded-full border border-accent bg-accent px-6 py-3 text-xs font-semibold uppercase tracking-[0.32em] text-background transition hover:bg-transparent hover:text-accent"
+                  >
+                    Request Plan Update
+                  </button>
+      </div>
+                <p className="mt-2 text-[0.7rem] uppercase tracking-[0.28em] text-foreground/60">
+                  This alerts your coach that a tweak is needed—no extra purchase required.
+                </p>
+              </div>
+            )}
+
+            {daysSinceDelivery !== null && daysSinceDelivery > 28 && (
+              <div className="rounded-3xl border border-border/70 bg-muted/60 px-8 py-8 shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] backdrop-blur">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.35em] text-foreground/60">
+                      It’s been {daysSinceDelivery} days
+                    </p>
+                    <h3 className="text-xl font-bold uppercase tracking-[0.28em] text-foreground">
+                      Want a fresh update?
+                    </h3>
+                    <p className="mt-1 text-[0.7rem] uppercase tracking-[0.28em] text-foreground/60">
+                      Month-old plans can drift from your routine. Request a refresh to stay dialed in.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRequestText("");
+                      setRequestError(null);
+                      setShowRequestModal(true);
+                    }}
+                    className="rounded-full border border-accent bg-accent px-6 py-3 text-xs font-semibold uppercase tracking-[0.32em] text-background transition hover:bg-transparent hover:text-accent"
+                  >
+                    Request Update
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           <ProgressTracker statusIndex={statusIndex} />
         </div>
 
@@ -111,9 +211,54 @@ export default function DashboardOverviewPage() {
             Update your macro intake form
           </Link>{" "}
           to keep your plan accurate.
-        </div>
+      </div>
       </section>
-    </div>
+
+      {showRequestModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
+          <div className="w-full max-w-lg rounded-3xl border border-border/70 bg-background px-8 py-8 text-foreground shadow-[0_0_80px_-30px_rgba(215,38,61,0.7)]">
+            <h3 className="text-xl font-bold uppercase tracking-[0.28em]">
+              Tell us what needs to change
+        </h3>
+            <p className="mt-2 text-xs uppercase tracking-[0.3em] text-foreground/60">
+              Describe the adjustments you’d like. Your coach will follow up.
+            </p>
+            <textarea
+              value={requestText}
+              onChange={(event) => setRequestText(event.target.value)}
+              rows={6}
+              className="mt-5 w-full rounded-2xl border border-border/70 bg-muted/40 px-4 py-3 text-sm text-foreground focus:border-accent focus:outline-none"
+              placeholder="Example: Increase carbs on training days, swap meal 2 for a quick option..."
+            />
+            {requestError && (
+              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.28em] text-accent">
+                {requestError}
+              </p>
+            )}
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowRequestModal(false);
+                  setRequestError(null);
+                }}
+                className="rounded-full border border-border/70 px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-foreground/70 transition hover:border-accent hover:text-accent"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmitPlanUpdateRequest}
+                disabled={requestSubmitting}
+                className="rounded-full border border-accent bg-accent px-6 py-2 text-xs font-semibold uppercase tracking-[0.32em] text-background transition hover:bg-transparent hover:text-accent disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {requestSubmitting ? "Sending..." : "Submit Request"}
+              </button>
+      </div>
+          </div>
+        </div>
+      )}
+      </div>
   );
 }
 

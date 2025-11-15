@@ -215,6 +215,16 @@ export default function AdminSalesPage() {
             >
               Recipes
             </Link>
+        <Link
+          href="/admin/recipes"
+          className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
+            pathname === "/admin/recipes"
+              ? "border-accent/60 bg-accent/20 text-accent"
+              : "border-border/70 text-foreground/70 hover:border-accent hover:text-accent"
+          }`}
+        >
+          Recipes
+        </Link>
             <Link
               href="/admin/sales"
               className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
@@ -235,6 +245,16 @@ export default function AdminSalesPage() {
             >
               Plan Requests
             </Link>
+        <Link
+          href="/admin/updates"
+          className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
+            pathname === "/admin/updates"
+              ? "border-accent/60 bg-accent/20 text-accent"
+              : "border-border/70 text-foreground/70 hover-border-accent hover:text-accent"
+          }`}
+        >
+          Plan Updates
+        </Link>
           </div>
         </nav>
       </motion.aside>
@@ -350,9 +370,9 @@ export default function AdminSalesPage() {
               <h2 className="font-bold text-xl uppercase tracking-[0.32em] text-foreground">
                 30-Day Revenue Trend
               </h2>
-              <span className="text-[0.7rem] font-medium uppercase tracking-[0.3em] text-foreground/60">
-                Placeholder chart — live analytics coming soon
-              </span>
+                      <span className="text-[0.7rem] font-medium uppercase tracking-[0.3em] text-foreground/60">
+                        Live revenue analytics drop here shortly—built for coaches, not spreadsheets.
+                      </span>
             </div>
             <div className="mt-6 h-48 rounded-2xl border border-border/70 bg-background/10 px-4 py-4">
               <svg

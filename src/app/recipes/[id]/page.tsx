@@ -123,8 +123,8 @@ export default function RecipeDetailsPage() {
                     priority
                   />
                 ) : (
-                  <div className="flex h-full items-center justify-center text-xs font-semibold uppercase tracking-[0.3em] text-foreground/50">
-                    Preview coming soon
+                  <div className="flex h-full items-center justify-center text-xs font-semibold uppercase tracking-[0.3em] text-foreground/60">
+                    Coach photo in transit
                   </div>
                 )}
                 <div className="absolute bottom-6 left-6 flex flex-wrap gap-3">

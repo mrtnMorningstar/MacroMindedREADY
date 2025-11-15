@@ -47,13 +47,13 @@ export function DashboardMetrics({
       />
       <MetricCard
         title="Daily Calories"
-        value="Coming soon"
-        subtitle="Coach-calculated calorie target."
+        value="Coach-set target"
+        subtitle="Your coach finalizes calories as soon as metrics lock in."
       />
       <MetricCard
         title="Macro Targets"
         value="Protein / Fat / Carbs"
-        subtitle="Detailed targets launching shortly."
+        subtitle="Targets update automatically with every plan refresh."
       />
       <div className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-border/80 bg-muted/60 px-6 py-8 text-center shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] backdrop-blur">
         <div className="relative h-24 w-24">
@@ -304,11 +304,11 @@ export function MealPlanSection({
             )}
 
             <MealPlanGallery images={images.length > 0 ? images : []} />
-            {images.length === 0 && (
-              <p className="text-[0.65rem] font-medium uppercase tracking-[0.3em] text-foreground/50">
-                Image gallery coming soon.
-              </p>
-            )}
+                {images.length === 0 && (
+                  <p className="text-[0.65rem] font-medium uppercase tracking-[0.3em] text-foreground/50">
+                    Gallery unlocks the moment your coach shares visuals.
+                  </p>
+                )}
           </>
         )}
       </div>
