@@ -174,7 +174,7 @@ export default function Home() {
           <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl">
             Built for Anyone Who Wants Results
           </h2>
-          <p className="mt-4 text-sm uppercase tracking-[0.32em] text-foreground/80">
+          <p className="mt-4 text-sm uppercase tracking-[0.32em] text-foreground">
             Whether you&apos;re trying to lose fat, build muscle, or maintain your physique —
             your plan is tailored to your reality.
           </p>
@@ -207,7 +207,7 @@ export default function Home() {
               <h3 className="text-xl font-semibold uppercase tracking-[0.2em] text-foreground">
                 {step.title}
               </h3>
-              <p className="mt-3 text-sm uppercase tracking-[0.28em] text-foreground/90">
+              <p className="mt-3 text-sm uppercase tracking-[0.28em] text-foreground">
                 {step.text}
               </p>
             </div>
@@ -258,7 +258,7 @@ export default function Home() {
               >
                 {pkg.title}
               </h3>
-              <p className="mt-3 text-sm uppercase tracking-[0.3em] text-foreground/90">
+              <p className="mt-3 text-sm uppercase tracking-[0.3em] text-foreground">
                 {pkg.description}
               </p>
               <ul className="mt-6 space-y-2 text-sm uppercase tracking-[0.28em] text-foreground">
@@ -287,7 +287,7 @@ export default function Home() {
           <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl">
             Ready to Transform Your Nutrition?
           </h2>
-          <p className="mt-4 text-sm uppercase tracking-[0.3em] text-foreground/90">
+          <p className="mt-4 text-sm uppercase tracking-[0.3em] text-foreground">
             Start your transformation with a meal plan built for your life — not downloaded from a template.
           </p>
           <div className="mt-10 flex justify-center">
