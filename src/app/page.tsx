@@ -20,12 +20,13 @@ const heroTextVariants: Variants = {
 };
 
 const cardVariants: Variants = {
-  hidden: { y: 20 },
+  hidden: { opacity: 0, y: 24 },
   visible: (custom: number = 0) => ({
+    opacity: 1,
     y: 0,
     transition: {
-      duration: 0.4,
-      delay: custom * 0.05,
+      duration: 0.6,
+      delay: 0.4 + custom * 0.1,
       ease: "easeOut",
     },
   }),
@@ -126,14 +127,13 @@ export default function Home() {
       </motion.div>
 
       {/* HERO */}
-      <section className="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-6xl flex-col items-center justify-center px-6 py-24 text-center" style={{ color: '#ffffff' }}>
+      <section className="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-6xl flex-col items-center justify-center px-6 py-24 text-center text-white">
         <motion.h1
           initial="hidden"
           animate="visible"
           custom={0.2}
           variants={heroTextVariants}
           className="text-4xl font-bold uppercase tracking-[0.2em] sm:text-6xl"
-          style={{ color: '#ffffff' }}
         >
           Your Body. Your Goals. Your Custom Meal Plan.
         </motion.h1>
@@ -142,8 +142,7 @@ export default function Home() {
           animate="visible"
           custom={0.3}
           variants={heroTextVariants}
-          className="mt-6 max-w-3xl text-base uppercase tracking-[0.28em] sm:text-lg"
-          style={{ color: '#ffffff' }}
+          className="mt-6 max-w-3xl text-base uppercase tracking-[0.28em] text-foreground/70 sm:text-lg"
         >
           No AI. No generic templates. Just human expertise tuned to your goals,
           lifestyle, and biology.
@@ -171,102 +170,131 @@ export default function Home() {
       </section>
 
       {/* WHO THIS IS FOR */}
-      <section className="px-6 py-16 text-center" style={{ color: '#ffffff' }}>
-        <div className="mx-auto max-w-4xl">
-          <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl" style={{ color: '#ffffff' }}>
+      <section className="px-6 py-16 text-center text-white">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.3 }}
+          variants={heroTextVariants}
+          className="mx-auto max-w-4xl"
+        >
+          <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl">
             Built for Anyone Who Wants Results
           </h2>
-          <p className="mt-4 text-sm uppercase tracking-[0.32em]" style={{ color: '#ffffff' }}>
+          <p className="mt-4 text-sm uppercase tracking-[0.32em] text-foreground/60">
             Whether you&apos;re trying to lose fat, build muscle, or maintain your physique —
             your plan is tailored to your reality.
           </p>
-        </div>
-        <div className="mx-auto mt-10 grid max-w-5xl grid-cols-2 gap-4 text-sm uppercase tracking-[0.2em] sm:grid-cols-5">
-          {audienceTargets.map((item) => (
-            <div
+        </motion.div>
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.3 }}
+          variants={heroTextVariants}
+          custom={0.2}
+          className="mx-auto mt-10 grid max-w-5xl grid-cols-2 gap-4 text-sm uppercase tracking-[0.2em] text-foreground/70 sm:grid-cols-5"
+        >
+          {audienceTargets.map((item, index) => (
+            <motion.div
               key={item}
-              className="rounded-2xl border border-border/60 bg-muted/80 px-4 py-4 text-sm font-semibold"
-              style={{ color: '#ffffff' }}
+              custom={index}
+              variants={cardVariants}
+              className="rounded-2xl border border-border/60 bg-muted/40 px-4 py-4 text-sm font-semibold"
             >
               {item}
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </section>
 
       {/* HOW IT WORKS */}
-      <section className="px-6 py-20" style={{ color: '#ffffff' }}>
-        <div className="mx-auto max-w-4xl text-center">
-          <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl" style={{ color: '#ffffff' }}>
+      <section className="px-6 py-20">
+        <div className="mx-auto max-w-4xl text-center text-white">
+          <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl">
             How It Works
           </h2>
         </div>
         <div className="mx-auto mt-12 grid gap-8 md:grid-cols-3">
-          {workflowSteps.map((step) => (
-            <div
+          {workflowSteps.map((step, index) => (
+            <motion.div
               key={step.title}
-              className="rounded-3xl border border-border/70 bg-muted/80 px-6 py-8 text-left shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] transition hover:scale-105"
+              className="rounded-3xl border border-border/70 bg-muted/50 px-6 py-8 text-left shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] backdrop-blur"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.3 }}
+              variants={cardVariants}
+              custom={index}
+              whileHover={{ scale: 1.03 }}
             >
-              <h3 className="text-xl font-semibold uppercase tracking-[0.2em]" style={{ color: '#ffffff' }}>
+              <h3 className="text-xl font-semibold uppercase tracking-[0.2em]">
                 {step.title}
               </h3>
-              <p className="mt-3 text-sm uppercase tracking-[0.28em]" style={{ color: '#ffffff' }}>
+              <p className="mt-3 text-sm uppercase tracking-[0.28em] text-foreground/60">
                 {step.text}
               </p>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
 
       {/* WHAT YOU GET */}
-      <section className="px-6 py-16" style={{ color: '#ffffff' }}>
+      <section className="px-6 py-16 text-white">
         <div className="mx-auto max-w-3xl text-center">
-          <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl" style={{ color: '#ffffff' }}>
+          <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl">
             What You Get
           </h2>
         </div>
         <div className="mx-auto mt-10 grid gap-6 md:grid-cols-2">
-          {deliverables.map((item) => (
-            <div
+          {deliverables.map((item, index) => (
+            <motion.div
               key={item}
-              className="rounded-2xl border border-border/70 bg-muted/80 px-6 py-5 text-left text-sm uppercase tracking-[0.25em]"
-              style={{ color: '#ffffff' }}
+              className="rounded-2xl border border-border/70 bg-muted/40 px-6 py-5 text-left text-sm uppercase tracking-[0.25em] text-foreground/70"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.3 }}
+              variants={cardVariants}
+              custom={index}
             >
               • {item}
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
 
       {/* PACKAGES */}
-      <section className="px-6 py-20" style={{ color: '#ffffff' }}>
+      <section className="px-6 py-20 text-white">
         <div className="mx-auto max-w-3xl text-center">
-          <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl" style={{ color: '#ffffff' }}>
+          <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl">
             Packages
           </h2>
         </div>
         <div className="mx-auto mt-12 grid gap-8 md:grid-cols-3">
-          {packages.map((pkg) => (
-            <div
+          {packages.map((pkg, index) => (
+            <motion.div
               key={pkg.title}
-              className={`rounded-3xl border px-6 py-8 shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] transition hover:scale-105 ${
+              className={`rounded-3xl border px-6 py-8 shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] backdrop-blur ${
                 pkg.highlight
-                  ? "border-accent bg-accent/20"
-                  : "border-border/70 bg-muted/80"
+                  ? "border-accent bg-accent/10"
+                  : "border-border/70 bg-muted/50"
               }`}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.3 }}
+              variants={cardVariants}
+              custom={index}
+              whileHover={{ scale: 1.03 }}
             >
               <h3
                 className={`text-3xl font-bold uppercase tracking-[0.2em] ${
-                  pkg.highlight ? "text-accent" : ""
+                  pkg.highlight ? "text-accent" : "text-foreground"
                 }`}
-                style={pkg.highlight ? undefined : { color: '#ffffff' }}
               >
                 {pkg.title}
               </h3>
-              <p className="mt-3 text-sm uppercase tracking-[0.3em]" style={{ color: '#ffffff' }}>
+              <p className="mt-3 text-sm uppercase tracking-[0.3em] text-foreground/60">
                 {pkg.description}
               </p>
-              <ul className="mt-6 space-y-2 text-sm uppercase tracking-[0.28em]" style={{ color: '#ffffff' }}>
+              <ul className="mt-6 space-y-2 text-sm uppercase tracking-[0.28em] text-foreground/70">
                 {pkg.bullets.map((bullet) => (
                   <li key={bullet}>• {bullet}</li>
                 ))}
@@ -276,24 +304,23 @@ export default function Home() {
                 className={`mt-8 inline-flex w-full items-center justify-center rounded-full px-6 py-3 text-xs font-semibold uppercase tracking-[0.32em] transition ${
                   pkg.highlight
                     ? "border border-accent bg-accent text-background hover:bg-transparent hover:text-accent"
-                    : "border border-border/70 hover:border-accent hover:text-accent"
+                    : "border border-border/70 text-foreground hover:border-accent hover:text-accent"
                 }`}
-                style={pkg.highlight ? undefined : { color: '#ffffff' }}
               >
                 {pkg.cta}
               </Link>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
 
       {/* FINAL CTA */}
-      <section className="px-6 py-20 text-center" style={{ color: '#ffffff' }}>
+      <section className="px-6 py-20 text-center text-white">
         <div className="mx-auto max-w-3xl">
-          <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl" style={{ color: '#ffffff' }}>
+          <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl">
             Ready to Transform Your Nutrition?
           </h2>
-          <p className="mt-4 text-sm uppercase tracking-[0.3em]" style={{ color: '#ffffff' }}>
+          <p className="mt-4 text-sm uppercase tracking-[0.3em] text-foreground/60">
             Start your transformation with a meal plan built for your life — not downloaded from a template.
           </p>
           <div className="mt-10 flex justify-center">
