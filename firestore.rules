@@ -99,25 +99,17 @@ service cloud.firestore {
       // Helper function: Prevent non-admins from modifying restricted fields
       function canModifyRestrictedFields() {
         // Admins can modify any field
-        if (isAdmin()) {
-          return true;
-        }
-        
-        // Non-admins cannot modify these fields
-        let restrictedFields = ['mealPlanFileURL', 'mealPlanStatus', 'role', 'mealPlanDeliveredAt'];
-        let data = request.resource.data;
-        
-        // For create (resource doesn't exist), check that restricted fields are not present
-        if (!exists(resource)) {
-          return !data.keys().hasAny(restrictedFields);
-        }
-        
-        // For update, check that restricted fields haven't changed
-        let existingData = resource.data;
-        return (!('mealPlanFileURL' in data) || !('mealPlanFileURL' in existingData) || data.mealPlanFileURL == existingData.mealPlanFileURL)
-          && (!('mealPlanStatus' in data) || !('mealPlanStatus' in existingData) || data.mealPlanStatus == existingData.mealPlanStatus)
-          && (!('role' in data) || !('role' in existingData) || data.role == existingData.role)
-          && (!('mealPlanDeliveredAt' in data) || !('mealPlanDeliveredAt' in existingData) || data.mealPlanDeliveredAt == existingData.mealPlanDeliveredAt);
+        return isAdmin() || (
+          // For creates: restricted fields must not be present
+          (!exists(resource) && !request.resource.data.keys().hasAny(['mealPlanFileURL', 'mealPlanStatus', 'role', 'mealPlanDeliveredAt'])) ||
+          // For updates: restricted fields must not have changed
+          (exists(resource) && 
+            (!('mealPlanFileURL' in request.resource.data) || !('mealPlanFileURL' in resource.data) || request.resource.data.mealPlanFileURL == resource.data.mealPlanFileURL) &&
+            (!('mealPlanStatus' in request.resource.data) || !('mealPlanStatus' in resource.data) || request.resource.data.mealPlanStatus == resource.data.mealPlanStatus) &&
+            (!('role' in request.resource.data) || !('role' in resource.data) || request.resource.data.role == resource.data.role) &&
+            (!('mealPlanDeliveredAt' in request.resource.data) || !('mealPlanDeliveredAt' in resource.data) || request.resource.data.mealPlanDeliveredAt == resource.data.mealPlanDeliveredAt)
+          )
+        );
       }
 
       // Read: Users can read their own document, admins can read all
