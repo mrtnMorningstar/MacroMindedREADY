@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { collection, doc, getDoc, onSnapshot, updateDoc, serverTimestamp, type DocumentData } from "firebase/firestore";
+import { collection, doc, getDoc, onSnapshot, updateDoc, serverTimestamp, query, where, getDocs, type DocumentData } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytesResumable, deleteObject } from "firebase/storage";
 
 import { auth, db, storage } from "@/lib/firebase";
 import { AdminSidebar, UserDetailPanel } from "@/components/admin";
+import DashboardSummary from "@/components/admin/DashboardSummary";
 
 type UserRecord = {
   id: string;
@@ -17,11 +18,15 @@ type UserRecord = {
   mealPlanStatus?: string | null;
   mealPlanFileURL?: string | null;
   mealPlanImageURLs?: string[] | null;
+  mealPlanDeliveredAt?: { toDate?: () => Date; seconds?: number } | Date | null;
   profile?: Record<string, string | null> | null;
   groceryListURL?: string | null;
   referralCode?: string | null;
   referralCredits?: number | null;
   referredBy?: string | null;
+  purchaseDate?: { toDate?: () => Date; seconds?: number } | Date | null;
+  adminNotes?: string | null;
+  purchaseAmount?: number | null;
 };
 
 type UploadStatus = {
@@ -37,7 +42,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"all" | "delivered" | "pending" | "not-started">("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "needs-plan" | "delivered" | "overdue" | "inactive">("all");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [toast, setToast] = useState<{
     message: string;
@@ -62,14 +67,51 @@ export default function AdminPage() {
     setLoadingUsers(true);
     const unsubscribe = onSnapshot(
       collection(db, "users"),
-      (snapshot) => {
-        const records: UserRecord[] = snapshot.docs
-          .map((docSnapshot) => {
-            const data = docSnapshot.data();
-            if (data?.role === "admin") return null;
-            return { id: docSnapshot.id, ...data } as UserRecord;
-          })
-          .filter((r): r is UserRecord => r !== null);
+      async (snapshot) => {
+        const records: UserRecord[] = [];
+        
+        // Process users and fetch purchase data
+        for (const docSnapshot of snapshot.docs) {
+          const data = docSnapshot.data();
+          if (data?.role === "admin") continue;
+
+          // Fetch purchase data for this user
+          let purchaseAmount: number | null = null;
+          try {
+            const purchasesQuery = query(
+              collection(db, "purchases"),
+              where("userId", "==", docSnapshot.id)
+            );
+            const purchasesSnapshot = await getDocs(purchasesQuery);
+            
+            if (!purchasesSnapshot.empty) {
+              // Get the latest purchase (sorted by createdAt)
+              const purchases = purchasesSnapshot.docs.map((doc) => ({
+                ...doc.data(),
+                createdAt: doc.data().createdAt,
+              }));
+              
+              purchases.sort((a, b) => {
+                const aTime = a.createdAt?.toMillis?.() ?? a.createdAt?.seconds ?? 0;
+                const bTime = b.createdAt?.toMillis?.() ?? b.createdAt?.seconds ?? 0;
+                return bTime - aTime;
+              });
+              
+              purchaseAmount = purchases[0]?.amount ?? null;
+            }
+          } catch (error) {
+            console.error(`Failed to fetch purchase for user ${docSnapshot.id}:`, error);
+          }
+
+          records.push({
+            id: docSnapshot.id,
+            ...data,
+            mealPlanDeliveredAt: data?.mealPlanDeliveredAt ?? null,
+            purchaseDate: data?.purchaseDate ?? null,
+            adminNotes: data?.adminNotes ?? null,
+            purchaseAmount,
+          } as UserRecord);
+        }
 
         setUsers(records);
         setSelectedUserId((prev) => (prev && records.some((u) => u.id === prev) ? prev : records[0]?.id ?? null));
@@ -168,17 +210,105 @@ export default function AdminPage() {
     }
   }, [showToast]);
 
+  // Helper function to parse Firestore dates
+  const parseFirestoreDate = (date?: { toDate?: () => Date; seconds?: number } | Date | null): Date | null => {
+    if (!date) return null;
+    if (date instanceof Date) return date;
+    if (typeof (date as { toDate?: () => Date }).toDate === "function") {
+      return (date as { toDate: () => Date }).toDate();
+    }
+    if (typeof (date as { seconds?: number }).seconds === "number") {
+      const value = date as { seconds: number; nanoseconds?: number };
+      return new Date(value.seconds * 1000 + Math.floor((value.nanoseconds ?? 0) / 1_000_000));
+    }
+    return null;
+  };
+
+  // Helper function to check if a plan is overdue (more than 30 days since delivery)
+  const isOverdue = (user: UserRecord): boolean => {
+    if (!user.mealPlanDeliveredAt || user.mealPlanStatus !== "Delivered") return false;
+    const deliveredDate = parseFirestoreDate(user.mealPlanDeliveredAt);
+    if (!deliveredDate) return false;
+    const daysSinceDelivery = Math.floor((Date.now() - deliveredDate.getTime()) / (1000 * 60 * 60 * 24));
+    return daysSinceDelivery > 30; // Consider overdue if more than 30 days old
+  };
+
+  // Helper function to check if a plan is expiring soon (25-30 days since delivery)
+  const isExpiringSoon = (user: UserRecord): boolean => {
+    if (!user.mealPlanDeliveredAt || user.mealPlanStatus !== "Delivered") return false;
+    const deliveredDate = parseFirestoreDate(user.mealPlanDeliveredAt);
+    if (!deliveredDate) return false;
+    const daysSinceDelivery = Math.floor((Date.now() - deliveredDate.getTime()) / (1000 * 60 * 60 * 24));
+    return daysSinceDelivery >= 25 && daysSinceDelivery <= 30;
+  };
+
+  // Helper function to get user status badge info
+  const getUserStatusBadge = (user: UserRecord): { label: string; color: string; bgColor: string; borderColor: string } => {
+    if (isOverdue(user)) {
+      return {
+        label: "Overdue",
+        color: "text-red-500",
+        bgColor: "bg-red-500/10",
+        borderColor: "border-red-500/30",
+      };
+    }
+    if (isExpiringSoon(user)) {
+      return {
+        label: "Expiring Soon",
+        color: "text-orange-500",
+        bgColor: "bg-orange-500/10",
+        borderColor: "border-orange-500/30",
+      };
+    }
+    if (user.mealPlanStatus === "Delivered") {
+      return {
+        label: "Delivered",
+        color: "text-green-500",
+        bgColor: "bg-green-500/10",
+        borderColor: "border-green-500/30",
+      };
+    }
+    if (user.mealPlanStatus === "In Progress") {
+      return {
+        label: "In Progress",
+        color: "text-yellow-500",
+        bgColor: "bg-yellow-500/10",
+        borderColor: "border-yellow-500/30",
+      };
+    }
+    if (!user.packageTier || user.mealPlanStatus === "Not Started" || !user.mealPlanStatus) {
+      return {
+        label: "Inactive",
+        color: "text-foreground/50",
+        bgColor: "bg-background/20",
+        borderColor: "border-border/40",
+      };
+    }
+    return {
+      label: user.mealPlanStatus ?? "Not Started",
+      color: "text-foreground/60",
+      bgColor: "bg-background/20",
+      borderColor: "border-border/40",
+    };
+  };
+
   // Filter and search users
   const filteredUsers = useMemo(() => {
     let filtered = users;
 
     // Filter by status
     if (filterStatus === "delivered") {
-      filtered = filtered.filter((u) => u.mealPlanStatus === "Delivered");
-    } else if (filterStatus === "pending") {
-      filtered = filtered.filter((u) => u.mealPlanStatus && u.mealPlanStatus !== "Delivered" && u.mealPlanStatus !== "Not Started");
-    } else if (filterStatus === "not-started") {
-      filtered = filtered.filter((u) => !u.mealPlanStatus || u.mealPlanStatus === "Not Started");
+      filtered = filtered.filter((u) => u.mealPlanStatus === "Delivered" && !isOverdue(u) && !isExpiringSoon(u));
+    } else if (filterStatus === "needs-plan") {
+      filtered = filtered.filter((u) => {
+        const hasPackage = !!u.packageTier;
+        const needsPlan = !u.mealPlanStatus || u.mealPlanStatus === "Not Started" || u.mealPlanStatus === "In Progress";
+        return hasPackage && needsPlan;
+      });
+    } else if (filterStatus === "overdue") {
+      filtered = filtered.filter((u) => isOverdue(u) || isExpiringSoon(u));
+    } else if (filterStatus === "inactive") {
+      filtered = filtered.filter((u) => !u.packageTier || (!u.mealPlanStatus || u.mealPlanStatus === "Not Started"));
     }
 
     // Search filter
@@ -251,6 +381,46 @@ export default function AdminPage() {
     [selectedUser, deleteFileForUser]
   );
 
+  const handleNotesSaved = useCallback(() => {
+    // Refresh user data to get updated adminNotes
+    if (selectedUserId) {
+      getDoc(doc(db, "users", selectedUserId)).then((docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const data = docSnapshot.data();
+          setUsers((prev) =>
+            prev.map((u) =>
+              u.id === selectedUserId
+                ? { ...u, adminNotes: data?.adminNotes ?? null }
+                : u
+            )
+          );
+        }
+      });
+    }
+  }, [selectedUserId]);
+
+  const handleStatusUpdated = useCallback(() => {
+    // Refresh user data to get updated status
+    if (selectedUserId) {
+      getDoc(doc(db, "users", selectedUserId)).then((docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const data = docSnapshot.data();
+          setUsers((prev) =>
+            prev.map((u) =>
+              u.id === selectedUserId
+                ? {
+                    ...u,
+                    mealPlanStatus: data?.mealPlanStatus ?? null,
+                    mealPlanDeliveredAt: data?.mealPlanDeliveredAt ?? null,
+                  }
+                : u
+            )
+          );
+        }
+      });
+    }
+  }, [selectedUserId]);
+
   // AuthGate handles auth checks and loading, so we can just render
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -285,60 +455,27 @@ export default function AdminPage() {
             </button>
           </header>
 
-          {/* Toast Notification */}
-          <AnimatePresence>
-            {toast && (
-              <motion.div
-                initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                transition={{ duration: 0.2 }}
-                className={`fixed top-20 left-1/2 z-50 -translate-x-1/2 rounded-3xl border px-6 py-4 text-center text-xs font-semibold uppercase tracking-[0.28em] shadow-lg backdrop-blur sm:top-24 ${
-                  toast.type === "success"
-                    ? "border-accent/40 bg-muted/90 text-accent"
-                    : "border-red-500/40 bg-red-500/20 text-red-500"
-                }`}
-              >
-                {toast.message}
-              </motion.div>
-            )}
-          </AnimatePresence>
+              {/* Toast Notification */}
+              <AnimatePresence>
+                {toast && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className={`fixed top-20 left-1/2 z-50 -translate-x-1/2 rounded-3xl border px-6 py-4 text-center text-xs font-semibold uppercase tracking-[0.28em] shadow-lg backdrop-blur sm:top-24 ${
+                      toast.type === "success"
+                        ? "border-accent/40 bg-muted/90 text-accent"
+                        : "border-red-500/40 bg-red-500/20 text-red-500"
+                    }`}
+                  >
+                    {toast.message}
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-          {/* Stats */}
-          <div className="grid gap-4 sm:grid-cols-4">
-            <div className="rounded-2xl border border-border/70 bg-muted/50 px-6 py-4 text-center">
-              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-foreground/60">
-                Total Users
-              </p>
-              <p className="mt-2 text-2xl font-bold uppercase tracking-[0.2em] text-foreground">
-                {users.length}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-border/70 bg-muted/50 px-6 py-4 text-center">
-              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-foreground/60">
-                Delivered
-              </p>
-              <p className="mt-2 text-2xl font-bold uppercase tracking-[0.2em] text-accent">
-                {users.filter((u) => u.mealPlanStatus === "Delivered").length}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-border/70 bg-muted/50 px-6 py-4 text-center">
-              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-foreground/60">
-                Pending
-              </p>
-              <p className="mt-2 text-2xl font-bold uppercase tracking-[0.2em] text-foreground">
-                {users.filter((u) => u.mealPlanStatus && u.mealPlanStatus !== "Delivered" && u.mealPlanStatus !== "Not Started").length}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-border/70 bg-muted/50 px-6 py-4 text-center">
-              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-foreground/60">
-                Not Started
-              </p>
-              <p className="mt-2 text-2xl font-bold uppercase tracking-[0.2em] text-foreground">
-                {users.filter((u) => !u.mealPlanStatus || u.mealPlanStatus === "Not Started").length}
-              </p>
-            </div>
-          </div>
+              {/* Dashboard Summary */}
+              <DashboardSummary />
 
           {/* Search and Filter Bar */}
           <div className="flex flex-col gap-4 rounded-3xl border border-border/70 bg-muted/60 px-6 py-6 shadow-[0_0_60px_-30px_rgba(215,38,61,0.6)] backdrop-blur sm:flex-row sm:items-center sm:justify-between">
@@ -351,7 +488,7 @@ export default function AdminPage() {
                 className="w-full rounded-full border border-border/70 bg-background/40 px-4 py-2.5 text-[0.65rem] uppercase tracking-[0.2em] text-foreground placeholder:text-foreground/40 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setFilterStatus("all")}
                 className={`rounded-full border px-4 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.3em] transition ${
@@ -361,6 +498,16 @@ export default function AdminPage() {
                 }`}
               >
                 All
+              </button>
+              <button
+                onClick={() => setFilterStatus("needs-plan")}
+                className={`rounded-full border px-4 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.3em] transition ${
+                  filterStatus === "needs-plan"
+                    ? "border-accent bg-accent/20 text-accent"
+                    : "border-border/70 bg-background/40 text-foreground/70 hover:border-accent hover:text-accent"
+                }`}
+              >
+                Needs Plan
               </button>
               <button
                 onClick={() => setFilterStatus("delivered")}
@@ -373,24 +520,24 @@ export default function AdminPage() {
                 Delivered
               </button>
               <button
-                onClick={() => setFilterStatus("pending")}
+                onClick={() => setFilterStatus("overdue")}
                 className={`rounded-full border px-4 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.3em] transition ${
-                  filterStatus === "pending"
+                  filterStatus === "overdue"
                     ? "border-accent bg-accent/20 text-accent"
                     : "border-border/70 bg-background/40 text-foreground/70 hover:border-accent hover:text-accent"
                 }`}
               >
-                Pending
+                Overdue / Expiring Soon
               </button>
               <button
-                onClick={() => setFilterStatus("not-started")}
+                onClick={() => setFilterStatus("inactive")}
                 className={`rounded-full border px-4 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.3em] transition ${
-                  filterStatus === "not-started"
+                  filterStatus === "inactive"
                     ? "border-accent bg-accent/20 text-accent"
                     : "border-border/70 bg-background/40 text-foreground/70 hover:border-accent hover:text-accent"
                 }`}
               >
-                Not Started
+                Inactive
               </button>
             </div>
           </div>
@@ -480,17 +627,16 @@ export default function AdminPage() {
                               </span>
                             </td>
                             <td className="px-4 py-4">
-                              <span
-                                className={`text-[0.65rem] font-semibold uppercase tracking-[0.25em] ${
-                                  user.mealPlanStatus === "Delivered"
-                                    ? "text-accent"
-                                    : user.mealPlanStatus && user.mealPlanStatus !== "Not Started"
-                                    ? "text-yellow-500"
-                                    : "text-foreground/60"
-                                }`}
-                              >
-                                {user.mealPlanStatus ?? "Not Started"}
-                              </span>
+                              {(() => {
+                                const badge = getUserStatusBadge(user);
+                                return (
+                                  <span
+                                    className={`inline-flex items-center rounded-full border px-3 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.2em] ${badge.color} ${badge.bgColor} ${badge.borderColor}`}
+                                  >
+                                    {badge.label}
+                                  </span>
+                                );
+                              })()}
                             </td>
                             <td className="px-4 py-4">
                               {user.mealPlanFileURL ? (
@@ -555,6 +701,8 @@ export default function AdminPage() {
               onDeleteMealPlan={selectedUser.mealPlanFileURL ? handleDeleteMealPlan : undefined}
               onDeleteGroceryList={selectedUser.groceryListURL ? handleDeleteGroceryList : undefined}
               onDeleteImage={handleDeleteImage}
+              onNotesSaved={handleNotesSaved}
+              onStatusUpdated={handleStatusUpdated}
             />
           )}
         </div>
