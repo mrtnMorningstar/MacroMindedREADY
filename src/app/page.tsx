@@ -199,7 +199,7 @@ export default function Home() {
               key={item}
               custom={index}
               variants={cardVariants}
-              className="rounded-2xl border border-border/60 bg-muted/40 px-4 py-4 text-sm font-semibold"
+              className="rounded-2xl border border-border/60 bg-muted/70 px-4 py-4 text-sm font-semibold"
             >
               {item}
             </motion.div>
@@ -218,7 +218,7 @@ export default function Home() {
           {workflowSteps.map((step, index) => (
             <motion.div
               key={step.title}
-              className="rounded-3xl border border-border/70 bg-muted/50 px-6 py-8 text-left shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] backdrop-blur"
+              className="rounded-3xl border border-border/70 bg-muted/80 px-6 py-8 text-left shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)]"
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, amount: 0.3 }}
@@ -248,7 +248,7 @@ export default function Home() {
           {deliverables.map((item, index) => (
             <motion.div
               key={item}
-              className="rounded-2xl border border-border/70 bg-muted/40 px-6 py-5 text-left text-sm uppercase tracking-[0.25em] text-foreground/70"
+              className="rounded-2xl border border-border/70 bg-muted/70 px-6 py-5 text-left text-sm uppercase tracking-[0.25em] text-foreground/80"
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, amount: 0.3 }}
@@ -272,10 +272,10 @@ export default function Home() {
           {packages.map((pkg, index) => (
             <motion.div
               key={pkg.title}
-              className={`rounded-3xl border px-6 py-8 shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] backdrop-blur ${
+              className={`rounded-3xl border px-6 py-8 shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] ${
                 pkg.highlight
-                  ? "border-accent bg-accent/10"
-                  : "border-border/70 bg-muted/50"
+                  ? "border-accent bg-accent/20"
+                  : "border-border/70 bg-muted/80"
               }`}
               initial="hidden"
               whileInView="visible"

@@ -226,10 +226,10 @@ export default function PackagesPage() {
                 key={name}
                 whileHover={{ y: -12, scale: 1.01 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className="relative overflow-hidden rounded-3xl border border-border/70 bg-muted/60 px-8 py-10 text-left shadow-[0_0_80px_-40px_rgba(215,38,61,0.6)] backdrop-blur"
+                className="relative overflow-hidden rounded-3xl border border-border/70 bg-muted/80 px-8 py-10 text-left shadow-[0_0_80px_-40px_rgba(215,38,61,0.6)]"
               >
                 <div
-                  className={`pointer-events-none absolute inset-x-0 -top-1/3 h-56 bg-gradient-to-b ${accent} opacity-80 blur-3xl`}
+                  className={`pointer-events-none absolute inset-x-0 -top-1/3 h-56 bg-gradient-to-b ${accent} opacity-60 blur-3xl`}
                 />
                 <div className="relative flex flex-col gap-6">
                   <header className="flex flex-col gap-2">
