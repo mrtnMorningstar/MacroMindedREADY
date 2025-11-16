@@ -130,18 +130,18 @@ export default function CheckoutWizard({
 
   return (
     <div 
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm" 
+      className="fixed inset-0 z-[100] flex items-start justify-center bg-black/80 backdrop-blur-sm" 
       style={{ 
         top: 0, 
         left: 0, 
         right: 0, 
         bottom: 0,
-        padding: '3rem 1rem',
+        padding: '6rem 1rem 3rem 1rem',
         position: 'fixed',
         width: '100vw',
         height: '100vh',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         justifyContent: 'center',
         overflow: 'hidden'
       }}
