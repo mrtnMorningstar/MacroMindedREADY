@@ -82,16 +82,18 @@ export default function AdminAnalyticsPage() {
       collection(db, "users"),
       (snapshot) => {
         const records: UserRecord[] = snapshot.docs
+          .filter((doc) => {
+            const data = doc.data();
+            return data?.role !== "admin";
+          })
           .map((doc) => {
             const data = doc.data();
-            if (data?.role === "admin") return null;
             return {
               id: doc.id,
               mealPlanStatus: data?.mealPlanStatus ?? null,
               purchaseDate: data?.purchaseDate ?? null,
             };
-          })
-          .filter((r): r is UserRecord => r !== null);
+          });
         setUsers(records);
       },
       (error) => {
