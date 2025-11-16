@@ -215,7 +215,7 @@ export default function CheckoutWizard({
                     type="text"
                     value={formData.height}
                     onChange={(e) => updateField("height", e.target.value)}
-                    placeholder="e.g., 5'10\" or 178 cm"
+                    placeholder={`e.g., 5'10" or 178 cm`}
                     className="w-full rounded-2xl border border-border/70 bg-muted/40 px-4 py-3 text-sm text-foreground placeholder:text-foreground/40 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
                   />
                   {errors.height && (
