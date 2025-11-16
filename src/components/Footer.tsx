@@ -14,7 +14,7 @@ export default function Footer() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      className="border-t border-border/60 bg-background/80 backdrop-blur"
+      className="border-t border-border/60 bg-background/80 backdrop-blur footer-component"
     >
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-10 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
         <div className="font-display text-xs uppercase tracking-[0.45em] text-foreground/70">

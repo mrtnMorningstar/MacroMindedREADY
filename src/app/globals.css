@@ -38,3 +38,8 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
+/* Hide footer when modal is open */
+body.modal-open footer.footer-component {
+  display: none !important;
+}
