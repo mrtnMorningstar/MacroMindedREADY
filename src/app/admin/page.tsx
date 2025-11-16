@@ -1,37 +1,14 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type ChangeEvent,
-} from "react";
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import {
-  collection,
-  doc,
-  getDoc,
-  onSnapshot,
-  updateDoc,
-  serverTimestamp,
-  Timestamp,
-  type QuerySnapshot,
-} from "firebase/firestore";
-import {
-  getDownloadURL,
-  ref,
-  uploadBytesResumable,
-  deleteObject,
-  type UploadTaskSnapshot,
-} from "firebase/storage";
+import { collection, doc, getDoc, onSnapshot, updateDoc, serverTimestamp, type DocumentData } from "firebase/firestore";
+import { getDownloadURL, ref, uploadBytesResumable, deleteObject } from "firebase/storage";
 import { onAuthStateChanged } from "firebase/auth";
 
 import { auth, db, storage } from "@/lib/firebase";
-
-type UserProfile = Record<string, string | null | undefined>;
 
 type UserRecord = {
   id: string;
@@ -41,8 +18,7 @@ type UserRecord = {
   mealPlanStatus?: string | null;
   mealPlanFileURL?: string | null;
   mealPlanImageURLs?: string[] | null;
-  profile?: UserProfile | null;
-  mealPlanDeliveredAt?: unknown;
+  profile?: Record<string, string | null> | null;
   groceryListURL?: string | null;
   referralCode?: string | null;
   referralCredits?: number | null;
@@ -51,29 +27,24 @@ type UserRecord = {
 
 type UploadStatus = {
   progress: number;
-  status: "idle" | "uploading" | "error" | "success";
+  status: "idle" | "uploading" | "success" | "error";
   errorMessage?: string;
 };
-
-const baseBackground = "bg-[radial-gradient(circle_at_top,#161616_0%,rgba(0,0,0,0.92)_60%,#000_98%)]";
 
 export default function AdminPage() {
   const router = useRouter();
   const pathname = usePathname();
+
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [pdfUploadStates, setPdfUploadStates] = useState<
-    Record<string, UploadStatus>
-  >({});
-  const [imageUploadStates, setImageUploadStates] =
-    useState<Record<string, UploadStatus>>({});
-  const [groceryUploadStates, setGroceryUploadStates] =
-    useState<Record<string, UploadStatus>>({});
 
+  const [uploadStates, setUploadStates] = useState<Record<string, Record<string, UploadStatus>>>({});
+
+  // Verify admin using Firebase custom claims
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
@@ -82,22 +53,16 @@ export default function AdminPage() {
         return;
       }
       try {
-        const docRef = doc(db, "users", currentUser.uid);
-        const currentSnapshot = await getDoc(docRef);
-        const role = currentSnapshot.data()?.role;
-
-        if (role !== "admin") {
+        const idTokenResult = await currentUser.getIdTokenResult();
+        if (!idTokenResult.claims.admin) {
           router.replace("/dashboard");
           setCheckingAuth(false);
           return;
         }
-
         setIsAdmin(true);
       } catch (error) {
-        console.error("Failed to verify admin role:", error);
+        console.error("Admin verification failed:", error);
         router.replace("/dashboard");
-        setCheckingAuth(false);
-        return;
       } finally {
         setCheckingAuth(false);
       }
@@ -106,6 +71,7 @@ export default function AdminPage() {
     return () => unsubscribe();
   }, [router]);
 
+  // Subscribe to users collection (exclude admins)
   useEffect(() => {
     if (!isAdmin) return;
 
@@ -116,40 +82,18 @@ export default function AdminPage() {
         const records: UserRecord[] = snapshot.docs
           .map((docSnapshot) => {
             const data = docSnapshot.data();
-            // Filter out admin users
-            if (data?.role === "admin") {
-              return null;
-            }
-            return {
-              id: docSnapshot.id,
-              email: data?.email ?? null,
-              displayName: data?.displayName ?? null,
-              packageTier: data?.packageTier ?? null,
-              mealPlanStatus: data?.mealPlanStatus ?? null,
-              mealPlanFileURL: data?.mealPlanFileURL ?? null,
-              mealPlanImageURLs: (data?.mealPlanImageURLs as string[] | null) ?? null,
-              profile: (data?.profile as UserProfile | null) ?? null,
-              mealPlanDeliveredAt: data?.mealPlanDeliveredAt ?? null,
-              groceryListURL: data?.groceryListURL ?? null,
-              referralCode: data?.referralCode ?? null,
-              referralCredits: data?.referralCredits ?? 0,
-              referredBy: data?.referredBy ?? null,
-            } as UserRecord | null;
+            if (data?.role === "admin") return null;
+            return { id: docSnapshot.id, ...data } as UserRecord;
           })
-          .filter((record): record is UserRecord => record !== null);
+          .filter((r): r is UserRecord => r !== null);
 
         setUsers(records);
-        setSelectedUserId((prev) => {
-          if (prev && records.some((record) => record.id === prev)) {
-            return prev;
-          }
-          return records[0]?.id ?? null;
-        });
+        setSelectedUserId((prev) => (prev && records.some((u) => u.id === prev) ? prev : records[0]?.id ?? null));
         setLoadingUsers(false);
       },
       (error) => {
-        console.error("Failed to subscribe to users:", error);
-        setFeedback("Unable to load user data. Please refresh the page.");
+        console.error("Failed to load users:", error);
+        setFeedback("Error fetching users. Refresh page.");
         setLoadingUsers(false);
       }
     );
@@ -157,29 +101,34 @@ export default function AdminPage() {
     return () => unsubscribe();
   }, [isAdmin]);
 
-  const uploadPdfForUser = useCallback(
-    async (user: UserRecord, file: File) => {
-      setPdfUploadStates((prev) => ({
+  // Generic upload handler
+  const uploadFileForUser = useCallback(
+    async (user: UserRecord, file: File, type: "mealPlan" | "images" | "grocery") => {
+      const key = type === "images" ? file.name : type;
+      setUploadStates((prev) => ({
         ...prev,
-        [user.id]: { status: "uploading", progress: 0 },
+        [user.id]: { ...prev[user.id], [key]: { status: "uploading", progress: 0 } },
       }));
 
       try {
-        const pdfRef = ref(storage, `mealPlans/${user.id}/plan.pdf`);
-        const uploadTask = uploadBytesResumable(pdfRef, file, {
-          contentType: file.type,
-        });
+        const path =
+          type === "mealPlan"
+            ? `mealPlans/${user.id}/plan.pdf`
+            : type === "images"
+            ? `mealPlans/${user.id}/images/${file.name}`
+            : `mealPlans/${user.id}/grocery-list.pdf`;
+
+        const storageRef = ref(storage, path);
+        const uploadTask = uploadBytesResumable(storageRef, file, { contentType: file.type });
 
         await new Promise<void>((resolve, reject) => {
           uploadTask.on(
             "state_changed",
-            (snap) => {
-              const progress = Math.round(
-                (snap.bytesTransferred / snap.totalBytes) * 100
-              );
-              setPdfUploadStates((prev) => ({
+            (snapshot) => {
+              const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+              setUploadStates((prev) => ({
                 ...prev,
-                [user.id]: { status: "uploading", progress },
+                [user.id]: { ...prev[user.id], [key]: { status: "uploading", progress } },
               }));
             },
             reject,
@@ -188,714 +137,117 @@ export default function AdminPage() {
         });
 
         const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-        const userRef = doc(db, "users", user.id);
-        const updatePayload: Record<string, unknown> = {
-          mealPlanFileURL: downloadURL,
-          mealPlanStatus: "Delivered",
-        };
-        if (!user.mealPlanDeliveredAt) {
-          updatePayload.mealPlanDeliveredAt = serverTimestamp();
-        }
+        const updateData: DocumentData = {};
+        if (type === "mealPlan") updateData.mealPlanFileURL = downloadURL;
+        else if (type === "images") {
+          updateData.mealPlanImageURLs = [...(user.mealPlanImageURLs ?? []), downloadURL];
+        } else updateData.groceryListURL = downloadURL;
 
-        await updateDoc(userRef, updatePayload);
+        updateData.mealPlanStatus = "Delivered";
+        if (!user.mealPlanFileURL && type === "mealPlan") updateData.mealPlanDeliveredAt = serverTimestamp();
 
-        setPdfUploadStates((prev) => ({
+        await updateDoc(doc(db, "users", user.id), updateData);
+
+        setUploadStates((prev) => ({
           ...prev,
-          [user.id]: { status: "success", progress: 100 },
+          [user.id]: { ...prev[user.id], [key]: { status: "success", progress: 100 } },
         }));
-        setFeedback("Meal plan PDF uploaded.");
-      } catch (error) {
-        console.error("PDF upload failed:", error);
-        setPdfUploadStates((prev) => ({
+        setFeedback(`${type} uploaded successfully.`);
+      } catch (err) {
+        console.error(`${type} upload failed`, err);
+        setUploadStates((prev) => ({
           ...prev,
-          [user.id]: {
-            status: "error",
-            progress: 0,
-            errorMessage: "PDF upload failed. Try again.",
-          },
+          [user.id]: { ...prev[user.id], [key]: { status: "error", progress: 0, errorMessage: "Upload failed" } },
         }));
-      }
-    },
-    [setFeedback]
-  );
-
-  const uploadImagesForUser = useCallback(
-    async (user: UserRecord, files: FileList) => {
-      const filtered = Array.from(files).filter((file) =>
-        file.type.startsWith("image/")
-      );
-
-      if (filtered.length === 0) {
-        setImageUploadStates((prev) => ({
-          ...prev,
-          [user.id]: {
-            status: "error",
-            progress: 0,
-            errorMessage: "Please select image files.",
-          },
-        }));
-        return;
-      }
-
-      if (filtered.length > 10) {
-        setImageUploadStates((prev) => ({
-          ...prev,
-          [user.id]: {
-            status: "error",
-            progress: 0,
-            errorMessage: "Upload up to 10 images at a time.",
-          },
-        }));
-        return;
-      }
-
-      setImageUploadStates((prev) => ({
-        ...prev,
-        [user.id]: { status: "uploading", progress: 0 },
-      }));
-
-      try {
-        const urls: string[] = [];
-        const total = filtered.length;
-
-        for (let index = 0; index < filtered.length; index += 1) {
-          const file = filtered[index];
-          const imageRef = ref(storage, `mealPlans/${user.id}/images/${file.name}`);
-          const uploadTask = uploadBytesResumable(imageRef, file, {
-            contentType: file.type,
-          });
-
-          await new Promise<void>((resolve, reject) => {
-            uploadTask.on(
-              "state_changed",
-              (snap) => {
-                const progress = Math.round(
-                  ((index + snap.bytesTransferred / snap.totalBytes) / total) * 100
-                );
-                setImageUploadStates((prev) => ({
-                  ...prev,
-                  [user.id]: { status: "uploading", progress },
-                }));
-              },
-              reject,
-              () => resolve()
-            );
-          });
-
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          urls.push(downloadURL);
-        }
-
-        const existingImages = user.mealPlanImageURLs ?? [];
-        const updatedImages = [...existingImages.filter(Boolean), ...urls];
-        const userRef = doc(db, "users", user.id);
-        const updatePayload: Record<string, unknown> = {
-          mealPlanImageURLs: updatedImages,
-          mealPlanStatus: "Delivered",
-        };
-        if (!user.mealPlanDeliveredAt) {
-          updatePayload.mealPlanDeliveredAt = serverTimestamp();
-        }
-        await updateDoc(userRef, updatePayload);
-
-        setImageUploadStates((prev) => ({
-          ...prev,
-          [user.id]: { status: "success", progress: 100 },
-        }));
-        setFeedback("Supporting images uploaded.");
-      } catch (error) {
-        console.error("Image upload failed:", error);
-        setImageUploadStates((prev) => ({
-          ...prev,
-          [user.id]: {
-            status: "error",
-            progress: 0,
-            errorMessage: "Image upload failed. Try again.",
-          },
-        }));
-      }
-    },
-    [setFeedback]
-  );
-
-  const handlePdfInputChange = useCallback(
-    (user: UserRecord) =>
-      (event: ChangeEvent<HTMLInputElement>) => {
-        setFeedback(null);
-        const file = event.target.files?.[0];
-        event.target.value = "";
-        if (!file) return;
-        if (file.type !== "application/pdf") {
-          setPdfUploadStates((prev) => ({
-            ...prev,
-            [user.id]: {
-              status: "error",
-              progress: 0,
-              errorMessage: "Only PDF files are supported.",
-            },
-          }));
-          return;
-        }
-        void uploadPdfForUser(user, file);
-      },
-    [uploadPdfForUser]
-  );
-
-  const handleImagesInputChange = useCallback(
-    (user: UserRecord) =>
-      (event: ChangeEvent<HTMLInputElement>) => {
-        setFeedback(null);
-        const files = event.target.files;
-        event.target.value = "";
-        if (!files || files.length === 0) return;
-        void uploadImagesForUser(user, files);
-      },
-    [uploadImagesForUser]
-  );
-
-  const uploadGroceryListForUser = useCallback(
-    async (user: UserRecord, file: File) => {
-      setGroceryUploadStates((prev) => ({
-        ...prev,
-        [user.id]: { status: "uploading", progress: 0 },
-      }));
-
-      try {
-        const groceryRef = ref(storage, `mealPlans/${user.id}/grocery-list.pdf`);
-        const uploadTask = uploadBytesResumable(groceryRef, file, {
-          contentType: file.type,
-        });
-
-        await new Promise<void>((resolve, reject) => {
-          uploadTask.on(
-            "state_changed",
-            (snap) => {
-              const progress = Math.round(
-                (snap.bytesTransferred / snap.totalBytes) * 100
-              );
-              setGroceryUploadStates((prev) => ({
-                ...prev,
-                [user.id]: { status: "uploading", progress },
-              }));
-            },
-            reject,
-            resolve
-          );
-        });
-
-        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-        const userRef = doc(db, "users", user.id);
-        const updatePayload: Record<string, unknown> = {
-          groceryListURL: downloadURL,
-          mealPlanStatus: "Delivered",
-        };
-        if (!user.mealPlanDeliveredAt) {
-          updatePayload.mealPlanDeliveredAt = serverTimestamp();
-        }
-
-        await updateDoc(userRef, updatePayload);
-
-        setGroceryUploadStates((prev) => ({
-          ...prev,
-          [user.id]: { status: "success", progress: 100 },
-        }));
-        setFeedback("Grocery list uploaded.");
-      } catch (error) {
-        console.error("Grocery list upload failed:", error);
-        setGroceryUploadStates((prev) => ({
-          ...prev,
-          [user.id]: {
-            status: "error",
-            progress: 0,
-            errorMessage: "Grocery list upload failed. Try again.",
-          },
-        }));
-      }
-    },
-    [setFeedback]
-  );
-
-  const handleGroceryInputChange = useCallback(
-    (user: UserRecord) =>
-      (event: ChangeEvent<HTMLInputElement>) => {
-        setFeedback(null);
-        const file = event.target.files?.[0];
-        event.target.value = "";
-        if (!file) return;
-        if (file.type !== "application/pdf") {
-          setGroceryUploadStates((prev) => ({
-            ...prev,
-            [user.id]: {
-              status: "error",
-              progress: 0,
-              errorMessage: "Only PDF files are supported.",
-            },
-          }));
-          return;
-        }
-        void uploadGroceryListForUser(user, file);
-      },
-    [uploadGroceryListForUser]
-  );
-
-  const deleteMealPlanFile = useCallback(
-    async (user: UserRecord) => {
-      if (!user.mealPlanFileURL) return;
-      if (!confirm("Are you sure you want to delete the meal plan PDF?")) return;
-
-      try {
-        const pdfRef = ref(storage, `mealPlans/${user.id}/plan.pdf`);
-        await deleteObject(pdfRef);
-        const userRef = doc(db, "users", user.id);
-        await updateDoc(userRef, {
-          mealPlanFileURL: null,
-        });
-        setFeedback("Meal plan PDF deleted.");
-      } catch (error) {
-        console.error("Failed to delete meal plan PDF", error);
-        setFeedback("Failed to delete meal plan PDF.");
       }
     },
     []
   );
 
-  const deleteGroceryList = useCallback(
-    async (user: UserRecord) => {
-      if (!user.groceryListURL) return;
-      if (!confirm("Are you sure you want to delete the grocery list?")) return;
-
-      try {
-        const groceryRef = ref(storage, `mealPlans/${user.id}/grocery-list.pdf`);
-        await deleteObject(groceryRef);
-        const userRef = doc(db, "users", user.id);
-        await updateDoc(userRef, {
-          groceryListURL: null,
-        });
-        setFeedback("Grocery list deleted.");
-      } catch (error) {
-        console.error("Failed to delete grocery list", error);
-        setFeedback("Failed to delete grocery list.");
-      }
-    },
-    []
-  );
-
-  const deleteImage = useCallback(
-    async (user: UserRecord, imageUrl: string) => {
-      if (!confirm("Are you sure you want to delete this image?")) return;
-
-      try {
-        const urlObj = new URL(imageUrl);
-        const pathMatch = urlObj.pathname.match(/mealPlans%2F([^%]+)%2Fimages%2F(.+)/);
-        if (!pathMatch) {
-          const altMatch = urlObj.pathname.match(/mealPlans\/([^/]+)\/images\/(.+)/);
-          if (altMatch) {
-            const [, userIdFromPath, fileName] = altMatch;
-            const imageRef = ref(storage, `mealPlans/${userIdFromPath}/images/${decodeURIComponent(fileName)}`);
-            await deleteObject(imageRef);
-          } else {
-            throw new Error("Could not extract file path from URL");
-          }
-        } else {
-          const [, userIdFromPath, fileName] = pathMatch;
-          const imageRef = ref(storage, `mealPlans/${userIdFromPath}/images/${decodeURIComponent(fileName)}`);
-          await deleteObject(imageRef);
-        }
-
-        const userRef = doc(db, "users", user.id);
-        const currentImages = user.mealPlanImageURLs ?? [];
-        const updatedImages = currentImages.filter((url) => url !== imageUrl);
-        await updateDoc(userRef, {
-          mealPlanImageURLs: updatedImages,
-        });
-        setFeedback("Image deleted.");
-      } catch (error) {
-        console.error("Failed to delete image", error);
-        setFeedback("Failed to delete image.");
-      }
-    },
-    []
-  );
-
-  // All hooks must be called before any early returns
-  const selectedUser = useMemo(
-    () => users.find((user) => user.id === selectedUserId) ?? null,
-    [users, selectedUserId]
-  );
-
-  // Calculate referral statistics - must be called before early returns
-  const referralStats = useMemo(() => {
-    if (!Array.isArray(users) || users.length === 0) {
-      return {
-        totalReferrals: 0,
-        usersWithReferrals: 0,
-        usersReferred: 0,
-        totalReferralCodes: 0,
-      };
-    }
-    
+  // Delete file handler
+  const deleteFileForUser = useCallback(async (user: UserRecord, url: string, type: "mealPlan" | "images" | "grocery") => {
+    if (!confirm("Are you sure you want to delete?")) return;
     try {
-      const totalReferrals = users.reduce((sum, user) => {
-        const credits = typeof user.referralCredits === "number" ? user.referralCredits : 0;
-        return sum + credits;
-      }, 0);
-      
-      const usersWithReferrals = users.filter((user) => {
-        const credits = typeof user.referralCredits === "number" ? user.referralCredits : 0;
-        return credits > 0;
-      }).length;
-      
-      const usersReferred = users.filter((user) => {
-        return user.referredBy && typeof user.referredBy === "string" && user.referredBy.trim() !== "";
-      }).length;
-      
-      const totalReferralCodes = users.filter((user) => {
-        return user.referralCode && typeof user.referralCode === "string" && user.referralCode.trim() !== "";
-      }).length;
-      
-      return {
-        totalReferrals,
-        usersWithReferrals,
-        usersReferred,
-        totalReferralCodes,
-      };
-    } catch (error) {
-      console.error("Error calculating referral stats:", error);
-      return {
-        totalReferrals: 0,
-        usersWithReferrals: 0,
-        usersReferred: 0,
-        totalReferralCodes: 0,
-      };
+      const refPath = type === "images" ? url.split("/o/")[1].split("?")[0] : type === "mealPlan" ? `mealPlans/${user.id}/plan.pdf` : `mealPlans/${user.id}/grocery-list.pdf`;
+      await deleteObject(ref(storage, decodeURIComponent(refPath)));
+      const updateData: DocumentData = {};
+      if (type === "mealPlan") updateData.mealPlanFileURL = null;
+      else if (type === "images") updateData.mealPlanImageURLs = (user.mealPlanImageURLs ?? []).filter((u) => u !== url);
+      else updateData.groceryListURL = null;
+
+      await updateDoc(doc(db, "users", user.id), updateData);
+      setFeedback(`${type} deleted.`);
+    } catch (err) {
+      console.error("Deletion failed:", err);
+      setFeedback("Deletion failed.");
     }
-  }, [users]);
+  }, []);
 
+  const selectedUser = useMemo(() => users.find((u) => u.id === selectedUserId) ?? null, [users, selectedUserId]);
 
-  // Early returns must come AFTER all hooks
-  if (checkingAuth) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
-        <p className="text-xs uppercase tracking-[0.3em] text-foreground/60">
-          Validating access...
-        </p>
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return null;
-  }
+  if (checkingAuth) return <div className="flex min-h-screen items-center justify-center">Checking admin access...</div>;
+  if (!isAdmin) return null;
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
-      <motion.aside
-        initial={{ x: -40, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="hidden h-[calc(100vh-5rem)] w-64 flex-col border-r border-border/70 bg-muted/40 px-6 py-10 shadow-[0_0_80px_-40px_rgba(215,38,61,0.6)] backdrop-blur lg:fixed lg:left-0 lg:top-20 lg:flex"
-      >
-        <span className="font-bold uppercase tracking-[0.48em] text-foreground">
-          MacroMinded
-        </span>
-        <p className="mt-2 text-[0.65rem] font-medium uppercase tracking-[0.3em] text-foreground/60">
-          Admin navigation
-        </p>
-
-        <nav className="mt-10 flex-1 overflow-y-auto pr-1">
-          <div className="flex flex-col gap-3">
-            <Link
-              href="/admin"
-              className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
-                pathname === "/admin"
-                  ? "border-accent/60 bg-accent/20 text-accent"
-                  : "border-border/70 text-foreground/70 hover:border-accent hover:text-accent"
-              }`}
-            >
-              Users
-            </Link>
-            <Link
-              href="/admin/referrals"
-              className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
-                pathname === "/admin/referrals"
-                  ? "border-accent/60 bg-accent/20 text-accent"
-                  : "border-border/70 text-foreground/70 hover-border-accent hover:text-accent"
-              }`}
-            >
-              Referrals
-            </Link>
-        <Link
-          href="/admin/recipes"
-          className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
-            pathname === "/admin/recipes"
-              ? "border-accent/60 bg-accent/20 text-accent"
-              : "border-border/70 text-foreground/70 hover:border-accent hover:text-accent"
-          }`}
-        >
-          Recipes
-        </Link>
-            <Link
-              href="/admin/recipes"
-              className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
-                pathname === "/admin/recipes"
-                  ? "border-accent/60 bg-accent/20 text-accent"
-                  : "border-border/70 text-foreground/70 hover:border-accent hover:text-accent"
-              }`}
-            >
-              Recipes
-            </Link>
-            <Link
-              href="/admin/sales"
-              className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
-                pathname === "/admin/sales"
-                  ? "border-accent/60 bg-accent/20 text-accent"
-                  : "border-border/70 text-foreground/70 hover:border-accent hover:text-accent"
-              }`}
-            >
-              Sales / Revenue
-            </Link>
-            <Link
-              href="/admin/requests"
-              className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
-                pathname === "/admin/requests"
-                  ? "border-accent/60 bg-accent/20 text-accent"
-                  : "border-border/70 text-foreground/70 hover:border-accent hover:text-accent"
-              }`}
-            >
-              Plan Requests
-            </Link>
-        <Link
-          href="/admin/updates"
-          className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
-            pathname === "/admin/updates"
-              ? "border-accent/60 bg-accent/20 text-accent"
-              : "border-border/70 text-foreground/70 hover-border-accent hover:text-accent"
-          }`}
-        >
-          Plan Updates
-        </Link>
-          </div>
+      {/* Sidebar */}
+      <motion.aside className="hidden lg:flex flex-col w-64 p-6 bg-muted/40 border-r border-border/70">
+        <span className="font-bold uppercase">MacroMinded</span>
+        <nav className="mt-10 flex flex-col gap-3">
+          <Link href="/admin" className={`rounded-full border px-4 py-2 ${pathname === "/admin" ? "bg-accent/20" : ""}`}>Users</Link>
+          <Link href="/admin/referrals" className={`rounded-full border px-4 py-2 ${pathname === "/admin/referrals" ? "bg-accent/20" : ""}`}>Referrals</Link>
+          <Link href="/admin/recipes" className={`rounded-full border px-4 py-2 ${pathname === "/admin/recipes" ? "bg-accent/20" : ""}`}>Recipes</Link>
+          <Link href="/admin/sales" className={`rounded-full border px-4 py-2 ${pathname === "/admin/sales" ? "bg-accent/20" : ""}`}>Sales</Link>
+          <Link href="/admin/requests" className={`rounded-full border px-4 py-2 ${pathname === "/admin/requests" ? "bg-accent/20" : ""}`}>Plan Requests</Link>
         </nav>
       </motion.aside>
 
-      <div className="relative isolate flex-1 lg:ml-64">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.1 }}
-          className="pointer-events-none absolute inset-0"
-        >
-          <div className="absolute -top-36 left-1/2 h-[680px] w-[680px] -translate-x-1/2 rounded-full bg-accent/30 blur-3xl" />
-          <div className={`absolute inset-0 ${baseBackground}`} />
-        </motion.div>
+      {/* Main Content */}
+      <div className="flex-1 p-10 lg:ml-64">
+        <header className="flex justify-between items-center mb-8">
+          <h1 className="font-bold text-2xl">MacroMinded Admin</h1>
+          <button onClick={() => auth.signOut().then(() => router.replace("/login"))} className="px-4 py-2 border rounded-full bg-accent text-background">Logout</button>
+        </header>
 
-        <div className="relative flex flex-col gap-10 px-6 py-10 sm:py-16 lg:px-10">
-          <header className="flex flex-col gap-4 rounded-3xl border border-border/70 bg-muted/60 px-6 py-6 shadow-[0_0_70px_-35px_rgba(215,38,61,0.6)] backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="font-bold text-2xl uppercase tracking-[0.32em] text-foreground sm:text-3xl">
-                MacroMinded Admin
-              </h1>
-              <p className="mt-2 text-[0.7rem] font-medium uppercase tracking-[0.3em] text-foreground/60">
-                Control tower for athletes, sales, and fulfillment.
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={async () => {
-                  await auth.signOut();
-                  router.replace("/login");
-                }}
-                className="rounded-full border border-accent bg-accent px-4 py-2 text-[0.6rem] font-medium uppercase tracking-[0.3em] text-background transition hover:bg-transparent hover:text-accent"
-              >
-                Logout
-              </button>
-            </div>
-          </header>
+        {feedback && <div className="mb-4 text-accent">{feedback}</div>}
 
-          {feedback && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-3xl border border-accent/40 bg-muted/70 px-6 py-4 text-center text-xs font-semibold uppercase tracking-[0.28em] text-accent"
-            >
-              {feedback}
-            </motion.div>
-          )}
-
-          {/* Referral Statistics */}
-          {!loadingUsers && (
-            <motion.section
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4"
-            >
-            <div className="rounded-3xl border border-border/70 bg-muted/60 px-6 py-6 shadow-[0_0_50px_-30px_rgba(215,38,61,0.5)] backdrop-blur">
-              <h3 className="text-xs font-bold uppercase tracking-[0.34em] text-foreground">
-                Total Referrals
-              </h3>
-              <p className="mt-2 text-2xl font-bold uppercase tracking-[0.2em] text-foreground">
-                {referralStats.totalReferrals}
-              </p>
-              <p className="mt-1 text-[0.7rem] font-medium uppercase tracking-[0.28em] text-foreground/60">
-                Credits earned
-              </p>
-            </div>
-            <div className="rounded-3xl border border-border/70 bg-muted/60 px-6 py-6 shadow-[0_0_50px_-30px_rgba(215,38,61,0.5)] backdrop-blur">
-              <h3 className="text-xs font-bold uppercase tracking-[0.34em] text-foreground">
-                Active Referrers
-              </h3>
-              <p className="mt-2 text-2xl font-bold uppercase tracking-[0.2em] text-foreground">
-                {referralStats.usersWithReferrals}
-              </p>
-              <p className="mt-1 text-[0.7rem] font-medium uppercase tracking-[0.28em] text-foreground/60">
-                Users with credits
-              </p>
-            </div>
-            <div className="rounded-3xl border border-border/70 bg-muted/60 px-6 py-6 shadow-[0_0_50px_-30px_rgba(215,38,61,0.5)] backdrop-blur">
-              <h3 className="text-xs font-bold uppercase tracking-[0.34em] text-foreground">
-                Referred Users
-              </h3>
-              <p className="mt-2 text-2xl font-bold uppercase tracking-[0.2em] text-foreground">
-                {referralStats.usersReferred}
-              </p>
-              <p className="mt-1 text-[0.7rem] font-medium uppercase tracking-[0.28em] text-foreground/60">
-                Signed up via referral
-              </p>
-            </div>
-            <div className="rounded-3xl border border-border/70 bg-muted/60 px-6 py-6 shadow-[0_0_50px_-30px_rgba(215,38,61,0.5)] backdrop-blur">
-              <h3 className="text-xs font-bold uppercase tracking-[0.34em] text-foreground">
-                Referral Codes
-              </h3>
-              <p className="mt-2 text-2xl font-bold uppercase tracking-[0.2em] text-foreground">
-                {referralStats.totalReferralCodes}
-              </p>
-              <p className="mt-1 text-[0.7rem] font-medium uppercase tracking-[0.28em] text-foreground/60">
-                Codes generated
-              </p>
-            </div>
-          </motion.section>
-          )}
-
-          <section id="users" className="flex flex-col gap-8">
-            <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <h2 className="font-bold text-xl uppercase tracking-[0.32em] text-foreground">
-                Users
-              </h2>
-              <p className="text-[0.65rem] font-medium uppercase tracking-[0.3em] text-foreground/60">
-                {loadingUsers
-                  ? "Fetching user data..."
-                  : `${users.length} users loaded`}
-              </p>
-            </header>
-
-            <div className="overflow-hidden rounded-3xl border border-border/80 bg-muted/60 shadow-[0_0_90px_-45px_rgba(215,38,61,0.6)] backdrop-blur">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-border/60 text-left">
-                  <thead className="uppercase tracking-[0.3em] text-foreground/60 text-[0.6rem]">
-                    <tr className="text-foreground/60">
-                      <th className="px-5 py-4 font-medium">Name</th>
-                      <th className="px-5 py-4 font-medium">Email</th>
-                      <th className="px-5 py-4 font-medium">Package</th>
-                      <th className="px-5 py-4 font-medium">Status</th>
-                      <th className="px-5 py-4 font-medium">Meal Plan</th>
-                      <th className="px-5 py-4 font-medium">Referrals</th>
-                      <th className="px-5 py-4 font-medium">Actions</th>
+        {/* Users Table */}
+        <section>
+          <h2 className="font-bold uppercase mb-4">Users</h2>
+          <div className="overflow-x-auto rounded-xl border bg-muted/60">
+            <table className="min-w-full divide-y divide-border/60">
+              <thead className="text-xs uppercase tracking-wide text-foreground/60">
+                <tr>
+                  <th>Name</th><th>Email</th><th>Package</th><th>Status</th><th>Meal Plan</th><th>Referrals</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loadingUsers ? <tr><td colSpan={7}>Loading...</td></tr> :
+                  users.map((user) => (
+                    <tr key={user.id} className={selectedUserId === user.id ? "bg-background/20" : ""}>
+                      <td>{user.displayName ?? "—"}</td>
+                      <td>{user.email ?? "—"}</td>
+                      <td>{user.packageTier ?? "—"}</td>
+                      <td>{user.mealPlanStatus ?? "Not Started"}</td>
+                      <td>{user.mealPlanFileURL ? <a href={user.mealPlanFileURL} target="_blank" className="text-accent underline">View</a> : "Pending"}</td>
+                      <td>{user.referralCredits ?? 0}</td>
+                      <td><button onClick={() => setSelectedUserId(user.id)}>Manage</button></td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/70 text-[0.7rem] uppercase tracking-[0.24em] text-foreground/80">
-                    {loadingUsers ? (
-                      <tr>
-                        <td colSpan={7} className="px-5 py-6 text-center">
-                          Loading users...
-                        </td>
-                      </tr>
-                    ) : users.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="px-5 py-6 text-center">
-                          No users found.
-                        </td>
-                      </tr>
-                    ) : (
-                      users.map((userRecord) => (
-                        <tr
-                          key={userRecord.id}
-                          className={
-                            selectedUserId === userRecord.id
-                              ? "bg-background/30"
-                              : undefined
-                          }
-                        >
-                          <td className="px-5 py-4">
-                            {userRecord.displayName ?? "—"}
-                          </td>
-                          <td className="px-5 py-4">{userRecord.email ?? "—"}</td>
-                          <td className="px-5 py-4">
-                            {userRecord.packageTier ?? "—"}
-                          </td>
-                          <td className="px-5 py-4">
-                            {userRecord.mealPlanStatus ?? "Not Started"}
-                          </td>
-                          <td className="px-5 py-4">
-                            {userRecord.mealPlanFileURL ? (
-                              <a
-                                href={userRecord.mealPlanFileURL}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-accent underline"
-                              >
-                                View File
-                              </a>
-                            ) : (
-                              <span className="text-foreground/40">Pending</span>
-                            )}
-                          </td>
-                          <td className="px-5 py-4">
-                            <div className="flex flex-col gap-1">
-                              <span className="text-xs">
-                                Credits: <span className="font-semibold">{userRecord.referralCredits ?? 0}</span>
-                              </span>
-                              {userRecord.referralCode && (
-                                <span className="text-[0.65rem] text-foreground/60">
-                                  Code: {userRecord.referralCode}
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-5 py-4">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedUserId(userRecord.id)}
-                              className="rounded-full border border-border/70 px-4 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-foreground/70 transition hover:border-accent hover:text-accent"
-                            >
-                              Manage
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                  ))
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
 
-            {selectedUser && (
-              <UserDetailPanel
-                user={selectedUser}
-                onPdfInputChange={handlePdfInputChange(selectedUser)}
-                onImagesInputChange={handleImagesInputChange(selectedUser)}
-                onGroceryInputChange={handleGroceryInputChange(selectedUser)}
-                pdfStatus={pdfUploadStates[selectedUser.id]}
-                imageStatus={imageUploadStates[selectedUser.id]}
-                groceryStatus={groceryUploadStates[selectedUser.id]}
-                onDeleteMealPlan={() => deleteMealPlanFile(selectedUser)}
-                onDeleteGroceryList={() => deleteGroceryList(selectedUser)}
-                onDeleteImage={(imageUrl) => deleteImage(selectedUser, imageUrl)}
-              />
-            )}
-          </section>
-
-
-        </div>
+        {selectedUser && (
+          <UserDetailPanel
+            user={selectedUser}
+            uploadFile={uploadFileForUser}
+            deleteFile={deleteFileForUser}
+            uploadStates={uploadStates[selectedUser.id] ?? {}}
+          />
+        )}
       </div>
     </div>
   );
@@ -903,236 +255,56 @@ export default function AdminPage() {
 
 type UserDetailPanelProps = {
   user: UserRecord;
-  onPdfInputChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  onImagesInputChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  onGroceryInputChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  pdfStatus?: UploadStatus;
-  imageStatus?: UploadStatus;
-  groceryStatus?: UploadStatus;
-  onDeleteMealPlan: () => void;
-  onDeleteGroceryList: () => void;
-  onDeleteImage: (imageUrl: string) => void;
+  uploadFile: (user: UserRecord, file: File, type: "mealPlan" | "images" | "grocery") => void;
+  deleteFile: (user: UserRecord, url: string, type: "mealPlan" | "images" | "grocery") => void;
+  uploadStates: Record<string, UploadStatus>;
 };
 
-function UserDetailPanel({
-  user,
-  onPdfInputChange,
-  onImagesInputChange,
-  onGroceryInputChange,
-  pdfStatus,
-  imageStatus,
-  groceryStatus,
-  onDeleteMealPlan,
-  onDeleteGroceryList,
-  onDeleteImage,
-}: UserDetailPanelProps) {
-  const profileEntries = useMemo(() => {
-    if (!user.profile) return [];
-    return Object.entries(user.profile).filter(
-      ([, value]) => value && String(value).trim() !== ""
-    );
-  }, [user.profile]);
-
-  const mealPlanImages = user.mealPlanImageURLs ?? [];
-
-  const renderStatus = (status?: UploadStatus) => {
-    if (!status) return null;
-    if (status.status === "uploading") {
-      return `Uploading ${status.progress}%`;
-    }
-    if (status.status === "success") {
-      return "Upload complete";
-    }
-    if (status.status === "error") {
-      return status.errorMessage ?? "Upload failed";
-    }
-    return null;
+function UserDetailPanel({ user, uploadFile, deleteFile, uploadStates }: UserDetailPanelProps) {
+  const handleInputChange = (type: "mealPlan" | "images" | "grocery") => (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    Array.from(files).forEach((file) => uploadFile(user, file, type));
+    event.target.value = "";
   };
 
+  const profileEntries = useMemo(() => Object.entries(user.profile ?? {}), [user.profile]);
+
   return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      className="relative overflow-hidden rounded-3xl border border-border/70 bg-muted/60 px-6 py-8 shadow-[0_0_90px_-45px_rgba(215,38,61,0.6)] backdrop-blur"
-    >
-      <div className="pointer-events-none absolute inset-x-0 -top-24 h-32 bg-gradient-to-b from-background/20 via-background/5 to-transparent blur-3xl" />
-      <div className="relative flex flex-col gap-8">
-        <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-left">
-            <h3 className="font-bold uppercase tracking-[0.32em] text-foreground">
-              {user.displayName ?? user.email ?? "Selected User"}
-            </h3>
-            <p className="text-[0.7rem] font-medium uppercase tracking-[0.3em] text-foreground/60">
-              {user.email ?? "No email"} · Tier: {user.packageTier ?? "Not assigned"}
-            </p>
-          </div>
-          <div className="rounded-full border border-border/70 px-4 py-2 text-[0.6rem] font-medium uppercase tracking-[0.3em] text-foreground/70">
-            Status: {user.mealPlanStatus ?? "Not Started"}
-          </div>
-        </header>
-
-        {profileEntries.length > 0 && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {profileEntries.map(([key, value]) => (
-              <motion.div
-                key={key}
-                whileHover={{ scale: 1.02 }}
-                className="flex flex-col gap-1 rounded-2xl border border-border/60 bg-background/20 px-4 py-4 text-left text-[0.65rem] font-medium uppercase tracking-[0.28em] text-foreground/70"
-              >
-                <span className="text-foreground/50">
-                  {key.replace(/([A-Z])/g, " $1").toUpperCase()}
-                </span>
-                <span className="text-xs font-bold tracking-[0.2em] text-foreground">
-                  {String(value)}
-                </span>
-              </motion.div>
-            ))}
-          </div>
-        )}
-
-        <div className="grid gap-6 lg:grid-cols-2">
-          <CardUpload
-            title="Upload Meal Plan PDF"
-            description="Required — replaces existing file."
-            onChange={onPdfInputChange}
-            accept="application/pdf"
-            status={renderStatus(pdfStatus)}
-            currentUrl={user.mealPlanFileURL}
-            ctaLabel="Select PDF"
-            onDelete={user.mealPlanFileURL ? onDeleteMealPlan : undefined}
-          />
-          <CardUpload
-            title="Upload Supporting Images"
-            description="Optional — upload lifestyle shots or plan breakdown visuals."
-            onChange={onImagesInputChange}
-            accept="image/*"
-            multiple
-            status={renderStatus(imageStatus)}
-            ctaLabel="Select Images"
-          />
-          <CardUpload
-            title="Upload Grocery List"
-            description="Optional grocery list PDF for the client."
-            onChange={onGroceryInputChange}
-            accept="application/pdf"
-            status={renderStatus(groceryStatus)}
-            currentUrl={user.groceryListURL}
-            ctaLabel="Select PDF"
-            onDelete={user.groceryListURL ? onDeleteGroceryList : undefined}
-          />
-        </div>
-
-        {mealPlanImages.length > 0 && (
-          <div className="flex flex-col gap-4">
-            <h4 className="font-bold uppercase tracking-[0.32em] text-foreground">
-              Meal Plan Gallery
-            </h4>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {mealPlanImages.map((url) => (
-                <motion.div
-                  key={url}
-                  whileHover={{ scale: 1.02 }}
-                  className="group relative overflow-hidden rounded-2xl border border-border/70"
-                >
-                  <a
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block"
-                  >
-                    <img
-                      src={url}
-                      alt="Meal plan supporting"
-                      className="h-32 w-full object-cover transition group-hover:scale-105"
-                    />
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => onDeleteImage(url)}
-                    className="absolute right-2 top-2 rounded-full border border-red-500/70 bg-red-500/20 px-2 py-1 text-xs font-bold uppercase tracking-[0.2em] text-red-500/70 transition hover:border-red-500 hover:bg-red-500/40 hover:text-red-500"
-                    title="Delete image"
-                  >
-                    ×
-                  </button>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        )}
+    <section className="mt-8 p-6 border rounded-xl bg-muted/50">
+      <h3 className="font-bold mb-4">{user.displayName ?? user.email}</h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        {profileEntries.map(([key, value]) => (
+          <div key={key} className="p-2 border rounded">{key}: {value}</div>
+        ))}
       </div>
-    </motion.div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <UploadCard type="mealPlan" label="Meal Plan PDF" currentUrl={user.mealPlanFileURL} uploadStates={uploadStates} handleChange={handleInputChange} handleDelete={deleteFile} />
+        <UploadCard type="images" label="Images" currentUrl={null} uploadStates={uploadStates} handleChange={handleInputChange} handleDelete={deleteFile} />
+        <UploadCard type="grocery" label="Grocery List" currentUrl={user.groceryListURL} uploadStates={uploadStates} handleChange={handleInputChange} handleDelete={deleteFile} />
+      </div>
+    </section>
   );
 }
 
-function CardUpload({
-  title,
-  description,
-  accept,
-  onChange,
-  multiple,
-  status,
-  currentUrl,
-  ctaLabel,
-  onDelete,
-}: {
-  title: string;
-  description: string;
-  accept: string;
-  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  multiple?: boolean;
-  status?: string | null;
-  currentUrl?: string | null;
-  ctaLabel: string;
-  onDelete?: () => void;
-}) {
+type UploadCardProps = {
+  type: "mealPlan" | "images" | "grocery";
+  label: string;
+  currentUrl: string | null;
+  uploadStates: Record<string, UploadStatus>;
+  handleChange: (type: "mealPlan" | "images" | "grocery") => (e: ChangeEvent<HTMLInputElement>) => void;
+  handleDelete: (user: UserRecord, url: string, type: "mealPlan" | "images" | "grocery") => void;
+};
+
+function UploadCard({ type, label, currentUrl, uploadStates, handleChange, handleDelete }: UploadCardProps) {
+  const status = uploadStates[type];
   return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-background/20 px-5 py-5 text-left"
-    >
-      <h4 className="font-bold uppercase tracking-[0.32em] text-foreground">
-        {title}
-      </h4>
-      <p className="text-[0.65rem] font-medium uppercase tracking-[0.3em] text-foreground/60">
-        {description}
-      </p>
-      <label className="inline-flex cursor-pointer items-center justify-center rounded-full border border-border/70 px-4 py-2 text-[0.6rem] font-medium uppercase tracking-[0.3em] text-foreground/70 transition hover:border-accent hover:text-accent">
-        {ctaLabel}
-        <input
-          type="file"
-          accept={accept}
-          multiple={multiple}
-          onChange={onChange}
-          className="hidden"
-        />
-      </label>
-      {status && (
-        <span className="text-[0.6rem] font-medium uppercase tracking-[0.28em] text-foreground/60">
-          {status}
-        </span>
-      )}
-      {currentUrl && (
-        <div className="flex items-center gap-2">
-          <a
-            href={currentUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[0.65rem] font-medium uppercase tracking-[0.3em] text-accent underline"
-          >
-            View current file
-          </a>
-          {onDelete && (
-            <button
-              type="button"
-              onClick={onDelete}
-              className="rounded-full border border-red-500/70 px-2 py-1 text-[0.6rem] font-bold uppercase tracking-[0.2em] text-red-500/70 transition hover:border-red-500 hover:bg-red-500/10 hover:text-red-500"
-              title="Delete file"
-            >
-              ×
-            </button>
-          )}
-        </div>
-      )}
-    </motion.div>
+    <div className="p-4 border rounded flex flex-col gap-2">
+      <h4>{label}</h4>
+      <input type="file" onChange={handleChange(type)} multiple={type === "images"} />
+      {status && <span>{status.status === "uploading" ? `Uploading ${status.progress}%` : status.status === "success" ? "Uploaded" : status.errorMessage}</span>}
+      {currentUrl && <div><a href={currentUrl} target="_blank">View</a>{type !== "images" && <button onClick={() => handleDelete({} as any, currentUrl, type)}>Delete</button>}</div>}
+    </div>
   );
 }
-
