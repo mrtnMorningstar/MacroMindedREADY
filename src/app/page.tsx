@@ -32,78 +32,26 @@ const cardVariants: Variants = {
   }),
 };
 
-const audienceTargets = [
-  "Beginners",
-  "Busy Professionals",
-  "Gym-Goers",
-  "Athletes",
-  "Anyone Tired of AI Plans",
-];
-
-const workflowSteps = [
+const features = [
   {
-    title: "1. Choose a Package",
-    text: "Select Basic, Pro, or Elite depending on how fast you want your plan delivered.",
+    title: "Custom Meal Plans",
+    description: "Tailored to your goals, body, and lifestyle by real human experts.",
+    icon: "📋",
   },
   {
-    title: "2. Tell Us About You",
-    text: "Share stats, preferences, allergies, goals, and schedule so your plan fits your life.",
+    title: "Recipe Library",
+    description: "Access to hundreds of recipes designed to fit your macros.",
+    icon: "🍽️",
   },
   {
-    title: "3. Get Your Plan",
-    text: "A real human expert designs your meal plan and delivers it to your dashboard + email.",
-  },
-];
-
-const deliverables = [
-  "Daily macro targets",
-  "Full custom meal plan",
-  "Ingredient lists",
-  "Calorie breakdowns",
-  "Preparation steps",
-  "Access to Recipe Library",
-  "Private dashboard access",
-];
-
-const packages = [
-  {
-    title: "Basic",
-    description: "Perfect for beginners wanting a budget-friendly custom plan.",
-    bullets: [
-      "Delivery: 5 business days",
-      "Full customized meal plan",
-      "Dashboard access",
-      "Recipe Library access",
-    ],
-    cta: "Choose Basic",
-    href: "/packages#basic",
-    highlight: false,
+    title: "Dashboard Access",
+    description: "Track your progress and manage your nutrition plan in one place.",
+    icon: "📊",
   },
   {
-    title: "Pro",
-    description: "Faster delivery, more personalization, and priority support.",
-    bullets: [
-      "Delivery: 3 business days",
-      "Priority in queue",
-      "Dashboard access",
-      "Recipe Library access",
-    ],
-    cta: "Choose Pro",
-    href: "/packages#pro",
-    highlight: true,
-  },
-  {
-    title: "Elite",
-    description: "The best option for people who want results ASAP.",
-    bullets: [
-      "Delivery: 1 business day",
-      "Priority support",
-      "All Pro features",
-      "Fastest response times",
-    ],
-    cta: "Choose Elite",
-    href: "/packages#elite",
-    highlight: false,
+    title: "Expert Support",
+    description: "Get personalized guidance from certified nutrition coaches.",
+    icon: "💬",
   },
 ];
 
@@ -127,13 +75,13 @@ export default function Home() {
       </motion.div>
 
       {/* HERO */}
-      <section className="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-6xl flex-col items-center justify-center px-6 py-24 text-center text-white">
+      <section className="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-6xl flex-col items-center justify-center px-6 py-24 text-center">
         <motion.h1
           initial="hidden"
           animate="visible"
           custom={0.2}
           variants={heroTextVariants}
-          className="text-4xl font-bold uppercase tracking-[0.2em] sm:text-6xl"
+          className="text-4xl font-bold uppercase tracking-[0.2em] text-foreground sm:text-6xl"
         >
           Your Body. Your Goals. Your Custom Meal Plan.
         </motion.h1>
@@ -169,168 +117,85 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* WHO THIS IS FOR */}
-      <section className="px-6 py-16 text-center text-white">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.3 }}
-          variants={heroTextVariants}
-          className="mx-auto max-w-4xl"
-        >
-          <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl">
-            Built for Anyone Who Wants Results
-          </h2>
-          <p className="mt-4 text-sm uppercase tracking-[0.32em] text-foreground/60">
-            Whether you&apos;re trying to lose fat, build muscle, or maintain your physique —
-            your plan is tailored to your reality.
-          </p>
-        </motion.div>
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.3 }}
-          variants={heroTextVariants}
-          custom={0.2}
-          className="mx-auto mt-10 grid max-w-5xl grid-cols-2 gap-4 text-sm uppercase tracking-[0.2em] text-foreground/70 sm:grid-cols-5"
-        >
-          {audienceTargets.map((item, index) => (
-            <motion.div
-              key={item}
-              custom={index}
-              variants={cardVariants}
-              className="rounded-2xl border border-border/60 bg-muted/40 px-4 py-4 text-sm font-semibold"
-            >
-              {item}
-            </motion.div>
-          ))}
-        </motion.div>
-      </section>
-
-      {/* HOW IT WORKS */}
-      <section className="px-6 py-20">
-        <div className="mx-auto max-w-4xl text-center text-white">
-          <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl">
-            How It Works
-          </h2>
-        </div>
-        <div className="mx-auto mt-12 grid gap-8 md:grid-cols-3">
-          {workflowSteps.map((step, index) => (
-            <motion.div
-              key={step.title}
-              className="rounded-3xl border border-border/70 bg-muted/50 px-6 py-8 text-left shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] backdrop-blur"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.3 }}
-              variants={cardVariants}
-              custom={index}
-              whileHover={{ scale: 1.03 }}
-            >
-              <h3 className="text-xl font-semibold uppercase tracking-[0.2em]">
-                {step.title}
-              </h3>
-              <p className="mt-3 text-sm uppercase tracking-[0.28em] text-foreground/60">
-                {step.text}
-              </p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* WHAT YOU GET */}
-      <section className="px-6 py-16 text-white">
-        <div className="mx-auto max-w-3xl text-center">
-          <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl">
-            What You Get
-          </h2>
-        </div>
-        <div className="mx-auto mt-10 grid gap-6 md:grid-cols-2">
-          {deliverables.map((item, index) => (
-            <motion.div
-              key={item}
-              className="rounded-2xl border border-border/70 bg-muted/40 px-6 py-5 text-left text-sm uppercase tracking-[0.25em] text-foreground/70"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.3 }}
-              variants={cardVariants}
-              custom={index}
-            >
-              • {item}
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* PACKAGES */}
-      <section className="px-6 py-20 text-white">
-        <div className="mx-auto max-w-3xl text-center">
-          <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl">
-            Packages
-          </h2>
-        </div>
-        <div className="mx-auto mt-12 grid gap-8 md:grid-cols-3">
-          {packages.map((pkg, index) => (
-            <motion.div
-              key={pkg.title}
-              className={`rounded-3xl border px-6 py-8 shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] backdrop-blur ${
-                pkg.highlight
-                  ? "border-accent bg-accent/10"
-                  : "border-border/70 bg-muted/50"
-              }`}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.3 }}
-              variants={cardVariants}
-              custom={index}
-              whileHover={{ scale: 1.03 }}
-            >
-              <h3
-                className={`text-3xl font-bold uppercase tracking-[0.2em] ${
-                  pkg.highlight ? "text-accent" : "text-foreground"
-                }`}
+      {/* FEATURE CARDS */}
+      <section className="relative px-6 py-20">
+        <div className="mx-auto max-w-6xl">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={heroTextVariants}
+            className="mb-12 text-center"
+          >
+            <h2 className="text-3xl font-bold uppercase tracking-[0.2em] text-foreground sm:text-4xl">
+              Everything You Need
+            </h2>
+            <p className="mt-4 text-sm uppercase tracking-[0.32em] text-foreground/60">
+              A complete nutrition solution built around your unique needs
+            </p>
+          </motion.div>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {features.map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.3 }}
+                variants={cardVariants}
+                custom={index}
+                whileHover={{ scale: 1.03, y: -4 }}
+                className="rounded-3xl border border-border/70 bg-muted/50 px-6 py-8 text-left shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] backdrop-blur"
               >
-                {pkg.title}
-              </h3>
-              <p className="mt-3 text-sm uppercase tracking-[0.3em] text-foreground/60">
-                {pkg.description}
-              </p>
-              <ul className="mt-6 space-y-2 text-sm uppercase tracking-[0.28em] text-foreground/70">
-                {pkg.bullets.map((bullet) => (
-                  <li key={bullet}>• {bullet}</li>
-                ))}
-              </ul>
-              <Link
-                href={pkg.href}
-                className={`mt-8 inline-flex w-full items-center justify-center rounded-full px-6 py-3 text-xs font-semibold uppercase tracking-[0.32em] transition ${
-                  pkg.highlight
-                    ? "border border-accent bg-accent text-background hover:bg-transparent hover:text-accent"
-                    : "border border-border/70 text-foreground hover:border-accent hover:text-accent"
-                }`}
-              >
-                {pkg.cta}
-              </Link>
-            </motion.div>
-          ))}
+                <div className="mb-4 text-4xl">{feature.icon}</div>
+                <h3 className="text-xl font-semibold uppercase tracking-[0.2em] text-foreground">
+                  {feature.title}
+                </h3>
+                <p className="mt-3 text-sm uppercase tracking-[0.28em] text-foreground/60">
+                  {feature.description}
+                </p>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* FINAL CTA */}
-      <section className="px-6 py-20 text-center text-white">
+      <section className="relative px-6 py-20 text-center">
         <div className="mx-auto max-w-3xl">
-          <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl">
+          <motion.h2
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={heroTextVariants}
+            className="text-3xl font-bold uppercase tracking-[0.2em] text-foreground sm:text-4xl"
+          >
             Ready to Transform Your Nutrition?
-          </h2>
-          <p className="mt-4 text-sm uppercase tracking-[0.3em] text-foreground/60">
+          </motion.h2>
+          <motion.p
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={heroTextVariants}
+            custom={0.1}
+            className="mt-4 text-sm uppercase tracking-[0.3em] text-foreground/60"
+          >
             Start your transformation with a meal plan built for your life — not downloaded from a template.
-          </p>
-          <div className="mt-10 flex justify-center">
+          </motion.p>
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={heroTextVariants}
+            custom={0.2}
+            className="mt-10 flex justify-center"
+          >
             <Link
               href="/packages"
               className="rounded-full bg-accent px-10 py-4 text-sm font-semibold uppercase tracking-[0.32em] text-background transition hover:bg-transparent hover:text-accent"
             >
               Get Started
             </Link>
-          </div>
+          </motion.div>
         </div>
       </section>
     </div>
