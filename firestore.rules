@@ -142,6 +142,7 @@ service cloud.firestore {
     // Purchases collection rules
     match /purchases/{purchaseId} {
       // Helper function: Check if purchase belongs to the user
+      // Works for both single document reads and queries
       function isPurchaseOwner() {
         return isSignedIn() 
           && resource.data.userId == request.auth.uid;
@@ -184,6 +185,9 @@ service cloud.firestore {
       }
 
       // Read: Users can only read their own purchases, admins can read all
+      // For queries with where("userId", "==", request.auth.uid), Firestore evaluates
+      // this rule against each document. Since all returned documents have
+      // resource.data.userId == request.auth.uid, isPurchaseOwner() will be true.
       allow read: if isSignedIn() && (isPurchaseOwner() || isAdmin());
 
       // Create: Users can only create purchases with their own userId, admins can create any
