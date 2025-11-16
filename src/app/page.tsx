@@ -55,6 +55,82 @@ const features = [
   },
 ];
 
+const workflowSteps = [
+  {
+    title: "1. Choose a Package",
+    description: "Select Basic, Pro, or Elite depending on how fast you want your plan delivered.",
+  },
+  {
+    title: "2. Tell Us About You",
+    description: "Share stats, preferences, allergies, goals, and schedule so your plan fits your life.",
+  },
+  {
+    title: "3. Get Your Plan",
+    description: "A real human expert designs your meal plan and delivers it to your dashboard + email.",
+  },
+];
+
+const deliverables = [
+  "Daily macro targets (calories, protein, carbs, fats)",
+  "Full custom meal plan with breakfast, lunch, dinner, and snacks",
+  "Detailed ingredient lists for every meal",
+  "Calorie and macro breakdowns per meal",
+  "Step-by-step preparation instructions",
+  "Access to our Recipe Library with hundreds of recipes",
+  "Private dashboard access to view and manage your plan",
+  "Email delivery of your complete meal plan",
+  "Ability to request plan updates and modifications",
+  "Progress tracking tools and reminders",
+];
+
+const dashboardFeatures = [
+  {
+    title: "Meal Plan Overview",
+    description: "View your complete custom meal plan with all meals, macros, and ingredients.",
+  },
+  {
+    title: "Progress Tracking",
+    description: "Track your nutrition goals and see your progress over time.",
+  },
+  {
+    title: "Recipe Library",
+    description: "Browse and search hundreds of recipes that fit your macro targets.",
+  },
+  {
+    title: "Profile Management",
+    description: "Update your stats, goals, and preferences anytime.",
+  },
+  {
+    title: "Plan Updates",
+    description: "Request modifications to your meal plan as your goals evolve.",
+  },
+  {
+    title: "Referral Program",
+    description: "Earn rewards by referring friends to MacroMinded.",
+  },
+];
+
+const packages = [
+  {
+    title: "Basic",
+    description: "Perfect for beginners wanting a budget-friendly custom plan.",
+    delivery: "5 business days",
+    highlight: false,
+  },
+  {
+    title: "Pro",
+    description: "Faster delivery, more personalization, and priority support.",
+    delivery: "3 business days",
+    highlight: true,
+  },
+  {
+    title: "Elite",
+    description: "The best option for people who want results ASAP.",
+    delivery: "1 business day",
+    highlight: false,
+  },
+];
+
 export default function Home() {
   return (
     <div className="relative isolate overflow-hidden bg-background">
@@ -121,7 +197,7 @@ export default function Home() {
       <section className="relative px-6 py-20">
         <div className="mx-auto max-w-6xl">
           <motion.div
-            initial="hidden"
+          initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.3 }}
             variants={heroTextVariants}
@@ -135,7 +211,7 @@ export default function Home() {
             </p>
           </motion.div>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {features.map((feature, index) => (
+          {features.map((feature, index) => (
               <motion.div
                 key={feature.title}
                 initial="hidden"
@@ -153,6 +229,185 @@ export default function Home() {
                 <p className="mt-3 text-sm uppercase tracking-[0.28em] text-foreground/60">
                   {feature.description}
                 </p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* HOW IT WORKS */}
+      <section className="relative px-6 py-20">
+        <div className="mx-auto max-w-4xl">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={heroTextVariants}
+            className="mb-12 text-center"
+          >
+            <h2 className="text-3xl font-bold uppercase tracking-[0.2em] text-foreground sm:text-4xl">
+              How It Works
+            </h2>
+            <p className="mt-4 text-sm uppercase tracking-[0.32em] text-foreground/60">
+              Three simple steps to your custom meal plan
+            </p>
+          </motion.div>
+          <div className="grid gap-8 md:grid-cols-3">
+            {workflowSteps.map((step, index) => (
+              <motion.div
+                key={step.title}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.3 }}
+                variants={cardVariants}
+                custom={index}
+                whileHover={{ scale: 1.03 }}
+                className="rounded-3xl border border-border/70 bg-muted/50 px-6 py-8 text-left shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] backdrop-blur"
+              >
+                <h3 className="text-xl font-semibold uppercase tracking-[0.2em] text-foreground">
+                  {step.title}
+                </h3>
+                <p className="mt-3 text-sm uppercase tracking-[0.28em] text-foreground/60">
+                  {step.description}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* WHAT YOU GET */}
+      <section className="relative px-6 py-20">
+        <div className="mx-auto max-w-4xl">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={heroTextVariants}
+            className="mb-12 text-center"
+          >
+            <h2 className="text-3xl font-bold uppercase tracking-[0.2em] text-foreground sm:text-4xl">
+              What You Get
+            </h2>
+            <p className="mt-4 text-sm uppercase tracking-[0.32em] text-foreground/60">
+              Everything included in your custom meal plan
+            </p>
+          </motion.div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {deliverables.map((item, index) => (
+              <motion.div
+                key={item}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.3 }}
+                variants={cardVariants}
+                custom={index}
+                className="rounded-2xl border border-border/70 bg-muted/40 px-6 py-5 text-left text-sm uppercase tracking-[0.25em] text-foreground/70"
+              >
+                • {item}
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* DASHBOARD FEATURES */}
+      <section className="relative px-6 py-20">
+        <div className="mx-auto max-w-6xl">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={heroTextVariants}
+            className="mb-12 text-center"
+          >
+            <h2 className="text-3xl font-bold uppercase tracking-[0.2em] text-foreground sm:text-4xl">
+              Your Dashboard
+            </h2>
+            <p className="mt-4 text-sm uppercase tracking-[0.32em] text-foreground/60">
+              Powerful tools to manage your nutrition journey
+            </p>
+          </motion.div>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {dashboardFeatures.map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.3 }}
+                variants={cardVariants}
+                custom={index}
+                whileHover={{ scale: 1.02 }}
+                className="rounded-3xl border border-border/70 bg-muted/50 px-6 py-6 text-left shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] backdrop-blur"
+              >
+                <h3 className="text-lg font-semibold uppercase tracking-[0.2em] text-foreground">
+                  {feature.title}
+                </h3>
+                <p className="mt-2 text-sm uppercase tracking-[0.28em] text-foreground/60">
+                  {feature.description}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* PACKAGES */}
+      <section className="relative px-6 py-20">
+        <div className="mx-auto max-w-5xl">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={heroTextVariants}
+            className="mb-12 text-center"
+          >
+            <h2 className="text-3xl font-bold uppercase tracking-[0.2em] text-foreground sm:text-4xl">
+              Choose Your Package
+            </h2>
+            <p className="mt-4 text-sm uppercase tracking-[0.32em] text-foreground/60">
+              Select the delivery speed that works for you
+            </p>
+          </motion.div>
+          <div className="grid gap-8 md:grid-cols-3">
+            {packages.map((pkg, index) => (
+              <motion.div
+                key={pkg.title}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.3 }}
+                variants={cardVariants}
+              custom={index}
+                whileHover={{ scale: 1.03 }}
+                className={`rounded-3xl border px-6 py-8 shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] backdrop-blur ${
+                  pkg.highlight
+                    ? "border-accent bg-accent/10"
+                    : "border-border/70 bg-muted/50"
+                }`}
+              >
+                <h3
+                  className={`text-3xl font-bold uppercase tracking-[0.2em] ${
+                    pkg.highlight ? "text-accent" : "text-foreground"
+                  }`}
+                >
+                  {pkg.title}
+                </h3>
+                <p className="mt-3 text-sm font-semibold uppercase tracking-[0.3em] text-foreground/80">
+                  {pkg.delivery}
+                </p>
+                <p className="mt-3 text-sm uppercase tracking-[0.3em] text-foreground/60">
+                  {pkg.description}
+                </p>
+                <Link
+                  href="/packages"
+                  className={`mt-8 inline-flex w-full items-center justify-center rounded-full px-6 py-3 text-xs font-semibold uppercase tracking-[0.32em] transition ${
+                    pkg.highlight
+                      ? "border border-accent bg-accent text-background hover:bg-transparent hover:text-accent"
+                      : "border border-border/70 text-foreground hover:border-accent hover:text-accent"
+                  }`}
+                >
+                  View Details
+                </Link>
               </motion.div>
             ))}
           </div>
@@ -181,7 +436,7 @@ export default function Home() {
           >
             Start your transformation with a meal plan built for your life — not downloaded from a template.
           </motion.p>
-          <motion.div
+        <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.3 }}
@@ -195,7 +450,7 @@ export default function Home() {
             >
               Get Started
             </Link>
-          </motion.div>
+        </motion.div>
         </div>
       </section>
     </div>
