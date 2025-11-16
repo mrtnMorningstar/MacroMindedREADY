@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { useMemo, useState, useEffect } from "react";
+import { addDoc, collection, serverTimestamp, query, where, getDocs } from "firebase/firestore";
+import type { Timestamp } from "firebase/firestore";
 
 import {
   DashboardMetrics,
@@ -14,6 +15,9 @@ import {
   SkeletonGrid,
   StatusOverview,
   useDeliveryMeta,
+  CustomerJourneyTimeline,
+  MealPlanStatusCard,
+  MacroSummaryPreview,
 } from "@/components/dashboard/client-components";
 import { useDashboard } from "@/context/dashboard-context";
 import { db } from "@/lib/firebase";
@@ -39,6 +43,57 @@ export default function DashboardOverviewPage() {
   const [requestSubmitting, setRequestSubmitting] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [hasUpdateRequest, setHasUpdateRequest] = useState(false);
+
+  // Helper to parse Firestore timestamps to Date
+  const parseFirestoreDate = (
+    date?: Timestamp | { seconds: number; nanoseconds: number } | Date | null
+  ): Date | null => {
+    if (!date) return null;
+    if (date instanceof Date) return date;
+    if (typeof (date as Timestamp).toDate === "function") {
+      return (date as Timestamp).toDate();
+    }
+    if (typeof (date as { seconds: number }).seconds === "number") {
+      const value = date as { seconds: number; nanoseconds: number };
+      return new Date(value.seconds * 1000 + Math.floor(value.nanoseconds / 1_000_000));
+    }
+    return null;
+  };
+
+  const accountCreatedAt = useMemo(() => {
+    if (user?.metadata?.creationTime) {
+      return new Date(user.metadata.creationTime);
+    }
+    return parseFirestoreDate(data?.createdAt);
+  }, [user, data?.createdAt]);
+
+  const purchaseDate = useMemo(() => parseFirestoreDate(data?.purchaseDate), [data?.purchaseDate]);
+  const mealPlanDeliveredAt = useMemo(
+    () => parseFirestoreDate(data?.mealPlanDeliveredAt),
+    [data?.mealPlanDeliveredAt]
+  );
+
+  // Check for update requests
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    const checkUpdateRequests = async () => {
+      try {
+        const q = query(
+          collection(db, "planUpdateRequests"),
+          where("userId", "==", user.uid),
+          where("handled", "==", false)
+        );
+        const snapshot = await getDocs(q);
+        setHasUpdateRequest(!snapshot.empty);
+      } catch (error) {
+        console.error("Failed to check update requests:", error);
+      }
+    };
+
+    checkUpdateRequests();
+  }, [user?.uid]);
 
   if (loading) {
     return (
@@ -122,15 +177,33 @@ export default function DashboardOverviewPage() {
       />
 
       <section className="grid gap-6">
-        <StatusOverview status={status} packageTier={data?.packageTier} />
+        {/* Premium Timeline */}
+        <CustomerJourneyTimeline
+          accountCreatedAt={accountCreatedAt}
+          purchaseDate={purchaseDate}
+          mealPlanStatus={status}
+          mealPlanDeliveredAt={mealPlanDeliveredAt}
+          hasUpdateRequest={hasUpdateRequest}
+        />
 
-            <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+        {/* Meal Plan Status Card */}
+        <MealPlanStatusCard
+          status={status}
+          fileUrl={data?.mealPlanFileURL}
+          mealPlanDeliveredAt={mealPlanDeliveredAt}
+          purchaseDate={purchaseDate}
+        />
+
+        {/* Macro Summary Preview */}
+        <MacroSummaryPreview goal={goal} profile={data?.profile ?? null} />
+
+        <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
           <div className="flex flex-col gap-6">
-              <MealPlanSection
+            <MealPlanSection
               status={status}
               fileUrl={data?.mealPlanFileURL}
               imageUrls={data?.mealPlanImageURLs}
-                daysSinceDelivery={daysSinceDelivery}
+              daysSinceDelivery={daysSinceDelivery}
               groceryListUrl={data?.groceryListURL}
             />
 

@@ -32,5 +32,15 @@ export type UserDashboardData = {
   groceryListURL?: string | null;
   referralCode?: string | null;
   referralCredits?: number | null;
+  purchaseDate?:
+    | Timestamp
+    | { seconds: number; nanoseconds: number }
+    | Date
+    | null;
+  createdAt?:
+    | Timestamp
+    | { seconds: number; nanoseconds: number }
+    | Date
+    | null;
 };
 
