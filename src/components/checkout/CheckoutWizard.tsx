@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 
@@ -55,6 +55,14 @@ export default function CheckoutWizard({
 
   const [errors, setErrors] = useState<Partial<Record<keyof WizardFormData, string>>>({});
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, []);
+
   const updateField = useCallback((field: keyof WizardFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
@@ -104,23 +112,25 @@ export default function CheckoutWizard({
   const progress = (currentStep / steps.length) * 100;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 py-6 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 py-6 backdrop-blur-sm overflow-y-auto">
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="relative w-full max-w-2xl rounded-3xl border border-border/70 bg-background px-8 py-10 shadow-[0_0_80px_-30px_rgba(215,38,61,0.7)]"
+        className="relative w-full max-w-2xl my-auto rounded-3xl border border-border/70 bg-background shadow-[0_0_80px_-30px_rgba(215,38,61,0.7)] flex flex-col max-h-[90vh]"
       >
-        {/* Close Button */}
-        <button
-          onClick={onCancel}
-          className="absolute right-4 top-4 text-foreground/40 transition hover:text-foreground"
-        >
-          <span className="text-2xl">×</span>
-        </button>
+        {/* Header - Fixed */}
+        <div className="flex-shrink-0 px-8 pt-10 pb-6">
+          {/* Close Button */}
+          <button
+            onClick={onCancel}
+            className="absolute right-4 top-4 text-foreground/40 transition hover:text-foreground z-10"
+          >
+            <span className="text-2xl">×</span>
+          </button>
 
-        {/* Progress Bar */}
-        <div className="mb-8">
+          {/* Progress Bar */}
+          <div className="mb-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-2xl font-bold uppercase tracking-[0.32em] text-foreground">
               {steps[currentStep - 1].label}
@@ -137,10 +147,10 @@ export default function CheckoutWizard({
               className="h-full bg-gradient-to-r from-accent/60 to-accent"
             />
           </div>
-        </div>
+          </div>
 
-        {/* Step Indicators */}
-        <div className="mb-8 flex items-center justify-between">
+          {/* Step Indicators */}
+          <div className="mb-6 flex items-center justify-between">
           {steps.map((step, index) => {
             const isActive = currentStep === step.id;
             const isCompleted = currentStep > step.id;
@@ -176,10 +186,12 @@ export default function CheckoutWizard({
               </div>
             );
           })}
+          </div>
         </div>
 
-        {/* Step Content */}
-        <div className="min-h-[400px]">
+        {/* Step Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto px-8">
+          <div className="min-h-[400px] pb-4">
           <AnimatePresence mode="wait">
             {currentStep === 1 && (
               <motion.div
@@ -468,10 +480,11 @@ export default function CheckoutWizard({
               </motion.div>
             )}
           </AnimatePresence>
+          </div>
         </div>
 
-        {/* Navigation Buttons */}
-        <div className="mt-8 flex items-center justify-between gap-4">
+        {/* Navigation Buttons - Fixed */}
+        <div className="flex-shrink-0 px-8 pt-6 pb-10 flex items-center justify-between gap-4 border-t border-border/30">
           <button
             onClick={currentStep === 1 ? onCancel : handleBack}
             className="rounded-full border border-border/70 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-foreground/70 transition hover:border-accent hover:text-accent"
