@@ -141,7 +141,7 @@ export default function Home() {
           animate="visible"
           custom={0.3}
           variants={heroTextVariants}
-          className="mt-6 max-w-3xl text-base uppercase tracking-[0.28em] text-foreground/70 sm:text-lg"
+          className="mt-6 max-w-3xl text-base uppercase tracking-[0.28em] text-foreground sm:text-lg"
         >
           No AI. No generic templates. Just human expertise tuned to your goals,
           lifestyle, and biology.
@@ -174,16 +174,16 @@ export default function Home() {
           <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl">
             Built for Anyone Who Wants Results
           </h2>
-          <p className="mt-4 text-sm uppercase tracking-[0.32em] text-foreground/60">
+          <p className="mt-4 text-sm uppercase tracking-[0.32em] text-foreground/80">
             Whether you&apos;re trying to lose fat, build muscle, or maintain your physique —
             your plan is tailored to your reality.
           </p>
         </div>
-        <div className="mx-auto mt-10 grid max-w-5xl grid-cols-2 gap-4 text-sm uppercase tracking-[0.2em] text-foreground/70 sm:grid-cols-5">
+        <div className="mx-auto mt-10 grid max-w-5xl grid-cols-2 gap-4 text-sm uppercase tracking-[0.2em] sm:grid-cols-5">
           {audienceTargets.map((item) => (
             <div
               key={item}
-              className="rounded-2xl border border-border/60 bg-muted/70 px-4 py-4 text-sm font-semibold"
+              className="rounded-2xl border border-border/60 bg-muted/80 px-4 py-4 text-sm font-semibold text-foreground"
             >
               {item}
             </div>
@@ -204,10 +204,10 @@ export default function Home() {
               key={step.title}
               className="rounded-3xl border border-border/70 bg-muted/80 px-6 py-8 text-left shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] transition hover:scale-105"
             >
-              <h3 className="text-xl font-semibold uppercase tracking-[0.2em]">
+              <h3 className="text-xl font-semibold uppercase tracking-[0.2em] text-foreground">
                 {step.title}
               </h3>
-              <p className="mt-3 text-sm uppercase tracking-[0.28em] text-foreground/60">
+              <p className="mt-3 text-sm uppercase tracking-[0.28em] text-foreground/90">
                 {step.text}
               </p>
             </div>
@@ -226,7 +226,7 @@ export default function Home() {
           {deliverables.map((item) => (
             <div
               key={item}
-              className="rounded-2xl border border-border/70 bg-muted/70 px-6 py-5 text-left text-sm uppercase tracking-[0.25em] text-foreground/80"
+              className="rounded-2xl border border-border/70 bg-muted/80 px-6 py-5 text-left text-sm uppercase tracking-[0.25em] text-foreground"
             >
               • {item}
             </div>
@@ -258,10 +258,10 @@ export default function Home() {
               >
                 {pkg.title}
               </h3>
-              <p className="mt-3 text-sm uppercase tracking-[0.3em] text-foreground/60">
+              <p className="mt-3 text-sm uppercase tracking-[0.3em] text-foreground/90">
                 {pkg.description}
               </p>
-              <ul className="mt-6 space-y-2 text-sm uppercase tracking-[0.28em] text-foreground/70">
+              <ul className="mt-6 space-y-2 text-sm uppercase tracking-[0.28em] text-foreground">
                 {pkg.bullets.map((bullet) => (
                   <li key={bullet}>• {bullet}</li>
                 ))}
@@ -287,7 +287,7 @@ export default function Home() {
           <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl">
             Ready to Transform Your Nutrition?
           </h2>
-          <p className="mt-4 text-sm uppercase tracking-[0.3em] text-foreground/60">
+          <p className="mt-4 text-sm uppercase tracking-[0.3em] text-foreground/90">
             Start your transformation with a meal plan built for your life — not downloaded from a template.
           </p>
           <div className="mt-10 flex justify-center">
