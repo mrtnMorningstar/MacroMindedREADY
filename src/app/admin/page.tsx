@@ -86,10 +86,13 @@ export default function AdminPage() {
             
             if (!purchasesSnapshot.empty) {
               // Get the latest purchase (sorted by createdAt)
-              const purchases = purchasesSnapshot.docs.map((doc) => ({
-                ...doc.data(),
-                createdAt: doc.data().createdAt,
-              }));
+              const purchases = purchasesSnapshot.docs.map((doc) => {
+                const data = doc.data();
+                return {
+                  amount: data?.amount ?? null,
+                  createdAt: data?.createdAt ?? null,
+                };
+              });
               
               purchases.sort((a, b) => {
                 const aTime = a.createdAt?.toMillis?.() ?? a.createdAt?.seconds ?? 0;
