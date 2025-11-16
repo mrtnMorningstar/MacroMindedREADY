@@ -280,9 +280,9 @@ function UserDetailPanel({ user, uploadFile, deleteFile, uploadStates }: UserDet
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        <UploadCard type="mealPlan" label="Meal Plan PDF" currentUrl={user.mealPlanFileURL} uploadStates={uploadStates} handleChange={handleInputChange} handleDelete={deleteFile} />
+        <UploadCard type="mealPlan" label="Meal Plan PDF" currentUrl={user.mealPlanFileURL ?? null} uploadStates={uploadStates} handleChange={handleInputChange} handleDelete={deleteFile} />
         <UploadCard type="images" label="Images" currentUrl={null} uploadStates={uploadStates} handleChange={handleInputChange} handleDelete={deleteFile} />
-        <UploadCard type="grocery" label="Grocery List" currentUrl={user.groceryListURL} uploadStates={uploadStates} handleChange={handleInputChange} handleDelete={deleteFile} />
+        <UploadCard type="grocery" label="Grocery List" currentUrl={user.groceryListURL ?? null} uploadStates={uploadStates} handleChange={handleInputChange} handleDelete={deleteFile} />
       </div>
     </section>
   );

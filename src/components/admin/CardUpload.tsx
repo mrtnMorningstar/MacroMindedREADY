@@ -16,7 +16,7 @@ type CardUploadProps = {
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
   multiple?: boolean;
   status?: string | null;
-  currentUrl?: string | null;
+  currentUrl?: string | null | undefined;
   ctaLabel?: string;
   onDelete?: () => void;
 };
