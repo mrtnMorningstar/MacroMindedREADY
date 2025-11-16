@@ -7,7 +7,7 @@ import { collection, doc, getDoc, onSnapshot, updateDoc, serverTimestamp, query,
 import { getDownloadURL, ref, uploadBytesResumable, deleteObject } from "firebase/storage";
 
 import { auth, db, storage } from "@/lib/firebase";
-import { AdminSidebar, UserDetailPanel } from "@/components/admin";
+import { AdminSidebar, UserDetailPanel, useSidebar } from "@/components/admin";
 import DashboardSummary from "@/components/admin/DashboardSummary";
 
 type UserRecord = {
@@ -424,12 +424,14 @@ export default function AdminPage() {
     }
   }, [selectedUserId]);
 
+  const { isOpen, isMobile } = useSidebar();
+
   // AuthGate handles auth checks and loading, so we can just render
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       <AdminSidebar />
 
-      <div className="relative isolate flex-1 lg:ml-64">
+      <div className={`relative isolate flex-1 transition-all duration-300 ${!isMobile && isOpen ? "lg:ml-64" : ""}`}>
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

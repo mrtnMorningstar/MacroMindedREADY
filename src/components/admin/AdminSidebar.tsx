@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, createContext, useContext } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -20,6 +20,16 @@ import {
   ClipboardDocumentListIcon as ClipboardDocumentListIconSolid,
   Cog6ToothIcon as Cog6ToothIconSolid,
 } from "@heroicons/react/24/solid";
+
+// Context to share sidebar state
+const SidebarContext = createContext<{
+  isOpen: boolean;
+  isMobile: boolean;
+}>({ isOpen: true, isMobile: false });
+
+export function useSidebar() {
+  return useContext(SidebarContext);
+}
 
 type NavLink = {
   label: string;
@@ -101,7 +111,7 @@ export function AdminSidebar() {
   };
 
   return (
-    <>
+    <SidebarContext.Provider value={{ isOpen, isMobile }}>
       {/* Mobile Toggle Button */}
       <button
         onClick={toggleSidebar}
@@ -114,6 +124,17 @@ export function AdminSidebar() {
           <Bars3Icon className="h-6 w-6" />
         )}
       </button>
+
+      {/* Desktop Toggle Button - Always visible when sidebar is closed */}
+      {!isMobile && !isOpen && (
+        <button
+          onClick={toggleSidebar}
+          className="fixed left-4 top-24 z-50 rounded-full border border-border/70 bg-muted/60 p-2 text-foreground/70 transition hover:border-accent hover:text-accent hidden lg:flex items-center justify-center"
+          aria-label="Open sidebar"
+        >
+          <Bars3Icon className="h-6 w-6" />
+        </button>
+      )}
 
       {/* Overlay for mobile */}
       <AnimatePresence>
@@ -140,14 +161,14 @@ export function AdminSidebar() {
               isMobile ? (isOpen ? "flex" : "hidden") : isOpen ? "hidden lg:flex" : "hidden lg:hidden"
             }`}
           >
-            {/* Desktop Toggle Button */}
-            {!isMobile && (
+            {/* Desktop Toggle Button - Only show when sidebar is open */}
+            {!isMobile && isOpen && (
               <button
                 onClick={toggleSidebar}
                 className="mb-6 ml-auto flex items-center justify-center rounded-full border border-border/70 bg-background/40 p-2 text-foreground/70 transition hover:border-accent hover:text-accent"
-                aria-label="Toggle sidebar"
+                aria-label="Close sidebar"
               >
-                <Bars3Icon className="h-5 w-5" />
+                <XMarkIcon className="h-5 w-5" />
               </button>
             )}
 
@@ -207,7 +228,6 @@ export function AdminSidebar() {
           </motion.aside>
         )}
       </AnimatePresence>
-
-    </>
+    </SidebarContext.Provider>
   );
 }
