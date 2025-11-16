@@ -100,13 +100,20 @@ service cloud.firestore {
       // When using merge:true, if profile is the only field being set/updated, allow it
       function isProfileOnlyUpdate() {
         // Check if profile exists in the update and is a map
+        // Ensure no restricted fields are being modified
         return 'profile' in request.resource.data 
           && request.resource.data.profile is map
-          // Ensure no restricted fields are being modified
-          && (!('mealPlanFileURL' in request.resource.data) || !exists(resource) || request.resource.data.mealPlanFileURL == resource.data.mealPlanFileURL)
-          && (!('mealPlanStatus' in request.resource.data) || !exists(resource) || request.resource.data.mealPlanStatus == resource.data.mealPlanStatus)
-          && (!('role' in request.resource.data) || !exists(resource) || request.resource.data.role == resource.data.role)
-          && (!('mealPlanDeliveredAt' in request.resource.data) || !exists(resource) || request.resource.data.mealPlanDeliveredAt == resource.data.mealPlanDeliveredAt);
+          && (
+            // If document doesn't exist, restricted fields shouldn't be in the update
+            (!exists(resource) && !request.resource.data.keys().hasAny(['mealPlanFileURL', 'mealPlanStatus', 'role', 'mealPlanDeliveredAt'])) ||
+            // If document exists, ensure restricted fields haven't changed
+            (exists(resource) && 
+              (!('mealPlanFileURL' in request.resource.data) || request.resource.data.mealPlanFileURL == resource.data.mealPlanFileURL) &&
+              (!('mealPlanStatus' in request.resource.data) || request.resource.data.mealPlanStatus == resource.data.mealPlanStatus) &&
+              (!('role' in request.resource.data) || request.resource.data.role == resource.data.role) &&
+              (!('mealPlanDeliveredAt' in request.resource.data) || request.resource.data.mealPlanDeliveredAt == resource.data.mealPlanDeliveredAt)
+            )
+          );
       }
 
       // Helper function: Prevent non-admins from modifying restricted fields
