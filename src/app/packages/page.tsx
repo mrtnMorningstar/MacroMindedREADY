@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import type { User } from "firebase/auth";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 
 import { auth, db } from "@/lib/firebase";
+import CheckoutWizard, { type WizardFormData } from "@/components/checkout/CheckoutWizard";
 
 type PlanTier = {
   name: "Basic" | "Pro" | "Elite";
@@ -75,6 +76,8 @@ export default function PackagesPage() {
   const [savingTier, setSavingTier] = useState<PlanTier["name"] | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [currentTier, setCurrentTier] = useState<PlanTier["name"] | null>(null);
+  const [showWizard, setShowWizard] = useState(false);
+  const [selectedPlanForWizard, setSelectedPlanForWizard] = useState<PlanTier["name"] | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -120,7 +123,7 @@ export default function PackagesPage() {
   }, [currentUser]);
 
   const handleSelect = useCallback(
-    async (tier: PlanTier["name"]) => {
+    (tier: PlanTier["name"]) => {
       setFeedback(null);
 
       if (!currentUser) {
@@ -128,17 +131,31 @@ export default function PackagesPage() {
         return;
       }
 
+      // Show wizard instead of going directly to checkout
+      setSelectedPlanForWizard(tier);
+      setShowWizard(true);
+    },
+    [currentUser, router]
+  );
+
+  const handleWizardComplete = useCallback(
+    async (wizardData: WizardFormData) => {
+      if (!currentUser || !selectedPlanForWizard) return;
+
+      setShowWizard(false);
+      setSavingTier(selectedPlanForWizard);
+
       try {
-        setSavingTier(tier);
         const response = await fetch("/api/checkout", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            plan: tier,
+            plan: selectedPlanForWizard,
             userId: currentUser.uid,
             email: currentUser.email ?? "",
+            profile: wizardData, // Include wizard data
           }),
         });
 
@@ -156,7 +173,7 @@ export default function PackagesPage() {
 
         window.location.href = data.url;
       } catch (error) {
-        console.error("Failed to save package selection:", error);
+        console.error("Failed to start checkout:", error);
         setFeedback(
           error instanceof Error
             ? error.message
@@ -165,8 +182,13 @@ export default function PackagesPage() {
         setSavingTier(null);
       }
     },
-    [currentUser, router]
+    [currentUser, selectedPlanForWizard]
   );
+
+  const handleWizardCancel = useCallback(() => {
+    setShowWizard(false);
+    setSelectedPlanForWizard(null);
+  }, []);
 
   return (
     <div className="relative isolate overflow-hidden bg-background text-foreground">
@@ -294,6 +316,18 @@ export default function PackagesPage() {
           })}
         </motion.div>
       </section>
+
+      {/* Checkout Wizard */}
+      <AnimatePresence>
+        {showWizard && selectedPlanForWizard && (
+          <CheckoutWizard
+            selectedPlan={selectedPlanForWizard}
+            planPrice={planConfig[selectedPlanForWizard].price}
+            onComplete={handleWizardComplete}
+            onCancel={handleWizardCancel}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

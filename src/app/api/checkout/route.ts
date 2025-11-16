@@ -14,10 +14,21 @@ function getBaseUrl(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { plan, userId, email } = body as {
+    const { plan, userId, email, profile } = body as {
       plan?: PlanTier;
       userId?: string;
       email?: string;
+      profile?: {
+        age?: string;
+        height?: string;
+        weight?: string;
+        gender?: string;
+        activityLevel?: string;
+        goal?: string;
+        allergies?: string;
+        foodsLove?: string;
+        foodsHate?: string;
+      };
     };
 
     if (!plan || !(plan in PRICE_IDS) || !userId) {
@@ -50,6 +61,36 @@ export async function POST(request: Request) {
 
     const mode = price.type === "recurring" ? "subscription" : "payment";
 
+    // Store profile data in Firestore before checkout (temporary storage)
+    // This will be merged with the user document after payment
+    let profileData = null;
+    if (profile && userId) {
+      try {
+        const { getAdminDb } = await import("@/lib/firebase-admin");
+        const adminDb = getAdminDb();
+        await adminDb.collection("users").doc(userId).set(
+          {
+            profile: {
+              age: profile.age,
+              height: profile.height,
+              weight: profile.weight,
+              gender: profile.gender,
+              activityLevel: profile.activityLevel,
+              goal: profile.goal,
+              allergies: profile.allergies || null,
+              preferences: profile.foodsLove || null,
+              dietaryRestrictions: profile.foodsHate || null,
+            },
+          },
+          { merge: true }
+        );
+        profileData = profile;
+      } catch (profileError) {
+        console.error("Failed to save profile data:", profileError);
+        // Continue with checkout even if profile save fails
+      }
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode,
       payment_method_types: ["card"],
@@ -64,6 +105,7 @@ export async function POST(request: Request) {
         plan,
         userId,
         email: email ?? "",
+        hasProfile: profileData ? "true" : "false",
       },
       success_url: `${baseUrl}/packages/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/packages/cancel`,
