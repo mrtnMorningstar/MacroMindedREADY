@@ -132,26 +132,28 @@ export default function CheckoutWizard({
         left: 0, 
         right: 0, 
         bottom: 0,
-        padding: '1rem',
+        padding: '3rem 1rem',
         position: 'fixed',
         width: '100vw',
         height: '100vh',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        overflow: 'hidden'
       }}
     >
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="relative w-full max-w-2xl rounded-3xl border border-border/70 bg-background shadow-[0_0_80px_-30px_rgba(215,38,61,0.7)] flex flex-col overflow-hidden"
+        className="relative w-full max-w-2xl rounded-3xl border border-border/70 bg-background shadow-[0_0_80px_-30px_rgba(215,38,61,0.7)] flex flex-col"
         style={{ 
-          maxHeight: 'calc(100vh - 8rem)',
+          maxHeight: 'calc(100vh - 6rem)',
           height: 'auto',
           display: 'flex',
           flexDirection: 'column',
-          margin: 'auto'
+          margin: 'auto',
+          overflow: 'hidden'
         }}
       >
         {/* Header - Fixed */}
@@ -225,7 +227,7 @@ export default function CheckoutWizard({
         </div>
 
         {/* Step Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto px-8" style={{ minHeight: 0 }}>
+        <div className="flex-1 overflow-y-auto px-8" style={{ minHeight: 0, maxHeight: '100%' }}>
           <div className="pb-4">
           <AnimatePresence mode="wait">
             {currentStep === 1 && (
