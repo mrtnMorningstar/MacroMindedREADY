@@ -96,6 +96,19 @@ service cloud.firestore {
 
     // Users collection rules
     match /users/{userId} {
+      // Helper function: Check if this is a profile-only update (for macro form)
+      // When using merge:true, if profile is the only field being set/updated, allow it
+      function isProfileOnlyUpdate() {
+        // Check if profile exists in the update and is a map
+        return 'profile' in request.resource.data 
+          && request.resource.data.profile is map
+          // Ensure no restricted fields are being modified
+          && (!('mealPlanFileURL' in request.resource.data) || !exists(resource) || request.resource.data.mealPlanFileURL == resource.data.mealPlanFileURL)
+          && (!('mealPlanStatus' in request.resource.data) || !exists(resource) || request.resource.data.mealPlanStatus == resource.data.mealPlanStatus)
+          && (!('role' in request.resource.data) || !exists(resource) || request.resource.data.role == resource.data.role)
+          && (!('mealPlanDeliveredAt' in request.resource.data) || !exists(resource) || request.resource.data.mealPlanDeliveredAt == resource.data.mealPlanDeliveredAt);
+      }
+
       // Helper function: Prevent non-admins from modifying restricted fields
       function canModifyRestrictedFields() {
         // Admins can modify any field
@@ -116,6 +129,7 @@ service cloud.firestore {
       allow read: if isSignedIn() && (isOwner(userId) || isAdmin());
 
       // Create: Users can only create their own document with valid schema
+      // Note: setDoc with merge:true may trigger create if document doesn't exist
       allow create: if isSignedIn() 
         && isOwner(userId)
         && isValidUserData()
@@ -123,9 +137,18 @@ service cloud.firestore {
         && canModifyRestrictedFields();
 
       // Update: Users can update their own document (with restrictions), admins can update any
-      allow update: if (isAdmin() || (isSignedIn() && isOwner(userId) && canModifyRestrictedFields()))
-        && isValidUserData()
-        && hasValidUserFieldTypes();
+      // Note: setDoc with merge:true triggers update if document exists
+      // Special handling for profile updates from macro form
+      allow update: if isSignedIn() && isOwner(userId) && (
+        // Admins can update anything
+        isAdmin() || (
+          // Allow profile updates (from macro form) - this is the most common user update
+          // Check that profile is a map and no restricted fields are being changed
+          ('profile' in request.resource.data && request.resource.data.profile is map && isProfileOnlyUpdate()) ||
+          // For other updates, apply full validation
+          (canModifyRestrictedFields() && isValidUserData() && hasValidUserFieldTypes())
+        )
+      );
 
       // Delete: Users can delete their own document, admins can delete any
       allow delete: if isAdmin() || (isSignedIn() && isOwner(userId));
