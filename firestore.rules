@@ -17,6 +17,18 @@ service cloud.firestore {
     //   - All writes are validated against schema and field types
     //   - Users cannot change the userId field on existing purchases
     //
+    // Plan Update Requests Collection (/planUpdateRequests/{requestId}):
+    //   - Users can create requests with their own userId
+    //   - Users can read their own requests
+    //   - Admins can read/write all requests
+    //
+    // Recipes Collection (/recipes/{recipeId}):
+    //   - All signed-in users can read recipes
+    //   - Only admins can create/update/delete recipes
+    //
+    // Webhook Events Collection (/webhook_events/{eventId}):
+    //   - Only admins can read/write (primarily used by server-side admin SDK)
+    //
     // Other Collections:
     //   - All other collections are denied by default
     // ============================================
@@ -144,7 +156,10 @@ service cloud.firestore {
           'status',
           'mealPlanUrl',
           'createdAt',
-          'deliveredAt'
+          'deliveredAt',
+          'stripeSessionId',
+          'email',
+          'amount'
         ];
         
         // Check that required fields exist and all keys are in allowed fields
@@ -161,6 +176,9 @@ service cloud.firestore {
           && data.planType is string
           && data.status is string
           && (!('mealPlanUrl' in data) || data.mealPlanUrl is string || data.mealPlanUrl == null)
+          && (!('stripeSessionId' in data) || data.stripeSessionId is string || data.stripeSessionId == null)
+          && (!('email' in data) || data.email is string || data.email == null)
+          && (!('amount' in data) || data.amount is number || data.amount == null)
           && (!('createdAt' in data) || data.createdAt is timestamp || data.createdAt == null)
           && (!('deliveredAt' in data) || data.deliveredAt is timestamp || data.deliveredAt == null);
       }
@@ -183,6 +201,68 @@ service cloud.firestore {
 
       // Delete: Users can delete their own purchases, admins can delete any
       allow delete: if isAdmin() || (isSignedIn() && isPurchaseOwner());
+    }
+
+    // Plan Update Requests collection rules
+    match /planUpdateRequests/{requestId} {
+      // Helper function: Check if request belongs to the user
+      function isRequestOwner() {
+        return isSignedIn() 
+          && resource.data.userId == request.auth.uid;
+      }
+
+      // Helper function: Validate request document schema
+      function isValidRequestData() {
+        let data = request.resource.data;
+        let allowedFields = ['userId', 'requestText', 'date', 'handled'];
+        
+        return 'userId' in data
+          && 'requestText' in data
+          && data.keys().hasOnly(allowedFields);
+      }
+
+      // Helper function: Validate request field types
+      function hasValidRequestFieldTypes() {
+        let data = request.resource.data;
+        return data.userId is string
+          && data.requestText is string
+          && (!('date' in data) || data.date is timestamp || data.date == null)
+          && (!('handled' in data) || data.handled is bool || data.handled == null);
+      }
+
+      // Read: Users can read their own requests, admins can read all
+      allow read: if isSignedIn() && (isRequestOwner() || isAdmin());
+
+      // Create: Users can create requests with their own userId
+      allow create: if isSignedIn() 
+        && request.resource.data.userId == request.auth.uid
+        && isValidRequestData()
+        && hasValidRequestFieldTypes();
+
+      // Update: Only admins can update requests (to mark as handled)
+      allow update: if isAdmin() && isValidRequestData() && hasValidRequestFieldTypes();
+
+      // Delete: Only admins can delete requests
+      allow delete: if isAdmin();
+    }
+
+    // Recipes collection rules
+    match /recipes/{recipeId} {
+      // Read: All signed-in users can read recipes
+      allow read: if isSignedIn();
+
+      // Write: Only admins can create/update/delete recipes
+      allow write: if isAdmin();
+    }
+
+    // Webhook Events collection (for idempotency tracking)
+    // This is primarily used by server-side code, but we allow admin writes for completeness
+    match /webhook_events/{eventId} {
+      // Read: Only admins can read webhook events
+      allow read: if isAdmin();
+
+      // Write: Only admins can write webhook events (server-side uses admin SDK which bypasses rules)
+      allow write: if isAdmin();
     }
 
     // Deny all other collections by default
