@@ -126,13 +126,14 @@ export default function Home() {
       </motion.div>
 
       {/* HERO */}
-      <section className="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-6xl flex-col items-center justify-center px-6 py-24 text-center text-white">
+      <section className="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-6xl flex-col items-center justify-center px-6 py-24 text-center" style={{ color: '#ffffff' }}>
         <motion.h1
           initial="hidden"
           animate="visible"
           custom={0.2}
           variants={heroTextVariants}
           className="text-4xl font-bold uppercase tracking-[0.2em] sm:text-6xl"
+          style={{ color: '#ffffff' }}
         >
           Your Body. Your Goals. Your Custom Meal Plan.
         </motion.h1>
@@ -141,7 +142,8 @@ export default function Home() {
           animate="visible"
           custom={0.3}
           variants={heroTextVariants}
-          className="mt-6 max-w-3xl text-base uppercase tracking-[0.28em] text-white sm:text-lg"
+          className="mt-6 max-w-3xl text-base uppercase tracking-[0.28em] sm:text-lg"
+          style={{ color: '#ffffff' }}
         >
           No AI. No generic templates. Just human expertise tuned to your goals,
           lifestyle, and biology.
@@ -169,7 +171,7 @@ export default function Home() {
       </section>
 
       {/* WHO THIS IS FOR */}
-      <section className="px-6 py-16 text-center text-white">
+      <section className="px-6 py-16 text-center" style={{ color: '#ffffff' }}>
         <div className="mx-auto max-w-4xl">
           <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl" style={{ color: '#ffffff' }}>
             Built for Anyone Who Wants Results
@@ -193,7 +195,7 @@ export default function Home() {
       </section>
 
       {/* HOW IT WORKS */}
-      <section className="px-6 py-20 text-white">
+      <section className="px-6 py-20" style={{ color: '#ffffff' }}>
         <div className="mx-auto max-w-4xl text-center">
           <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl" style={{ color: '#ffffff' }}>
             How It Works
@@ -217,7 +219,7 @@ export default function Home() {
       </section>
 
       {/* WHAT YOU GET */}
-      <section className="px-6 py-16 text-white">
+      <section className="px-6 py-16" style={{ color: '#ffffff' }}>
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl" style={{ color: '#ffffff' }}>
             What You Get
@@ -237,7 +239,7 @@ export default function Home() {
       </section>
 
       {/* PACKAGES */}
-      <section className="px-6 py-20 text-white">
+      <section className="px-6 py-20" style={{ color: '#ffffff' }}>
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl" style={{ color: '#ffffff' }}>
             Packages
@@ -286,7 +288,7 @@ export default function Home() {
       </section>
 
       {/* FINAL CTA */}
-      <section className="px-6 py-20 text-center text-white">
+      <section className="px-6 py-20 text-center" style={{ color: '#ffffff' }}>
         <div className="mx-auto max-w-3xl">
           <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl" style={{ color: '#ffffff' }}>
             Ready to Transform Your Nutrition?
