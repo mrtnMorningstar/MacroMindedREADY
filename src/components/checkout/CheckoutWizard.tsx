@@ -112,12 +112,28 @@ export default function CheckoutWizard({
   const progress = (currentStep / steps.length) * 100;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 py-6 backdrop-blur-sm overflow-y-auto">
+    <div 
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm overflow-hidden" 
+      style={{ 
+        top: 0, 
+        left: 0, 
+        right: 0, 
+        bottom: 0,
+        padding: '1rem',
+        position: 'fixed'
+      }}
+    >
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="relative w-full max-w-2xl my-auto rounded-3xl border border-border/70 bg-background shadow-[0_0_80px_-30px_rgba(215,38,61,0.7)] flex flex-col max-h-[90vh]"
+        className="relative w-full max-w-2xl rounded-3xl border border-border/70 bg-background shadow-[0_0_80px_-30px_rgba(215,38,61,0.7)] flex flex-col overflow-hidden"
+        style={{ 
+          maxHeight: 'calc(100vh - 2rem)',
+          height: 'auto',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
       >
         {/* Header - Fixed */}
         <div className="flex-shrink-0 px-8 pt-10 pb-6">
@@ -190,8 +206,8 @@ export default function CheckoutWizard({
         </div>
 
         {/* Step Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto px-8">
-          <div className="min-h-[400px] pb-4">
+        <div className="flex-1 overflow-y-auto px-8" style={{ minHeight: 0 }}>
+          <div className="pb-4">
           <AnimatePresence mode="wait">
             {currentStep === 1 && (
               <motion.div
