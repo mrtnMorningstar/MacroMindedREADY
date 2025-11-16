@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   collection,
@@ -15,6 +15,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import Link from "next/link";
 
 import { auth, db } from "@/lib/firebase";
+import { AdminSidebar, ReferralStats } from "@/components/admin";
 
 type UserRecord = {
   id: string;
@@ -29,7 +30,6 @@ const baseBackground = "bg-[radial-gradient(circle_at_top,#161616_0%,rgba(0,0,0,
 
 export default function AdminReferralsPage() {
   const router = useRouter();
-  const pathname = usePathname();
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [users, setUsers] = useState<UserRecord[]>([]);
@@ -155,95 +155,7 @@ export default function AdminReferralsPage() {
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
-      {/* Sidebar */}
-      <motion.aside
-        initial={{ x: -40, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="hidden h-[calc(100vh-5rem)] w-64 flex-col border-r border-border/70 bg-muted/40 px-6 py-10 shadow-[0_0_80px_-40px_rgba(215,38,61,0.6)] backdrop-blur lg:fixed lg:left-0 lg:top-20 lg:flex"
-      >
-        <span className="font-bold uppercase tracking-[0.48em] text-foreground">
-          MacroMinded
-        </span>
-        <p className="mt-2 text-[0.65rem] font-medium uppercase tracking-[0.3em] text-foreground/60">
-          Admin navigation
-        </p>
-
-        <nav className="mt-10 flex-1 overflow-y-auto pr-1">
-          <div className="flex flex-col gap-3">
-            <Link
-              href="/admin"
-              className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
-                pathname === "/admin"
-                  ? "border-accent/60 bg-accent/20 text-accent"
-                  : "border-border/70 text-foreground/70 hover:border-accent hover:text-accent"
-              }`}
-            >
-              Users
-            </Link>
-            <Link
-              href="/admin/referrals"
-              className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
-                pathname === "/admin/referrals"
-                  ? "border-accent/60 bg-accent/20 text-accent"
-                  : "border-border/70 text-foreground/70 hover:border-accent hover:text-accent"
-              }`}
-            >
-              Referrals
-            </Link>
-            <Link
-              href="/admin/recipes"
-              className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
-                pathname === "/admin/recipes"
-                  ? "border-accent/60 bg-accent/20 text-accent"
-                  : "border-border/70 text-foreground/70 hover-border-accent hover:text-accent"
-              }`}
-            >
-              Recipes
-            </Link>
-        <Link
-          href="/admin/recipes"
-          className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
-            pathname === "/admin/recipes"
-              ? "border-accent/60 bg-accent/20 text-accent"
-              : "border-border/70 text-foreground/70 hover-border-accent hover:text-accent"
-          }`}
-        >
-          Recipes
-        </Link>
-            <Link
-              href="/admin/sales"
-              className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
-                pathname === "/admin/sales"
-                  ? "border-accent/60 bg-accent/20 text-accent"
-                  : "border-border/70 text-foreground/70 hover:border-accent hover:text-accent"
-              }`}
-            >
-              Sales / Revenue
-            </Link>
-        <Link
-          href="/admin/updates"
-          className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
-            pathname === "/admin/updates"
-              ? "border-accent/60 bg-accent/20 text-accent"
-              : "border-border/70 text-foreground/70 hover-border-accent hover:text-accent"
-          }`}
-        >
-          Plan Updates
-        </Link>
-            <Link
-              href="/admin/requests"
-              className={`rounded-full border px-4 py-2 text-left text-[0.65rem] uppercase tracking-[0.3em] transition ${
-                pathname === "/admin/requests"
-                  ? "border-accent/60 bg-accent/20 text-accent"
-                  : "border-border/70 text-foreground/70 hover:border-accent hover:text-accent"
-              }`}
-            >
-              Plan Requests
-            </Link>
-          </div>
-        </nav>
-      </motion.aside>
+      <AdminSidebar />
 
       <div className="relative isolate flex-1 lg:ml-64">
         <motion.div
@@ -289,6 +201,8 @@ export default function AdminReferralsPage() {
               {feedback}
             </motion.div>
           )}
+
+          <ReferralStats users={users} />
 
           {/* Search */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
