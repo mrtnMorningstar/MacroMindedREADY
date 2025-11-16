@@ -126,13 +126,13 @@ export default function CheckoutWizard({
 
   return (
     <div 
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm overflow-hidden" 
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm overflow-y-auto" 
       style={{ 
         top: 0, 
         left: 0, 
         right: 0, 
         bottom: 0,
-        padding: '1rem',
+        padding: '2rem 1rem',
         position: 'fixed',
         width: '100vw',
         height: '100vh'
@@ -142,9 +142,9 @@ export default function CheckoutWizard({
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="relative w-full max-w-2xl rounded-3xl border border-border/70 bg-background shadow-[0_0_80px_-30px_rgba(215,38,61,0.7)] flex flex-col overflow-hidden"
+        className="relative w-full max-w-2xl rounded-3xl border border-border/70 bg-background shadow-[0_0_80px_-30px_rgba(215,38,61,0.7)] flex flex-col overflow-hidden my-auto"
         style={{ 
-          maxHeight: 'calc(100vh - 2rem)',
+          maxHeight: 'calc(100vh - 4rem)',
           height: 'auto',
           display: 'flex',
           flexDirection: 'column'
