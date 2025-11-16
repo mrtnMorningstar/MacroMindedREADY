@@ -3,6 +3,9 @@
 import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { doc, getDoc } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth, db } from "@/lib/firebase";
 
 export type WizardFormData = {
   // Personal Info
@@ -52,8 +55,53 @@ export default function CheckoutWizard({
     foodsLove: "",
     foodsHate: "",
   });
+  const [loadingProfile, setLoadingProfile] = useState(true);
 
   const [errors, setErrors] = useState<Partial<Record<keyof WizardFormData, string>>>({});
+
+  // Load existing profile data from macro form
+  useEffect(() => {
+    const loadProfileData = async () => {
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+          setLoadingProfile(false);
+          return;
+        }
+
+        try {
+          const userDocRef = doc(db, "users", user.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            const profile = userData?.profile;
+            
+            if (profile) {
+              setFormData({
+                age: profile.age ?? "",
+                height: profile.height ?? "",
+                weight: profile.weight ?? "",
+                gender: profile.gender ?? "",
+                activityLevel: profile.activityLevel ?? "",
+                goal: profile.goal ?? "",
+                allergies: profile.allergies ?? "",
+                foodsLove: profile.preferences ?? "", // preferences from macro form maps to foodsLove
+                foodsHate: profile.dietaryRestrictions ?? "", // dietaryRestrictions from macro form maps to foodsHate
+              });
+            }
+          }
+        } catch (error) {
+          console.error("Failed to load profile data:", error);
+        } finally {
+          setLoadingProfile(false);
+        }
+      });
+
+      return () => unsubscribe();
+    };
+
+    loadProfileData();
+  }, []);
 
   // Prevent body scroll when modal is open and lock scroll position
   useEffect(() => {
