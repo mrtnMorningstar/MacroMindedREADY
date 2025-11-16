@@ -171,10 +171,10 @@ export default function Home() {
       {/* WHO THIS IS FOR */}
       <section className="px-6 py-16 text-center text-white">
         <div className="mx-auto max-w-4xl">
-          <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl !text-white">
+          <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl" style={{ color: '#ffffff' }}>
             Built for Anyone Who Wants Results
           </h2>
-          <p className="mt-4 text-sm uppercase tracking-[0.32em] !text-white">
+          <p className="mt-4 text-sm uppercase tracking-[0.32em]" style={{ color: '#ffffff' }}>
             Whether you&apos;re trying to lose fat, build muscle, or maintain your physique —
             your plan is tailored to your reality.
           </p>
@@ -183,7 +183,8 @@ export default function Home() {
           {audienceTargets.map((item) => (
             <div
               key={item}
-              className="rounded-2xl border border-border/60 bg-muted/80 px-4 py-4 text-sm font-semibold !text-white"
+              className="rounded-2xl border border-border/60 bg-muted/80 px-4 py-4 text-sm font-semibold"
+              style={{ color: '#ffffff' }}
             >
               {item}
             </div>
@@ -194,7 +195,7 @@ export default function Home() {
       {/* HOW IT WORKS */}
       <section className="px-6 py-20 text-white">
         <div className="mx-auto max-w-4xl text-center">
-          <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl !text-white">
+          <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl" style={{ color: '#ffffff' }}>
             How It Works
           </h2>
         </div>
@@ -204,10 +205,10 @@ export default function Home() {
               key={step.title}
               className="rounded-3xl border border-border/70 bg-muted/80 px-6 py-8 text-left shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] transition hover:scale-105"
             >
-              <h3 className="text-xl font-semibold uppercase tracking-[0.2em] !text-white">
+              <h3 className="text-xl font-semibold uppercase tracking-[0.2em]" style={{ color: '#ffffff' }}>
                 {step.title}
               </h3>
-              <p className="mt-3 text-sm uppercase tracking-[0.28em] !text-white">
+              <p className="mt-3 text-sm uppercase tracking-[0.28em]" style={{ color: '#ffffff' }}>
                 {step.text}
               </p>
             </div>
@@ -218,7 +219,7 @@ export default function Home() {
       {/* WHAT YOU GET */}
       <section className="px-6 py-16 text-white">
         <div className="mx-auto max-w-3xl text-center">
-          <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl !text-white">
+          <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl" style={{ color: '#ffffff' }}>
             What You Get
           </h2>
         </div>
@@ -226,7 +227,8 @@ export default function Home() {
           {deliverables.map((item) => (
             <div
               key={item}
-              className="rounded-2xl border border-border/70 bg-muted/80 px-6 py-5 text-left text-sm uppercase tracking-[0.25em] !text-white"
+              className="rounded-2xl border border-border/70 bg-muted/80 px-6 py-5 text-left text-sm uppercase tracking-[0.25em]"
+              style={{ color: '#ffffff' }}
             >
               • {item}
             </div>
@@ -237,7 +239,7 @@ export default function Home() {
       {/* PACKAGES */}
       <section className="px-6 py-20 text-white">
         <div className="mx-auto max-w-3xl text-center">
-          <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl !text-white">
+          <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl" style={{ color: '#ffffff' }}>
             Packages
           </h2>
         </div>
@@ -253,15 +255,16 @@ export default function Home() {
             >
               <h3
                 className={`text-3xl font-bold uppercase tracking-[0.2em] ${
-                  pkg.highlight ? "text-accent" : "!text-white"
+                  pkg.highlight ? "text-accent" : ""
                 }`}
+                style={pkg.highlight ? undefined : { color: '#ffffff' }}
               >
                 {pkg.title}
               </h3>
-              <p className="mt-3 text-sm uppercase tracking-[0.3em] !text-white">
+              <p className="mt-3 text-sm uppercase tracking-[0.3em]" style={{ color: '#ffffff' }}>
                 {pkg.description}
               </p>
-              <ul className="mt-6 space-y-2 text-sm uppercase tracking-[0.28em] !text-white">
+              <ul className="mt-6 space-y-2 text-sm uppercase tracking-[0.28em]" style={{ color: '#ffffff' }}>
                 {pkg.bullets.map((bullet) => (
                   <li key={bullet}>• {bullet}</li>
                 ))}
@@ -271,8 +274,9 @@ export default function Home() {
                 className={`mt-8 inline-flex w-full items-center justify-center rounded-full px-6 py-3 text-xs font-semibold uppercase tracking-[0.32em] transition ${
                   pkg.highlight
                     ? "border border-accent bg-accent text-background hover:bg-transparent hover:text-accent"
-                    : "border border-border/70 !text-white hover:border-accent hover:text-accent"
+                    : "border border-border/70 hover:border-accent hover:text-accent"
                 }`}
+                style={pkg.highlight ? undefined : { color: '#ffffff' }}
               >
                 {pkg.cta}
               </Link>
@@ -284,10 +288,10 @@ export default function Home() {
       {/* FINAL CTA */}
       <section className="px-6 py-20 text-center text-white">
         <div className="mx-auto max-w-3xl">
-          <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl !text-white">
+          <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl" style={{ color: '#ffffff' }}>
             Ready to Transform Your Nutrition?
           </h2>
-          <p className="mt-4 text-sm uppercase tracking-[0.3em] !text-white">
+          <p className="mt-4 text-sm uppercase tracking-[0.3em]" style={{ color: '#ffffff' }}>
             Start your transformation with a meal plan built for your life — not downloaded from a template.
           </p>
           <div className="mt-10 flex justify-center">
