@@ -1,44 +1,193 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // ============================================
+    // FIRESTORE SECURITY RULES
+    // ============================================
+    // 
+    // Users Collection (/users/{userId}):
+    //   - Users can read/write only their own document
+    //   - Admins can read/write all user documents
+    //   - Non-admins cannot modify restricted fields (mealPlanFileURL, mealPlanStatus, role, mealPlanDeliveredAt)
+    //   - All writes are validated against schema and field types
+    //
+    // Purchases Collection (/purchases/{purchaseId}):
+    //   - Users can only read/write their own purchases (where userId matches their auth.uid)
+    //   - Admins can read/write all purchases
+    //   - All writes are validated against schema and field types
+    //   - Users cannot change the userId field on existing purchases
+    //
+    // Other Collections:
+    //   - All other collections are denied by default
+    // ============================================
+    // Helper function: Check if user is signed in
     function isSignedIn() {
       return request.auth != null;
     }
 
+    // Helper function: Check if user is admin
     function isAdmin() {
       return isSignedIn()
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    function unchangedRestrictedFields() {
-      return (!request.resource.data.keys().hasAny(['mealPlanFileURL']) ||
-          (!('mealPlanFileURL' in resource.data)
-            && !('mealPlanFileURL' in request.resource.data)) ||
-          request.resource.data.mealPlanFileURL == resource.data.mealPlanFileURL) &&
-        (!request.resource.data.keys().hasAny(['mealPlanStatus']) ||
-          (!('mealPlanStatus' in resource.data)
-            && !('mealPlanStatus' in request.resource.data)) ||
-          request.resource.data.mealPlanStatus == resource.data.mealPlanStatus);
+    // Helper function: Check if user is accessing their own document
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
+    // Helper function: Validate user document schema
+    function isValidUserData() {
+      let data = request.resource.data;
+      let allowedFields = [
+        'email',
+        'displayName',
+        'packageTier',
+        'mealPlanStatus',
+        'mealPlanFileURL',
+        'mealPlanImageURLs',
+        'profile',
+        'mealPlanDeliveredAt',
+        'groceryListURL',
+        'referralCode',
+        'referralCredits',
+        'referredBy',
+        'purchaseDate',
+        'role',
+        'createdAt'
+      ];
+      
+      // Check that all keys in data are in the allowed fields list
+      return data.keys().hasOnly(allowedFields);
+    }
+
+    // Helper function: Validate user field types
+    function hasValidUserFieldTypes() {
+      let data = request.resource.data;
+      return (!('email' in data) || data.email is string || data.email == null)
+        && (!('displayName' in data) || data.displayName is string || data.displayName == null)
+        && (!('packageTier' in data) || data.packageTier is string || data.packageTier == null)
+        && (!('mealPlanStatus' in data) || data.mealPlanStatus is string || data.mealPlanStatus == null)
+        && (!('mealPlanFileURL' in data) || data.mealPlanFileURL is string || data.mealPlanFileURL == null)
+        && (!('mealPlanImageURLs' in data) || data.mealPlanImageURLs is list || data.mealPlanImageURLs == null)
+        && (!('profile' in data) || data.profile is map || data.profile == null)
+        && (!('groceryListURL' in data) || data.groceryListURL is string || data.groceryListURL == null)
+        && (!('referralCode' in data) || data.referralCode is string || data.referralCode == null)
+        && (!('referredBy' in data) || data.referredBy is string || data.referredBy == null)
+        && (!('referralCredits' in data) || data.referralCredits is int || data.referralCredits == null)
+        && (!('role' in data) || data.role is string || data.role == null)
+        && (!('mealPlanDeliveredAt' in data) || data.mealPlanDeliveredAt is timestamp || data.mealPlanDeliveredAt == null)
+        && (!('purchaseDate' in data) || data.purchaseDate is timestamp || data.purchaseDate == null)
+        && (!('createdAt' in data) || data.createdAt is timestamp || data.createdAt == null);
+    }
+
+    // Users collection rules
     match /users/{userId} {
-      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      // Helper function: Prevent non-admins from modifying restricted fields
+      function canModifyRestrictedFields() {
+        // Admins can modify any field
+        if (isAdmin()) {
+          return true;
+        }
+        
+        // Non-admins cannot modify these fields
+        let restrictedFields = ['mealPlanFileURL', 'mealPlanStatus', 'role', 'mealPlanDeliveredAt'];
+        let data = request.resource.data;
+        
+        // For create (resource doesn't exist), check that restricted fields are not present
+        if (!exists(resource)) {
+          return !data.keys().hasAny(restrictedFields);
+        }
+        
+        // For update, check that restricted fields haven't changed
+        let existingData = resource.data;
+        return (!('mealPlanFileURL' in data) || !('mealPlanFileURL' in existingData) || data.mealPlanFileURL == existingData.mealPlanFileURL)
+          && (!('mealPlanStatus' in data) || !('mealPlanStatus' in existingData) || data.mealPlanStatus == existingData.mealPlanStatus)
+          && (!('role' in data) || !('role' in existingData) || data.role == existingData.role)
+          && (!('mealPlanDeliveredAt' in data) || !('mealPlanDeliveredAt' in existingData) || data.mealPlanDeliveredAt == existingData.mealPlanDeliveredAt);
+      }
 
-      allow create: if isSignedIn() && request.auth.uid == userId
-        && !request.resource.data.keys().hasAny(['mealPlanFileURL', 'mealPlanStatus']);
+      // Read: Users can read their own document, admins can read all
+      allow read: if isSignedIn() && (isOwner(userId) || isAdmin());
 
-      allow update: if isAdmin()
-        || (isSignedIn()
-          && request.auth.uid == userId
-          && unchangedRestrictedFields());
+      // Create: Users can only create their own document with valid schema
+      allow create: if isSignedIn() 
+        && isOwner(userId)
+        && isValidUserData()
+        && hasValidUserFieldTypes()
+        && canModifyRestrictedFields();
 
-      allow delete: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+      // Update: Users can update their own document (with restrictions), admins can update any
+      allow update: if (isAdmin() || (isSignedIn() && isOwner(userId) && canModifyRestrictedFields()))
+        && isValidUserData()
+        && hasValidUserFieldTypes();
+
+      // Delete: Users can delete their own document, admins can delete any
+      allow delete: if isAdmin() || (isSignedIn() && isOwner(userId));
     }
 
+    // Purchases collection rules
     match /purchases/{purchaseId} {
-      allow read, write: if isSignedIn();
+      // Helper function: Check if purchase belongs to the user
+      function isPurchaseOwner() {
+        return isSignedIn() 
+          && resource.data.userId == request.auth.uid;
+      }
+
+      // Helper function: Validate purchase document schema
+      function isValidPurchaseData() {
+        let data = request.resource.data;
+        let allowedFields = [
+          'userId',
+          'planType',
+          'status',
+          'mealPlanUrl',
+          'createdAt',
+          'deliveredAt'
+        ];
+        
+        // Check that required fields exist and all keys are in allowed fields
+        return 'userId' in data
+          && 'planType' in data
+          && 'status' in data
+          && data.keys().hasOnly(allowedFields);
+      }
+
+      // Helper function: Validate purchase field types
+      function hasValidPurchaseFieldTypes() {
+        let data = request.resource.data;
+        return data.userId is string
+          && data.planType is string
+          && data.status is string
+          && (!('mealPlanUrl' in data) || data.mealPlanUrl is string || data.mealPlanUrl == null)
+          && (!('createdAt' in data) || data.createdAt is timestamp || data.createdAt == null)
+          && (!('deliveredAt' in data) || data.deliveredAt is timestamp || data.deliveredAt == null);
+      }
+
+      // Read: Users can only read their own purchases, admins can read all
+      allow read: if isSignedIn() && (isPurchaseOwner() || isAdmin());
+
+      // Create: Users can only create purchases with their own userId, admins can create any
+      allow create: if isSignedIn() 
+        && (isAdmin() || request.resource.data.userId == request.auth.uid)
+        && isValidPurchaseData()
+        && hasValidPurchaseFieldTypes();
+
+      // Update: Users can only update their own purchases, admins can update any
+      // Also ensure userId cannot be changed by non-admins
+      allow update: if isSignedIn() 
+        && (isAdmin() || (isPurchaseOwner() && request.resource.data.userId == resource.data.userId && request.resource.data.userId == request.auth.uid))
+        && isValidPurchaseData()
+        && hasValidPurchaseFieldTypes();
+
+      // Delete: Users can delete their own purchases, admins can delete any
+      allow delete: if isAdmin() || (isSignedIn() && isPurchaseOwner());
+    }
+
+    // Deny all other collections by default
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
-

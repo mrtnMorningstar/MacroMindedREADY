@@ -1,5 +1,16 @@
 rules_version = '2';
 service firebase.storage {
+  // ============================================
+  // FIREBASE STORAGE SECURITY RULES
+  // ============================================
+  // 
+  // Meal Plans Folder (/mealPlans/{userId}/):
+  //   - Only admins can upload to plan.pdf and images/ folder
+  //   - Users can only read/download their own plan PDF + images
+  //   - No public listing of other users' files
+  //   - Admins can list, read, and write all files
+  // ============================================
+  
   function isSignedIn() {
     return request.auth != null;
   }
@@ -8,11 +19,50 @@ service firebase.storage {
     return isSignedIn() && request.auth.token.admin == true;
   }
 
+  function isOwner(userId) {
+    return isSignedIn() && request.auth.uid == userId;
+  }
+
   match /b/{bucket}/o {
-    match /mealPlans/{userId}/{allPaths=**} {
-      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+    // Meal Plans PDF file - specific file access
+    match /mealPlans/{userId}/plan.pdf {
+      // Only admins can upload/update/delete the PDF
       allow write: if isAdmin();
+      
+      // Users can download their own PDF, admins can download any
+      allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
+    }
+
+    // Meal Plans individual image files
+    match /mealPlans/{userId}/images/{imageName} {
+      // Only admins can upload/update/delete images
+      allow write: if isAdmin();
+      
+      // Users can download their own images, admins can download any
+      allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
+    }
+
+    // Meal Plans directory listings - only admins can list
+    match /mealPlans {
+      allow list: if isAdmin();
+    }
+
+    match /mealPlans/{userId} {
+      allow list: if isAdmin();
+    }
+
+    match /mealPlans/{userId}/images {
+      allow list: if isAdmin();
+    }
+
+    // Deny all other paths under mealPlans
+    match /mealPlans/{userId}/{allOtherPaths=**} {
+      allow read, write, list: if false;
+    }
+
+    // Deny all other folders by default
+    match /{allPaths=**} {
+      allow read, write, list: if false;
     }
   }
 }
-
