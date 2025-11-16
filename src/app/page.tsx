@@ -34,98 +34,98 @@ const cardVariants: Variants = {
 
 const features = [
   {
-    title: "Custom Meal Plans",
-    description: "Tailored to your goals, body, and lifestyle by real human experts.",
-    icon: "📋",
+    title: "Macro-Perfect Plans",
+    description: "Precision nutrition for your cut, bulk, or maintenance goals. Every macro calculated for your body.",
+    icon: "💪",
   },
   {
     title: "Recipe Library",
-    description: "Access to hundreds of recipes designed to fit your macros.",
-    icon: "🍽️",
+    description: "Hundreds of high-protein, macro-friendly recipes to fuel your training and hit your targets.",
+    icon: "🔥",
   },
   {
-    title: "Dashboard Access",
-    description: "Track your progress and manage your nutrition plan in one place.",
-    icon: "📊",
+    title: "Progress Tracking",
+    description: "Monitor your gains, track macros, and see real results with our fitness-focused dashboard.",
+    icon: "📈",
   },
   {
-    title: "Expert Support",
-    description: "Get personalized guidance from certified nutrition coaches.",
-    icon: "💬",
+    title: "Expert Coaching",
+    description: "Get guidance from certified nutrition coaches who understand training and performance.",
+    icon: "🎯",
   },
 ];
 
 const workflowSteps = [
   {
-    title: "1. Choose a Package",
-    description: "Select Basic, Pro, or Elite depending on how fast you want your plan delivered.",
+    title: "1. Pick Your Speed",
+    description: "Choose Basic (5 days), Pro (3 days), or Elite (1 day) delivery. The faster you want results, the faster we deliver.",
   },
   {
-    title: "2. Tell Us About You",
-    description: "Share stats, preferences, allergies, goals, and schedule so your plan fits your life.",
+    title: "2. Share Your Stats",
+    description: "Tell us your weight, body fat, training schedule, goals (cut/bulk/recomp), and dietary preferences.",
   },
   {
     title: "3. Get Your Plan",
-    description: "A real human expert designs your meal plan and delivers it to your dashboard + email.",
+    description: "A nutrition expert designs your macro-perfect meal plan. Delivered to your dashboard and email.",
   },
 ];
 
 const deliverables = [
-  "Daily macro targets (calories, protein, carbs, fats)",
-  "Full custom meal plan with breakfast, lunch, dinner, and snacks",
-  "Detailed ingredient lists for every meal",
-  "Calorie and macro breakdowns per meal",
-  "Step-by-step preparation instructions",
-  "Access to our Recipe Library with hundreds of recipes",
-  "Private dashboard access to view and manage your plan",
-  "Email delivery of your complete meal plan",
-  "Ability to request plan updates and modifications",
-  "Progress tracking tools and reminders",
+  "Precise daily macro targets (calories, protein, carbs, fats) for your goals",
+  "Complete meal plan: breakfast, lunch, dinner, pre/post-workout, snacks",
+  "High-protein recipes optimized for muscle growth and recovery",
+  "Macro breakdown for every single meal and snack",
+  "Meal prep instructions to save time and stay consistent",
+  "Access to Recipe Library with 200+ macro-friendly recipes",
+  "Private dashboard to track progress and manage your nutrition",
+  "Email delivery of your complete transformation plan",
+  "Request plan updates as you progress (cut → bulk, etc.)",
+  "Progress tracking: weight, body fat, strength gains, photos",
 ];
 
 const dashboardFeatures = [
   {
-    title: "Meal Plan Overview",
-    description: "View your complete custom meal plan with all meals, macros, and ingredients.",
+    title: "Meal Plan Hub",
+    description: "View your complete macro-perfect meal plan with all meals, macros, and prep instructions.",
   },
   {
-    title: "Progress Tracking",
-    description: "Track your nutrition goals and see your progress over time.",
+    title: "Progress Tracker",
+    description: "Log weight, body fat, measurements, and strength gains. See your transformation data.",
   },
   {
     title: "Recipe Library",
-    description: "Browse and search hundreds of recipes that fit your macro targets.",
+    description: "Search 200+ high-protein recipes by macros, meal type, and dietary preferences.",
   },
   {
-    title: "Profile Management",
-    description: "Update your stats, goals, and preferences anytime.",
+    title: "Profile & Stats",
+    description: "Update your body stats, training schedule, and goals (cut/bulk/recomp) anytime.",
   },
   {
-    title: "Plan Updates",
-    description: "Request modifications to your meal plan as your goals evolve.",
+    title: "Plan Modifications",
+    description: "Request updates when switching goals (e.g., cut to bulk) or adjusting macros.",
   },
   {
-    title: "Referral Program",
-    description: "Earn rewards by referring friends to MacroMinded.",
+    title: "Referral Rewards",
+    description: "Earn rewards when you refer friends. Build your fitness community.",
   },
 ];
 
 const packages = [
   {
     title: "Basic",
-    description: "Perfect for beginners wanting a budget-friendly custom plan.",
+    description: "For those ready to commit. Get your macro-perfect plan in 5 business days.",
     delivery: "5 business days",
     highlight: false,
   },
   {
     title: "Pro",
-    description: "Faster delivery, more personalization, and priority support.",
+    description: "Faster delivery, priority support, and maximum personalization. Most popular choice.",
     delivery: "3 business days",
     highlight: true,
   },
   {
     title: "Elite",
-    description: "The best option for people who want results ASAP.",
+    description: "Want results yesterday? Get your plan in 24 hours. For serious athletes.",
     delivery: "1 business day",
     highlight: false,
   },
@@ -159,7 +159,7 @@ export default function Home() {
           variants={heroTextVariants}
           className="text-4xl font-bold uppercase tracking-[0.2em] text-foreground sm:text-6xl"
         >
-          Your Body. Your Goals. Your Custom Meal Plan.
+          Fuel Your Gains. Hit Your Macros. Transform Your Body.
         </motion.h1>
         <motion.p
           initial="hidden"
@@ -168,8 +168,7 @@ export default function Home() {
           variants={heroTextVariants}
           className="mt-6 max-w-3xl text-base uppercase tracking-[0.28em] text-foreground/70 sm:text-lg"
         >
-          No AI. No generic templates. Just human expertise tuned to your goals,
-          lifestyle, and biology.
+          No AI bullshit. No cookie-cutter plans. Real nutrition experts crafting meal plans for your cut, bulk, or recomp.
         </motion.p>
         <motion.div
           initial="hidden"
@@ -180,15 +179,15 @@ export default function Home() {
         >
           <Link
             href="/packages"
-            className="rounded-full bg-accent px-8 py-3 text-xs font-semibold uppercase tracking-[0.32em] text-background transition hover:bg-transparent hover:text-accent"
+            className="rounded-full bg-accent px-8 py-3 text-xs font-semibold uppercase tracking-[0.32em] text-background transition hover:bg-transparent hover:text-accent hover:border hover:border-accent"
           >
-            Start My Custom Plan
+            Start My Transformation
           </Link>
           <Link
             href="/dashboard"
             className="rounded-full border border-accent px-8 py-3 text-xs font-semibold uppercase tracking-[0.32em] text-accent transition hover:bg-accent hover:text-background"
           >
-            Preview Dashboard
+            See The Dashboard
           </Link>
         </motion.div>
       </section>
@@ -204,10 +203,10 @@ export default function Home() {
             className="mb-12 text-center"
           >
             <h2 className="text-3xl font-bold uppercase tracking-[0.2em] text-foreground sm:text-4xl">
-              Everything You Need
+              Built For Athletes. Designed For Results.
             </h2>
             <p className="mt-4 text-sm uppercase tracking-[0.32em] text-foreground/60">
-              A complete nutrition solution built around your unique needs
+              Everything you need to fuel your training and hit your physique goals
             </p>
           </motion.div>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -249,7 +248,7 @@ export default function Home() {
               How It Works
             </h2>
             <p className="mt-4 text-sm uppercase tracking-[0.32em] text-foreground/60">
-              Three simple steps to your custom meal plan
+              Three steps to your macro-perfect meal plan. No fluff, just results.
             </p>
           </motion.div>
           <div className="grid gap-8 md:grid-cols-3">
@@ -287,10 +286,10 @@ export default function Home() {
             className="mb-12 text-center"
           >
             <h2 className="text-3xl font-bold uppercase tracking-[0.2em] text-foreground sm:text-4xl">
-              What You Get
+              What's In Your Plan
             </h2>
             <p className="mt-4 text-sm uppercase tracking-[0.32em] text-foreground/60">
-              Everything included in your custom meal plan
+              Everything you need to fuel your training and transform your physique
             </p>
           </motion.div>
           <div className="grid gap-4 md:grid-cols-2">
@@ -322,10 +321,10 @@ export default function Home() {
             className="mb-12 text-center"
           >
             <h2 className="text-3xl font-bold uppercase tracking-[0.2em] text-foreground sm:text-4xl">
-              Your Dashboard
+              Your Command Center
             </h2>
             <p className="mt-4 text-sm uppercase tracking-[0.32em] text-foreground/60">
-              Powerful tools to manage your nutrition journey
+              Track macros, monitor progress, and manage your nutrition like a pro
             </p>
           </motion.div>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -363,10 +362,10 @@ export default function Home() {
             className="mb-12 text-center"
           >
             <h2 className="text-3xl font-bold uppercase tracking-[0.2em] text-foreground sm:text-4xl">
-              Choose Your Package
+              Pick Your Speed
             </h2>
             <p className="mt-4 text-sm uppercase tracking-[0.32em] text-foreground/60">
-              Select the delivery speed that works for you
+              Choose how fast you want to start your transformation
             </p>
           </motion.div>
           <div className="grid gap-8 md:grid-cols-3">
@@ -406,7 +405,7 @@ export default function Home() {
                       : "border border-border/70 text-foreground hover:border-accent hover:text-accent"
                   }`}
                 >
-                  View Details
+                  Get Started
                 </Link>
               </motion.div>
             ))}
@@ -424,7 +423,7 @@ export default function Home() {
             variants={heroTextVariants}
             className="text-3xl font-bold uppercase tracking-[0.2em] text-foreground sm:text-4xl"
           >
-            Ready to Transform Your Nutrition?
+            Ready to Transform Your Body?
           </motion.h2>
           <motion.p
             initial="hidden"
@@ -434,7 +433,7 @@ export default function Home() {
             custom={0.1}
             className="mt-4 text-sm uppercase tracking-[0.3em] text-foreground/60"
           >
-            Start your transformation with a meal plan built for your life — not downloaded from a template.
+            Stop guessing your macros. Start hitting your goals. Get your custom meal plan today.
           </motion.p>
         <motion.div
             initial="hidden"
@@ -446,9 +445,9 @@ export default function Home() {
           >
             <Link
               href="/packages"
-              className="rounded-full bg-accent px-10 py-4 text-sm font-semibold uppercase tracking-[0.32em] text-background transition hover:bg-transparent hover:text-accent"
+              className="rounded-full bg-accent px-10 py-4 text-sm font-semibold uppercase tracking-[0.32em] text-background transition hover:bg-transparent hover:text-accent hover:border hover:border-accent"
             >
-              Get Started
+              Start My Transformation
             </Link>
         </motion.div>
         </div>
