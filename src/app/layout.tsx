@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Anton } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/context/auth-context";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -36,11 +37,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${anton.variable} bg-background text-foreground antialiased`}
       >
-        <div className="flex min-h-screen flex-col bg-background">
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <Footer />
-        </div>
+        <AuthProvider>
+          <div className="flex min-h-screen flex-col bg-background">
+            <Navbar />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );

@@ -11,7 +11,6 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  onAuthStateChanged,
   signOut,
   type User as FirebaseUser,
 } from "firebase/auth";
@@ -23,6 +22,8 @@ import type { DashboardContextValue } from "@/context/dashboard-context";
 import { generateUniqueReferralCode } from "@/lib/referral";
 import { getUserPurchase } from "@/lib/purchases";
 import type { UserDashboardData } from "@/types/dashboard";
+import AuthGate from "@/components/AuthGate";
+import { useAuth } from "@/context/auth-context";
 
 const navItems = [
   { href: "/dashboard", label: "Overview" },
@@ -103,22 +104,19 @@ export default function DashboardLayout({
     []
   );
 
+  const { user: authUser } = useAuth();
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (!firebaseUser) {
-        setUser(null);
-        setCheckingAuth(false);
-        router.replace("/login");
-        return;
-      }
-
-      setUser(firebaseUser);
+    if (!authUser) {
+      setUser(null);
       setCheckingAuth(false);
-      void loadDashboardData(firebaseUser.uid);
-    });
+      return;
+    }
 
-    return () => unsubscribe();
-  }, [loadDashboardData, router]);
+    setUser(authUser);
+    setCheckingAuth(false);
+    void loadDashboardData(authUser.uid);
+  }, [authUser, loadDashboardData]);
 
   const refresh = useCallback(async () => {
     if (user) {
@@ -145,18 +143,10 @@ export default function DashboardLayout({
     [data, error, loading, purchase, refresh, signOutAndRedirect, user]
   );
 
-  if (checkingAuth) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
-        <p className="text-xs uppercase tracking-[0.3em] text-foreground/60">
-          Checking authentication...
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <DashboardProvider value={contextValue}>
+    <AuthGate requireAuth requirePurchase>
+      {checkingAuth || !user ? null : (
+        <DashboardProvider value={contextValue}>
       <div className="flex min-h-screen bg-background text-foreground">
         <motion.aside
           initial={{ x: -40, opacity: 0 }}
@@ -207,5 +197,7 @@ export default function DashboardLayout({
         </div>
       </div>
     </DashboardProvider>
+      )}
+    </AuthGate>
   );
 }

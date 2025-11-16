@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { collection, doc, getDoc, onSnapshot, updateDoc, serverTimestamp, type DocumentData } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytesResumable, deleteObject } from "firebase/storage";
-import { onAuthStateChanged } from "firebase/auth";
 
 import { auth, db, storage } from "@/lib/firebase";
 import { AdminSidebar, UserDetailPanel } from "@/components/admin";
@@ -34,8 +33,7 @@ type UploadStatus = {
 export default function AdminPage() {
   const router = useRouter();
 
-  const [checkingAuth, setCheckingAuth] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  // AuthGate handles auth checks, so we can remove these states
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -48,36 +46,8 @@ export default function AdminPage() {
 
   const [uploadStates, setUploadStates] = useState<Record<string, Record<string, UploadStatus>>>({});
 
-  // Verify admin access
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (!currentUser) {
-        router.replace("/login");
-        setCheckingAuth(false);
-        return;
-      }
-
-      try {
-        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-        const role = userDoc.data()?.role;
-
-        if (role !== "admin") {
-          router.replace("/dashboard");
-          setCheckingAuth(false);
-          return;
-        }
-
-        setIsAdmin(true);
-      } catch (error) {
-        console.error("Failed to verify admin role:", error);
-        router.replace("/dashboard");
-      } finally {
-        setCheckingAuth(false);
-      }
-    });
-
-    return () => unsubscribe();
-  }, [router]);
+  // Admin access is verified by AuthGate in admin layout
+  // No need for local auth checks
 
   // Show toast notification
   const showToast = useCallback((message: string, type: "success" | "error") => {
@@ -87,7 +57,7 @@ export default function AdminPage() {
 
   // Subscribe to users collection (exclude admins)
   useEffect(() => {
-    if (!isAdmin) return;
+    // AuthGate ensures we're admin, so we can proceed
 
     setLoadingUsers(true);
     const unsubscribe = onSnapshot(
@@ -113,7 +83,7 @@ export default function AdminPage() {
     );
 
     return () => unsubscribe();
-  }, [isAdmin, showToast]);
+  }, [showToast]);
 
   // Generic upload handler
   const uploadFileForUser = useCallback(
@@ -281,20 +251,7 @@ export default function AdminPage() {
     [selectedUser, deleteFileForUser]
   );
 
-  if (checkingAuth) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
-        <p className="text-xs uppercase tracking-[0.3em] text-foreground/60">
-          Validating access...
-        </p>
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return null;
-  }
-
+  // AuthGate handles auth checks and loading, so we can just render
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       <AdminSidebar />

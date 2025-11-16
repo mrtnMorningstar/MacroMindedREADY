@@ -29,15 +29,8 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isDisabled = useMemo(() => !email || !password || isSubmitting, [email, password, isSubmitting]);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        router.replace("/dashboard");
-      }
-    });
-
-    return () => unsubscribe();
-  }, [router]);
+  // Auth redirect is handled by AuthGate in layouts
+  // No need to check here to prevent flashing
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
