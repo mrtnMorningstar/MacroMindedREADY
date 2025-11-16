@@ -19,6 +19,7 @@ const defaultLinks: NavLink[] = [
   { label: "Recipes", href: "/admin/recipes" },
   { label: "Sales / Revenue", href: "/admin/sales" },
   { label: "Plan Requests", href: "/admin/requests" },
+  { label: "Manage Admins", href: "/admin/manage-admins" },
 ];
 
 export function AdminSidebar({ links }: AdminSidebarProps) {
