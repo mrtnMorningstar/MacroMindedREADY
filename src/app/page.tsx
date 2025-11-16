@@ -20,13 +20,12 @@ const heroTextVariants: Variants = {
 };
 
 const cardVariants: Variants = {
-  hidden: { opacity: 0, y: 24 },
+  hidden: { y: 20 },
   visible: (custom: number = 0) => ({
-    opacity: 1,
     y: 0,
     transition: {
-      duration: 0.6,
-      delay: 0.4 + custom * 0.1,
+      duration: 0.4,
+      delay: custom * 0.05,
       ease: "easeOut",
     },
   }),
@@ -171,13 +170,7 @@ export default function Home() {
 
       {/* WHO THIS IS FOR */}
       <section className="px-6 py-16 text-center text-white">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.3 }}
-          variants={heroTextVariants}
-          className="mx-auto max-w-4xl"
-        >
+        <div className="mx-auto max-w-4xl">
           <h2 className="text-3xl font-bold uppercase tracking-[0.2em] sm:text-4xl">
             Built for Anyone Who Wants Results
           </h2>
@@ -185,26 +178,17 @@ export default function Home() {
             Whether you&apos;re trying to lose fat, build muscle, or maintain your physique —
             your plan is tailored to your reality.
           </p>
-        </motion.div>
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.3 }}
-          variants={heroTextVariants}
-          custom={0.2}
-          className="mx-auto mt-10 grid max-w-5xl grid-cols-2 gap-4 text-sm uppercase tracking-[0.2em] text-foreground/70 sm:grid-cols-5"
-        >
-          {audienceTargets.map((item, index) => (
-            <motion.div
+        </div>
+        <div className="mx-auto mt-10 grid max-w-5xl grid-cols-2 gap-4 text-sm uppercase tracking-[0.2em] text-foreground/70 sm:grid-cols-5">
+          {audienceTargets.map((item) => (
+            <div
               key={item}
-              custom={index}
-              variants={cardVariants}
               className="rounded-2xl border border-border/60 bg-muted/70 px-4 py-4 text-sm font-semibold"
             >
               {item}
-            </motion.div>
+            </div>
           ))}
-        </motion.div>
+        </div>
       </section>
 
       {/* HOW IT WORKS */}
@@ -215,16 +199,10 @@ export default function Home() {
           </h2>
         </div>
         <div className="mx-auto mt-12 grid gap-8 md:grid-cols-3">
-          {workflowSteps.map((step, index) => (
-            <motion.div
+          {workflowSteps.map((step) => (
+            <div
               key={step.title}
-              className="rounded-3xl border border-border/70 bg-muted/80 px-6 py-8 text-left shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)]"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.3 }}
-              variants={cardVariants}
-              custom={index}
-              whileHover={{ scale: 1.03 }}
+              className="rounded-3xl border border-border/70 bg-muted/80 px-6 py-8 text-left shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] transition hover:scale-105"
             >
               <h3 className="text-xl font-semibold uppercase tracking-[0.2em]">
                 {step.title}
@@ -232,7 +210,7 @@ export default function Home() {
               <p className="mt-3 text-sm uppercase tracking-[0.28em] text-foreground/60">
                 {step.text}
               </p>
-            </motion.div>
+            </div>
           ))}
         </div>
       </section>
@@ -245,18 +223,13 @@ export default function Home() {
           </h2>
         </div>
         <div className="mx-auto mt-10 grid gap-6 md:grid-cols-2">
-          {deliverables.map((item, index) => (
-            <motion.div
+          {deliverables.map((item) => (
+            <div
               key={item}
               className="rounded-2xl border border-border/70 bg-muted/70 px-6 py-5 text-left text-sm uppercase tracking-[0.25em] text-foreground/80"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.3 }}
-              variants={cardVariants}
-              custom={index}
             >
               • {item}
-            </motion.div>
+            </div>
           ))}
         </div>
       </section>
@@ -269,20 +242,14 @@ export default function Home() {
           </h2>
         </div>
         <div className="mx-auto mt-12 grid gap-8 md:grid-cols-3">
-          {packages.map((pkg, index) => (
-            <motion.div
+          {packages.map((pkg) => (
+            <div
               key={pkg.title}
-              className={`rounded-3xl border px-6 py-8 shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] ${
+              className={`rounded-3xl border px-6 py-8 shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] transition hover:scale-105 ${
                 pkg.highlight
                   ? "border-accent bg-accent/20"
                   : "border-border/70 bg-muted/80"
               }`}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.3 }}
-              variants={cardVariants}
-              custom={index}
-              whileHover={{ scale: 1.03 }}
             >
               <h3
                 className={`text-3xl font-bold uppercase tracking-[0.2em] ${
@@ -309,7 +276,7 @@ export default function Home() {
               >
                 {pkg.cta}
               </Link>
-            </motion.div>
+            </div>
           ))}
         </div>
       </section>
