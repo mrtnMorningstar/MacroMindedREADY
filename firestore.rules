@@ -109,8 +109,11 @@ service cloud.firestore {
       function isWizardUpdate() {
         // Check that profile exists and is a map
         // Allow updating profile, estimatedMacros, and macroWizardCompleted together
+        // Only validate the wizard fields being updated, not the entire document
         return 'profile' in request.resource.data 
           && request.resource.data.profile is map
+          && (!('estimatedMacros' in request.resource.data) || request.resource.data.estimatedMacros is map || request.resource.data.estimatedMacros == null)
+          && (!('macroWizardCompleted' in request.resource.data) || request.resource.data.macroWizardCompleted is bool || request.resource.data.macroWizardCompleted == null)
           && (
             // Ensure no restricted fields are being modified
             (!exists(resource) && !request.resource.data.keys().hasAny(['mealPlanFileURL', 'mealPlanStatus', 'role', 'mealPlanDeliveredAt'])) ||
@@ -157,7 +160,9 @@ service cloud.firestore {
         // Admins can update anything
         isAdmin() || (
           // Allow wizard updates (profile + estimatedMacros + macroWizardCompleted from macro form)
-          isWizardUpdate() ||
+          // This allows updating these fields without full document validation
+          // Only check that restricted fields aren't being modified
+          (isWizardUpdate() && canModifyRestrictedFields()) ||
           // For other updates, apply full validation
           (canModifyRestrictedFields() && isValidUserData() && hasValidUserFieldTypes())
         )

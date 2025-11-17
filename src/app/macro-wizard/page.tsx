@@ -128,6 +128,12 @@ export default function MacroWizard() {
         router.push("/dashboard");
       }, 1500);
     } catch (error) {
+      console.error("Failed to save wizard data:", error);
+      // Log the full error for debugging
+      if (error instanceof Error) {
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      }
       handleError(error);
     } finally {
       setIsSaving(false);
