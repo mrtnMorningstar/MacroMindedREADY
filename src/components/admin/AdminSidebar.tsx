@@ -14,6 +14,7 @@ import {
   XMarkIcon,
   UserGroupIcon,
   ShieldCheckIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
 import {
   HomeIcon as HomeIconSolid,
@@ -23,6 +24,7 @@ import {
   Cog6ToothIcon as Cog6ToothIconSolid,
   UserGroupIcon as UserGroupIconSolid,
   ShieldCheckIcon as ShieldCheckIconSolid,
+  SparklesIcon as SparklesIconSolid,
 } from "@heroicons/react/24/solid";
 
 // Context to share sidebar state
@@ -72,6 +74,12 @@ const navLinks: NavLink[] = [
     href: "/admin/requests",
     icon: ClipboardDocumentListIcon,
     iconSolid: ClipboardDocumentListIconSolid,
+  },
+  {
+    label: "Wizard Progress",
+    href: "/admin/wizard",
+    icon: SparklesIcon,
+    iconSolid: SparklesIconSolid,
   },
   {
     label: "Manage Admins",

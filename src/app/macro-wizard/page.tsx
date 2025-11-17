@@ -169,26 +169,15 @@ export default function MacroWizard() {
           Personalized Setup
         </motion.h1>
 
-        {/* Step dots */}
-        <div className="mb-10 flex justify-center gap-2">
-          {steps.map((s, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: i * 0.1 }}
-              className={`h-2 rounded-full transition-all ${
-                i <= step
-                  ? "w-12 bg-accent"
-                  : "w-8 bg-border/70"
-              }`}
-            />
-          ))}
+        {/* Progress bar */}
+        <div className="w-full bg-gray-800 h-2 rounded-full mb-10">
+          <div
+            className="bg-red-600 h-2 rounded-full transition-all"
+            style={{ width: `${(step / (steps.length - 1)) * 100}%` }}
+          />
         </div>
 
-        <div className="relative overflow-hidden rounded-3xl border border-border/70 bg-muted/60 p-10 shadow-[0_0_90px_-45px_rgba(215,38,61,0.6)] backdrop-blur">
-          <div className="pointer-events-none absolute inset-x-0 -top-1/3 h-40 bg-gradient-to-b from-accent/40 via-accent/10 to-transparent blur-3xl" />
-
+        <div className="bg-gray-950 p-8 rounded-2xl border border-gray-800 shadow-xl">
           <AnimatePresence mode="wait">
             <motion.div
               key={step}
@@ -198,12 +187,19 @@ export default function MacroWizard() {
               transition={{ duration: 0.3 }}
               className="relative"
             >
+              {/* Animated Step Title */}
+              <motion.h2
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-2xl font-bold mb-4 text-white"
+              >
+                {steps[step]}
+              </motion.h2>
+
               {/* PERSONAL */}
               {step === 0 && (
-                <div className="space-y-6">
-                  <h2 className="text-xl font-bold uppercase tracking-[0.28em] text-foreground">
-                    Personal Information
-                  </h2>
+                <motion.div className="bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-800">
+                  <div className="space-y-6">
                   <Input
                     label="Age"
                     type="number"
@@ -223,70 +219,68 @@ export default function MacroWizard() {
                     onChange={(e) => update("weight", e.target.value)}
                   />
 
-                  <div>
-                    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-foreground/70">
-                      Gender
-                    </label>
-                    <select
-                      className="w-full rounded-2xl border border-border/60 bg-background/40 px-4 py-3 text-sm tracking-[0.08em] text-foreground focus:border-accent focus:outline-none"
-                      value={form.gender}
-                      onChange={(e) => update("gender", e.target.value)}
-                    >
-                      <option value="">Select</option>
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                    </select>
+                    <div>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-gray-300">
+                        Gender
+                      </label>
+                      <select
+                        className="bg-black border border-gray-700 focus:border-red-600 transition p-3 rounded w-full text-white"
+                        value={form.gender}
+                        onChange={(e) => update("gender", e.target.value)}
+                      >
+                        <option value="">Select</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                      </select>
+                    </div>
                   </div>
-                </div>
+                </motion.div>
               )}
 
               {/* ACTIVITY */}
               {step === 1 && (
-                <div className="space-y-6">
-                  <h2 className="text-xl font-bold uppercase tracking-[0.28em] text-foreground">
-                    Activity Level
-                  </h2>
-                  <div>
-                    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-foreground/70">
-                      How active are you?
-                    </label>
-                    <select
-                      className="w-full rounded-2xl border border-border/60 bg-background/40 px-4 py-3 text-sm tracking-[0.08em] text-foreground focus:border-accent focus:outline-none"
-                      value={form.activityLevel}
-                      onChange={(e) => update("activityLevel", e.target.value)}
-                    >
-                      <option value="">Select</option>
-                      <option value="sedentary">Sedentary</option>
-                      <option value="light">Light (1–3 days/week)</option>
-                      <option value="moderate">Moderate (3–5 days/week)</option>
-                      <option value="active">Active (6–7 days/week)</option>
-                      <option value="very_active">Very Active (Athlete)</option>
-                    </select>
+                <motion.div className="bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-800">
+                  <div className="space-y-6">
+                    <div>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-gray-300">
+                        How active are you?
+                      </label>
+                      <select
+                        className="bg-black border border-gray-700 focus:border-red-600 transition p-3 rounded w-full text-white"
+                        value={form.activityLevel}
+                        onChange={(e) => update("activityLevel", e.target.value)}
+                      >
+                        <option value="">Select</option>
+                        <option value="sedentary">Sedentary</option>
+                        <option value="light">Light (1–3 days/week)</option>
+                        <option value="moderate">Moderate (3–5 days/week)</option>
+                        <option value="active">Active (6–7 days/week)</option>
+                        <option value="very_active">Very Active (Athlete)</option>
+                      </select>
+                    </div>
                   </div>
-                </div>
+                </motion.div>
               )}
 
               {/* GOALS */}
               {step === 2 && (
-                <div className="space-y-6">
-                  <h2 className="text-xl font-bold uppercase tracking-[0.28em] text-foreground">
-                    Goals & Preferences
-                  </h2>
-                  <div>
-                    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-foreground/70">
-                      Goal
-                    </label>
-                    <select
-                      className="w-full rounded-2xl border border-border/60 bg-background/40 px-4 py-3 text-sm tracking-[0.08em] text-foreground focus:border-accent focus:outline-none"
-                      value={form.goal}
-                      onChange={(e) => update("goal", e.target.value)}
-                    >
-                      <option value="">Select</option>
-                      <option value="lose">Lose Weight</option>
-                      <option value="maintain">Maintain Weight</option>
-                      <option value="gain">Gain Weight</option>
-                    </select>
-                  </div>
+                <motion.div className="bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-800">
+                  <div className="space-y-6">
+                    <div>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-gray-300">
+                        Goal
+                      </label>
+                      <select
+                        className="bg-black border border-gray-700 focus:border-red-600 transition p-3 rounded w-full text-white"
+                        value={form.goal}
+                        onChange={(e) => update("goal", e.target.value)}
+                      >
+                        <option value="">Select</option>
+                        <option value="lose">Lose Weight</option>
+                        <option value="maintain">Maintain Weight</option>
+                        <option value="gain">Gain Weight</option>
+                      </select>
+                    </div>
 
                   <Input
                     label="Allergies"
@@ -300,70 +294,72 @@ export default function MacroWizard() {
                     onChange={(e) => update("likes", e.target.value)}
                     placeholder="Foods you enjoy..."
                   />
-                  <Input
-                    label="Foods You Dislike"
-                    value={form.dislikes}
-                    onChange={(e) => update("dislikes", e.target.value)}
-                    placeholder="Foods to avoid..."
-                  />
-                </div>
+                    <Input
+                      label="Foods You Dislike"
+                      value={form.dislikes}
+                      onChange={(e) => update("dislikes", e.target.value)}
+                      placeholder="Foods to avoid..."
+                    />
+                  </div>
+                </motion.div>
               )}
 
               {/* REVIEW */}
               {step === 3 && (
-                <div>
-                  <h2 className="mb-6 text-xl font-bold uppercase tracking-[0.28em] text-foreground">
-                    Review Your Details
-                  </h2>
-                  <p className="mb-4 text-xs uppercase tracking-[0.25em] text-foreground/60">
+                <motion.div className="bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-800">
+                  <p className="mb-4 text-xs uppercase tracking-[0.25em] text-gray-400">
                     Please review your information before finalizing:
                   </p>
-                  <div className="rounded-2xl border border-border/70 bg-background/20 p-6">
-                    <div className="space-y-3 text-sm uppercase tracking-[0.2em] text-foreground/80">
+                  <div className="rounded-2xl border border-gray-700 bg-black/40 p-6">
+                    <div className="space-y-3 text-sm uppercase tracking-[0.2em] text-gray-300">
                       <div className="flex justify-between">
-                        <span className="text-foreground/50">Age:</span>
-                        <span>{form.age || "—"}</span>
+                        <span className="text-gray-400">Age:</span>
+                        <span className="text-white">{form.age || "—"}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-foreground/50">Height:</span>
-                        <span>{form.height ? `${form.height} cm` : "—"}</span>
+                        <span className="text-gray-400">Height:</span>
+                        <span className="text-white">{form.height ? `${form.height} cm` : "—"}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-foreground/50">Weight:</span>
-                        <span>{form.weight ? `${form.weight} kg` : "—"}</span>
+                        <span className="text-gray-400">Weight:</span>
+                        <span className="text-white">{form.weight ? `${form.weight} kg` : "—"}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-foreground/50">Gender:</span>
-                        <span className="capitalize">{form.gender || "—"}</span>
+                        <span className="text-gray-400">Gender:</span>
+                        <span className="capitalize text-white">{form.gender || "—"}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-foreground/50">Activity:</span>
-                        <span className="capitalize">
+                        <span className="text-gray-400">Activity:</span>
+                        <span className="capitalize text-white">
                           {form.activityLevel.replace("_", " ") || "—"}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-foreground/50">Goal:</span>
-                        <span className="capitalize">{form.goal || "—"}</span>
+                        <span className="text-gray-400">Goal:</span>
+                        <span className="capitalize text-white">{form.goal || "—"}</span>
                       </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               )}
 
               {/* RESULT */}
               {step === 4 && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <h2 className="mb-6 text-2xl font-bold uppercase tracking-[0.28em] text-foreground">
-                    Estimated Macros
-                  </h2>
+                <motion.div className="bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-800">
+                  <div className="bg-gray-900 p-6 rounded-xl border border-gray-800 shadow-xl text-gray-300 mb-6">
+                    <h3 className="text-xl font-bold mb-4">Your Details</h3>
+
+                    <p>Age: {form.age}</p>
+                    <p>Height: {form.height} cm</p>
+                    <p>Weight: {form.weight} kg</p>
+                    <p>Activity: {form.activityLevel}</p>
+                    <p>Goal: {form.goal}</p>
+
+                    <p className="mt-4 text-sm text-gray-500">These will be reviewed by your coach.</p>
+                  </div>
 
                   {!macros ? (
-                    <p className="text-accent">Not enough information to calculate macros.</p>
+                    <p className="text-red-500">Not enough information to calculate macros.</p>
                   ) : (
                     <div className="space-y-4">
                       <MacroLine label="Calories" value={macros.calories.toString()} />
@@ -373,7 +369,7 @@ export default function MacroWizard() {
                     </div>
                   )}
 
-                  <p className="mt-6 text-xs uppercase tracking-[0.25em] text-foreground/60">
+                  <p className="mt-6 text-xs uppercase tracking-[0.25em] text-gray-400">
                     Your coach will personally review and adjust these numbers to create your custom meal plan.
                   </p>
                 </motion.div>
@@ -386,7 +382,7 @@ export default function MacroWizard() {
             {step > 0 && step < steps.length - 1 && (
               <button
                 onClick={prev}
-                className="rounded-full border border-border/70 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-foreground/70 transition hover:border-accent hover:text-accent"
+                className="px-5 py-3 bg-gray-800 hover:bg-gray-700 transition rounded-lg font-semibold text-white border border-gray-700"
               >
                 Back
               </button>
@@ -396,8 +392,8 @@ export default function MacroWizard() {
             {step < steps.length - 1 && (
               <button
                 onClick={next}
-                disabled={isSaving}
-                className="rounded-full border border-accent bg-accent px-6 py-3 text-xs font-semibold uppercase tracking-[0.32em] text-background transition hover:bg-transparent hover:text-accent disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isSaving || (step === 0 && (!form.age || !form.height || !form.weight))}
+                className="px-5 py-3 bg-red-600 hover:bg-red-700 transition rounded-lg font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-red-600"
               >
                 {isSaving
                   ? "Saving..."
@@ -428,7 +424,7 @@ function Input({
 }) {
   return (
     <div>
-      <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-foreground/70">
+      <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-gray-300">
         {label}
       </label>
       <input
@@ -436,7 +432,7 @@ function Input({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="w-full rounded-2xl border border-border/60 bg-background/40 px-4 py-3 text-sm tracking-[0.08em] text-foreground placeholder:text-foreground/40 focus:border-accent focus:outline-none"
+        className="bg-black border border-gray-700 focus:border-red-600 transition p-3 rounded w-full text-white placeholder:text-gray-500"
       />
     </div>
   );
@@ -444,11 +440,18 @@ function Input({
 
 function MacroLine({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-border/70 bg-background/20 px-6 py-4">
-      <span className="text-sm font-semibold uppercase tracking-[0.25em] text-foreground/70">
+    <div className="flex items-center justify-between rounded-xl border border-gray-700 bg-black/40 px-6 py-4">
+      <span className="text-sm font-semibold uppercase tracking-[0.25em] text-gray-300">
         {label}
       </span>
-      <span className="text-lg font-bold uppercase tracking-[0.2em] text-accent">{value}</span>
+      <motion.span
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="text-lg font-bold uppercase tracking-[0.2em] text-red-500"
+      >
+        {value}
+      </motion.span>
     </div>
   );
 }
