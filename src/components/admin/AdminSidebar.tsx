@@ -12,6 +12,8 @@ import {
   Cog6ToothIcon,
   Bars3Icon,
   XMarkIcon,
+  UserGroupIcon,
+  ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
 import {
   HomeIcon as HomeIconSolid,
@@ -19,6 +21,8 @@ import {
   ChartBarIcon as ChartBarIconSolid,
   ClipboardDocumentListIcon as ClipboardDocumentListIconSolid,
   Cog6ToothIcon as Cog6ToothIconSolid,
+  UserGroupIcon as UserGroupIconSolid,
+  ShieldCheckIcon as ShieldCheckIconSolid,
 } from "@heroicons/react/24/solid";
 
 // Context to share sidebar state
@@ -58,10 +62,22 @@ const navLinks: NavLink[] = [
     iconSolid: ChartBarIconSolid,
   },
   {
+    label: "Referrals",
+    href: "/admin/referrals",
+    icon: UserGroupIcon,
+    iconSolid: UserGroupIconSolid,
+  },
+  {
     label: "Requests",
     href: "/admin/requests",
     icon: ClipboardDocumentListIcon,
     iconSolid: ClipboardDocumentListIconSolid,
+  },
+  {
+    label: "Manage Admins",
+    href: "/admin/manage-admins",
+    icon: ShieldCheckIcon,
+    iconSolid: ShieldCheckIconSolid,
   },
   {
     label: "Settings",
