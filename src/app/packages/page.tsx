@@ -11,6 +11,7 @@ import { auth, db } from "@/lib/firebase";
 import CheckoutWizard, { type WizardFormData } from "@/components/checkout/CheckoutWizard";
 import PackageRequiredModal from "@/components/modals/PackageRequiredModal";
 import { useSearchParams } from "next/navigation";
+import PackageListSkeleton from "@/components/skeletons/PackageListSkeleton";
 
 type PlanTier = {
   name: "Basic" | "Pro" | "Elite";
