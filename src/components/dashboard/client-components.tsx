@@ -220,12 +220,14 @@ export function MealPlanSection({
   imageUrls,
   daysSinceDelivery,
   groceryListUrl,
+  packageTier,
 }: {
   status: MealPlanStatus;
   fileUrl?: string | null;
   imageUrls?: string[] | null;
   daysSinceDelivery: number | null;
   groceryListUrl?: string | null;
+  packageTier?: string | null;
 }) {
   const isDelivered = status === "Delivered";
   const images = imageUrls ?? [];
@@ -253,12 +255,15 @@ export function MealPlanSection({
         </h3>
         {!isDelivered ? (
           <>
-            <p className="text-xs font-medium uppercase tracking-[0.3em] text-foreground/60 sm:text-sm">
-              Your dashboard will unlock automatically once our coaches deliver
-              your plan. Refresh shortly after checkout to see updates.
-            </p>
-            <div className="mt-4 flex h-36 items-center justify-center rounded-2xl border border-dashed border-border/70 bg-background/20 text-[0.65rem] font-medium uppercase tracking-[0.3em] text-foreground/50">
-              Meal plan file pending upload
+            <div className="rounded-2xl border border-yellow-500/30 bg-yellow-500/10 px-6 py-6">
+              <div className="mb-3 flex items-center gap-3">
+                <span className="inline-flex items-center rounded-full border border-yellow-500/30 bg-yellow-500/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-yellow-500">
+                  {status === "In Progress" ? "🟠 Being Prepared" : "🟡 In Queue"}
+                </span>
+              </div>
+              <p className="text-sm font-medium uppercase tracking-[0.25em] text-foreground/80">
+                Your meal plan is being prepared. Estimated delivery: {packageTier === "Elite" ? "1–3" : packageTier === "Pro" ? "2–4" : "3–5"} business days depending on your package.
+              </p>
             </div>
           </>
         ) : (

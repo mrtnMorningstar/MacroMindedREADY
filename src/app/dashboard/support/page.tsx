@@ -5,15 +5,15 @@ import Link from "next/link";
 import { useDashboard } from "@/context/dashboard-context";
 import {
   LockedDashboardScreen,
-  SkeletonGrid,
 } from "@/components/dashboard/client-components";
+import { DashboardCardSkeleton } from "@/components/skeletons";
 import { CTA_BUTTON_CLASSES } from "@/lib/ui";
 
 export default function SupportPage() {
   const { loading, error, isUnlocked } = useDashboard();
 
   if (loading) {
-    return <SkeletonGrid />;
+    return <DashboardCardSkeleton />;
   }
 
   if (error) {

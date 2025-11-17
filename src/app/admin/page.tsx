@@ -9,6 +9,7 @@ import { getDownloadURL, ref, uploadBytesResumable, deleteObject } from "firebas
 import { auth, db, storage } from "@/lib/firebase";
 import { AdminSidebar, UserDetailPanel, useSidebar } from "@/components/admin";
 import DashboardSummary from "@/components/admin/DashboardSummary";
+import { AdminTableSkeleton } from "@/components/skeletons";
 
 type UserRecord = {
   id: string;
@@ -561,12 +562,7 @@ export default function AdminPage() {
             </div>
 
             {loadingUsers ? (
-              <div className="rounded-2xl border border-border/70 bg-background/20 px-4 py-12 text-center">
-                <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-                <p className="mt-3 text-xs uppercase tracking-[0.3em] text-foreground/60">
-                  Loading users...
-                </p>
-              </div>
+              <AdminTableSkeleton rows={10} />
             ) : filteredUsers.length === 0 ? (
               <div className="rounded-2xl border border-border/70 bg-background/20 px-4 py-12 text-center">
                 <p className="text-xs uppercase tracking-[0.3em] text-foreground/50">

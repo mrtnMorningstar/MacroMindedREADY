@@ -14,7 +14,7 @@ export default function ProfilePage() {
   const { data, loading, error, isUnlocked } = useDashboard();
 
   if (loading) {
-    return <SkeletonGrid />;
+    return <ProfileSkeleton />;
   }
 
   if (error) {

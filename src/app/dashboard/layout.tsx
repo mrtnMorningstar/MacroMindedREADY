@@ -22,7 +22,7 @@ import type { DashboardContextValue } from "@/context/dashboard-context";
 import { generateUniqueReferralCode } from "@/lib/referral";
 import { getUserPurchase } from "@/lib/purchases";
 import type { UserDashboardData } from "@/types/dashboard";
-import AuthGate from "@/components/AuthGate";
+import { RequireAuth, RequirePackage, RequireProfileCompletion } from "@/components/guards";
 import { useAuth } from "@/context/auth-context";
 
 const navItems = [
@@ -144,10 +144,12 @@ export default function DashboardLayout({
   );
 
   return (
-    <AuthGate requireAuth requirePurchase>
-      {checkingAuth || !user ? null : (
-        <DashboardProvider value={contextValue}>
-      <div className="flex min-h-screen bg-background text-foreground">
+    <RequireAuth>
+      <RequirePackage>
+        {checkingAuth || !user ? null : (
+          <RequireProfileCompletion>
+            <DashboardProvider value={contextValue}>
+              <div className="flex min-h-screen bg-background text-foreground">
         <motion.aside
           initial={{ x: -40, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
@@ -193,11 +195,13 @@ export default function DashboardLayout({
 
           <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-14">
             {children}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-    </DashboardProvider>
-      )}
-    </AuthGate>
+        </DashboardProvider>
+          </RequireProfileCompletion>
+        )}
+      </RequirePackage>
+    </RequireAuth>
   );
 }

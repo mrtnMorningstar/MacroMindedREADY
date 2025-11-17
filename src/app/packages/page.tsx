@@ -9,6 +9,8 @@ import { doc, getDoc } from "firebase/firestore";
 
 import { auth, db } from "@/lib/firebase";
 import CheckoutWizard, { type WizardFormData } from "@/components/checkout/CheckoutWizard";
+import PackageRequiredModal from "@/components/modals/PackageRequiredModal";
+import { useSearchParams } from "next/navigation";
 
 type PlanTier = {
   name: "Basic" | "Pro" | "Elite";
@@ -70,7 +72,7 @@ const planConfig: PlanConfig = {
 
 const cards = Object.values(planConfig);
 
-export default function PackagesPage() {
+function PackagesPageContent() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [savingTier, setSavingTier] = useState<PlanTier["name"] | null>(null);
@@ -78,7 +80,9 @@ export default function PackagesPage() {
   const [currentTier, setCurrentTier] = useState<PlanTier["name"] | null>(null);
   const [showWizard, setShowWizard] = useState(false);
   const [selectedPlanForWizard, setSelectedPlanForWizard] = useState<PlanTier["name"] | null>(null);
+  const [showRedirectModal, setShowRedirectModal] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -88,6 +92,13 @@ export default function PackagesPage() {
 
     return () => unsubscribe();
   }, []);
+
+  // Check if redirected from dashboard (show modal)
+  useEffect(() => {
+    if (searchParams.get("redirect") === "dashboard") {
+      setShowRedirectModal(true);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     let isMounted = true;
@@ -191,7 +202,13 @@ export default function PackagesPage() {
   }, []);
 
   return (
-    <div className="relative isolate overflow-hidden bg-background text-foreground">
+    <>
+      <PackageRequiredModal
+        isOpen={showRedirectModal}
+        onClose={() => setShowRedirectModal(false)}
+      />
+      
+      <div className="relative isolate overflow-hidden bg-background text-foreground">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -328,7 +345,16 @@ export default function PackagesPage() {
           />
         )}
       </AnimatePresence>
-    </div>
+      </div>
+    </>
+  );
+}
+
+export default function PackagesPage() {
+  return (
+    <Suspense fallback={<PackageListSkeleton />}>
+      <PackagesPageContent />
+    </Suspense>
   );
 }
 

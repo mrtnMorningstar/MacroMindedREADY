@@ -12,13 +12,13 @@ import {
   ProfileSummary,
   ProgressTracker,
   ReferralsCard,
-  SkeletonGrid,
   StatusOverview,
   useDeliveryMeta,
   CustomerJourneyTimeline,
-  MealPlanStatusCard,
   MacroSummaryPreview,
 } from "@/components/dashboard/client-components";
+import { DashboardCardSkeleton } from "@/components/skeletons";
+import MealPlanStatusCard from "@/components/status/MealPlanStatusCard";
 import { useDashboard } from "@/context/dashboard-context";
 import { db } from "@/lib/firebase";
 import { CTA_BUTTON_CLASSES } from "@/lib/ui";
@@ -98,7 +98,9 @@ export default function DashboardOverviewPage() {
   if (loading) {
     return (
       <div className="flex flex-col gap-8">
-        <SkeletonGrid />
+        <DashboardCardSkeleton />
+        <DashboardCardSkeleton />
+        <DashboardCardSkeleton />
       </div>
     );
   }
@@ -189,9 +191,9 @@ export default function DashboardOverviewPage() {
         {/* Meal Plan Status Card */}
         <MealPlanStatusCard
           status={status}
+          packageTier={data?.packageTier ?? null}
+          showDownload={status === "Delivered"}
           fileUrl={data?.mealPlanFileURL}
-          mealPlanDeliveredAt={mealPlanDeliveredAt}
-          purchaseDate={purchaseDate}
         />
 
         {/* Macro Summary Preview */}
@@ -205,6 +207,7 @@ export default function DashboardOverviewPage() {
               imageUrls={data?.mealPlanImageURLs}
               daysSinceDelivery={daysSinceDelivery}
               groceryListUrl={data?.groceryListURL}
+              packageTier={data?.packageTier ?? null}
             />
 
             {(status === "Delivered" || (daysSinceDelivery ?? null) !== null) && (

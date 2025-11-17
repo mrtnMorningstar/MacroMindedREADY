@@ -3,15 +3,15 @@
 import {
   LockedDashboardScreen,
   ReferralsCard,
-  SkeletonGrid,
 } from "@/components/dashboard/client-components";
+import { DashboardCardSkeleton } from "@/components/skeletons";
 import { useDashboard } from "@/context/dashboard-context";
 
 export default function ReferralsPage() {
   const { data, loading, error, isUnlocked } = useDashboard();
 
   if (loading) {
-    return <SkeletonGrid />;
+    return <DashboardCardSkeleton />;
   }
 
   if (error) {

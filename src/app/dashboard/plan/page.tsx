@@ -4,9 +4,10 @@ import {
   LockedDashboardScreen,
   MealPlanSection,
   ProgressTracker,
-  SkeletonGrid,
   useDeliveryMeta,
 } from "@/components/dashboard/client-components";
+import { MealPlanSkeleton } from "@/components/skeletons";
+import MealPlanStatusCard from "@/components/status/MealPlanStatusCard";
 import { useDashboard } from "@/context/dashboard-context";
 import { progressSteps, type MealPlanStatus } from "@/types/dashboard";
 
@@ -22,7 +23,7 @@ export default function PlanPage() {
   const { daysSinceDelivery } = useDeliveryMeta(data?.mealPlanDeliveredAt ?? null);
 
   if (loading) {
-    return <SkeletonGrid />;
+    return <MealPlanSkeleton />;
   }
 
   if (error) {
@@ -51,6 +52,13 @@ export default function PlanPage() {
         </p>
       </div>
 
+      <MealPlanStatusCard
+        status={status}
+        packageTier={data?.packageTier ?? null}
+        showDownload={status === "Delivered"}
+        fileUrl={data?.mealPlanFileURL}
+      />
+
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <MealPlanSection
           status={status}
@@ -58,6 +66,7 @@ export default function PlanPage() {
           imageUrls={data?.mealPlanImageURLs}
           daysSinceDelivery={daysSinceDelivery}
           groceryListUrl={data?.groceryListURL}
+          packageTier={data?.packageTier ?? null}
         />
         <ProgressTracker statusIndex={statusIndex} />
       </div>
