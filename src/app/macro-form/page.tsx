@@ -1,437 +1,206 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import type { FormEvent } from "react";
-import { motion } from "framer-motion";
-import { onAuthStateChanged } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { doc, updateDoc } from "firebase/firestore";
+import { db, auth } from "@/lib/firebase";
+import { useAuthState } from "react-firebase-hooks/auth";
 
-import { auth, db } from "@/lib/firebase";
+const steps = [
+  "Personal",
+  "Activity",
+  "Goals",
+  "Lifestyle",
+  "Review",
+  "Result"
+];
 
-const genders = ["Male", "Female", "Non-binary", "Prefer not to say"] as const;
+export default function MacroWizard() {
+  const [user] = useAuthState(auth);
 
-const activityLevels = [
-  "Sedentary",
-  "Lightly Active",
-  "Moderately Active",
-  "Very Active",
-  "Athlete",
-] as const;
+  const [step, setStep] = useState(0);
 
-const goals = ["Lose", "Maintain", "Gain"] as const;
+  const [form, setForm] = useState({
+    age: "",
+    height: "",
+    weight: "",
+    gender: "",
+    activityLevel: "",
+    goal: "",
+    allergies: "",
+    likes: "",
+    dislikes: "",
+    lifestyle: "",
+    workSchedule: "",
+    exerciseHabits: "",
+    struggles: ""
+  });
 
-type MacroFormData = {
-  height: string;
-  weight: string;
-  age: string;
-  gender: (typeof genders)[number] | "";
-  activityLevel: (typeof activityLevels)[number] | "";
-  goal: (typeof goals)[number] | "";
-  dietaryRestrictions: string;
-  allergies: string;
-  preferences: string;
-};
+  const update = (key, value) => setForm({ ...form, [key]: value });
 
-const initialValues: MacroFormData = {
-  height: "",
-  weight: "",
-  age: "",
-  gender: "",
-  activityLevel: "",
-  goal: "",
-  dietaryRestrictions: "",
-  allergies: "",
-  preferences: "",
-};
+  // Fake macro calculation (coach will adjust real values)
+  const calculateMacros = () => {
+    const w = parseFloat(form.weight);
+    const h = parseFloat(form.height);
+    const a = parseFloat(form.age);
 
-const labelMotion = {
-  initial: { opacity: 0, y: 12 },
-  animate: { opacity: 1, y: 0 },
-};
+    if (!w || !h || !a) return null;
 
-export default function MacroFormPage() {
-  const [userId, setUserId] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [formValues, setFormValues] = useState<MacroFormData>(initialValues);
-  const [errors, setErrors] = useState<Record<keyof MacroFormData, string>>(
-    {} as Record<keyof MacroFormData, string>
-  );
-  const [globalError, setGlobalError] = useState<string | null>(null);
-  const router = useRouter();
+    let bmr =
+      form.gender === "male"
+        ? 10 * w + 6.25 * h - 5 * a + 5
+        : 10 * w + 6.25 * h - 5 * a - 161;
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setUserId(user.uid);
-      } else {
-        router.replace("/login");
-      }
+    const activity = {
+      sedentary: 1.2,
+      light: 1.375,
+      moderate: 1.55,
+      active: 1.725,
+      very_active: 1.9
+    }[form.activityLevel] || 1.2;
+
+    let calories = bmr * activity;
+
+    if (form.goal === "lose") calories -= 350;
+    if (form.goal === "gain") calories += 350;
+
+    const protein = w * 2.2 * 0.8;
+    const fats = (calories * 0.25) / 9;
+    const carbs = (calories - (protein * 4 + fats * 9)) / 4;
+
+    return {
+      calories: Math.round(calories),
+      protein: Math.round(protein),
+      carbs: Math.round(carbs),
+      fats: Math.round(fats)
+    };
+  };
+
+  const macros = calculateMacros();
+
+  const saveToFirestore = async () => {
+    if (!user) return;
+
+    const ref = doc(db, "users", user.uid);
+    await updateDoc(ref, {
+      profile: form,
+      estimatedMacros: macros,
+      macroWizardCompleted: true
     });
+  };
 
-    return () => unsubscribe();
-  }, [router]);
+  const next = async () => {
+    if (step === steps.length - 2) await saveToFirestore();
+    setStep(step + 1);
+  };
 
-  const isFormValid = useMemo(
-    () =>
-      formValues.height &&
-      formValues.weight &&
-      formValues.age &&
-      formValues.gender &&
-      formValues.activityLevel &&
-      formValues.goal,
-    [formValues]
-  );
-
-  const handleChange = useCallback(
-    (field: keyof MacroFormData) =>
-      (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        setFormValues((prev) => ({
-          ...prev,
-          [field]: event.target.value,
-        }));
-        setErrors((prev) => ({
-          ...prev,
-          [field]: "",
-        }));
-      },
-    []
-  );
-
-  const validate = useCallback(() => {
-    const newErrors = {} as Record<keyof MacroFormData, string>;
-
-    (Object.keys(formValues) as Array<keyof MacroFormData>).forEach((field) => {
-      const value = formValues[field];
-
-      if (
-        ["height", "weight", "age", "gender", "activityLevel", "goal"].includes(
-          field
-        ) &&
-        !value
-      ) {
-        newErrors[field] = "Required";
-      }
-    });
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  }, [formValues]);
-
-  const handleSubmit = useCallback(
-    async (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      setGlobalError(null);
-
-      if (!userId) {
-        setGlobalError("Please log in to submit your macros.");
-        return;
-      }
-
-      if (!validate()) {
-        return;
-      }
-
-      try {
-        setSubmitting(true);
-        const userDocRef = doc(db, "users", userId);
-        await setDoc(
-          userDocRef,
-          {
-            profile: {
-              height: formValues.height,
-              weight: formValues.weight,
-              age: formValues.age,
-              gender: formValues.gender,
-              activityLevel: formValues.activityLevel,
-              goal: formValues.goal,
-              dietaryRestrictions: formValues.dietaryRestrictions,
-              allergies: formValues.allergies,
-              preferences: formValues.preferences,
-            },
-          },
-          { merge: true }
-        );
-
-        router.push("/dashboard");
-      } catch (error) {
-        console.error("Failed to save macro form:", error);
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : "Unable to save your details. Please try again or contact support.";
-        setGlobalError(errorMessage);
-      } finally {
-        setSubmitting(false);
-      }
-    },
-    [formValues, router, userId, validate]
-  );
+  const prev = () => setStep(step - 1);
 
   return (
-    <div className="relative isolate overflow-hidden bg-background text-foreground">
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1.1 }}
-        className="pointer-events-none absolute inset-0"
-      >
-        <div className="absolute -top-1/3 left-1/4 h-[520px] w-[520px] rounded-full bg-accent/25 blur-3xl" />
-        <div className="absolute top-1/2 right-[-160px] h-[480px] w-[480px] -translate-y-1/2 rounded-full bg-accent/20 blur-3xl" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#121212_0%,rgba(0,0,0,0.92)_60%,#000000_100%)]" />
-      </motion.div>
+    <div className="max-w-xl mx-auto py-12 text-white">
+      <h1 className="text-3xl font-bold mb-6 text-center">Complete Your Setup</h1>
 
-      <section className="relative mx-auto flex w-full max-w-4xl flex-col gap-12 px-6 py-16 sm:py-24">
-        <header className="flex flex-col items-center gap-4 text-center">
-          <motion.span
-            {...labelMotion}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="font-display text-xs uppercase tracking-[0.45em] text-accent"
-          >
-            Macro Intake Blueprint
-          </motion.span>
-          <motion.h1
-            {...labelMotion}
-            transition={{ duration: 0.7, delay: 0.25 }}
-            className="max-w-2xl font-display text-4xl uppercase tracking-[0.24em] text-foreground sm:text-5xl"
-          >
-            Tell us how you live, train, and fuel
-          </motion.h1>
-          <motion.p
-            {...labelMotion}
-            transition={{ duration: 0.7, delay: 0.35 }}
-            className="max-w-2xl text-center text-xs uppercase tracking-[0.3em] text-foreground/60 sm:text-sm"
-          >
-            We&apos;ll craft a human-led plan calibrated precisely to your stats,
-            goals, and preferences.
-          </motion.p>
-        </header>
-
-        {globalError && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-2xl border border-accent/40 bg-muted/70 px-6 py-4 text-center text-xs font-semibold uppercase tracking-[0.28em] text-accent"
-          >
-            {globalError}
-          </motion.div>
-        )}
-
-        <motion.form
-          onSubmit={handleSubmit}
-          className="relative overflow-hidden rounded-3xl border border-border/80 bg-muted/60 p-8 shadow-[0_0_90px_-40px_rgba(215,38,61,0.5)] backdrop-blur"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <div className="absolute inset-x-0 -top-40 h-60 bg-gradient-to-b from-accent/40 via-accent/10 to-transparent blur-3xl" />
-          <div className="relative grid gap-6 sm:grid-cols-2">
-            <FormField
-              label="Height"
-              placeholder="E.g. 5ft 10in or 178 cm"
-              value={formValues.height}
-              onChange={handleChange("height")}
-              error={errors.height}
-              required
-            />
-            <FormField
-              label="Weight"
-              placeholder="E.g. 180 lbs or 82 kg"
-              value={formValues.weight}
-              onChange={handleChange("weight")}
-              error={errors.weight}
-              required
-            />
-            <FormField
-              label="Age"
-              type="number"
-              placeholder="Enter your age"
-              value={formValues.age}
-              onChange={handleChange("age")}
-              error={errors.age}
-              required
-            />
-            <SelectField
-              label="Gender"
-              value={formValues.gender}
-              onChange={handleChange("gender")}
-              options={genders}
-              error={errors.gender}
-              required
-            />
-            <SelectField
-              label="Activity Level"
-              value={formValues.activityLevel}
-              onChange={handleChange("activityLevel")}
-              options={activityLevels}
-              error={errors.activityLevel}
-              required
-            />
-            <SelectField
-              label="Goal"
-              value={formValues.goal}
-              onChange={handleChange("goal")}
-              options={goals}
-              error={errors.goal}
-              required
-            />
-            <FormField
-              label="Dietary Restrictions"
-              placeholder="E.g. gluten-free, vegetarian"
-              value={formValues.dietaryRestrictions}
-              onChange={handleChange("dietaryRestrictions")}
-              error={errors.dietaryRestrictions}
-              isTextArea
-            />
-            <FormField
-              label="Allergies"
-              placeholder="List any food allergies"
-              value={formValues.allergies}
-              onChange={handleChange("allergies")}
-              error={errors.allergies}
-              isTextArea
-            />
-            <FormField
-              label="Food Preferences"
-              placeholder="Preferred cuisines, meals, dislikes..."
-              value={formValues.preferences}
-              onChange={handleChange("preferences")}
-              error={errors.preferences}
-              isTextArea
-              className="sm:col-span-2"
-            />
-          </div>
-
-          <div className="relative mt-10 flex justify-center">
-            <motion.button
-              type="submit"
-              disabled={submitting || !isFormValid}
-              whileTap={{ scale: 0.98 }}
-              className={`inline-flex items-center justify-center rounded-full border px-8 py-3 text-xs font-semibold uppercase tracking-[0.32em] transition ${
-                submitting || !isFormValid
-                  ? "cursor-not-allowed border-border/40 bg-muted/50 text-foreground/40"
-                  : "border-accent bg-accent text-background hover:border-foreground hover:bg-transparent hover:text-accent"
-              }`}
-            >
-              {submitting ? "Submitting..." : "Submit Profile"}
-            </motion.button>
-          </div>
-        </motion.form>
-      </section>
-    </div>
-  );
-}
-
-type CommonProps = {
-  label: string;
-  value: string;
-  error?: string;
-  required?: boolean;
-  className?: string;
-  onChange: (
-    event: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
-  ) => void;
-  placeholder?: string;
-};
-
-type FormFieldProps = CommonProps & {
-  type?: "text" | "number";
-  isTextArea?: boolean;
-};
-
-function FormField({
-  label,
-  type = "text",
-  value,
-  onChange,
-  placeholder,
-  error,
-  required,
-  isTextArea,
-  className,
-}: FormFieldProps) {
-  return (
-    <label className={`flex flex-col gap-2 ${className ?? ""}`}>
-      <span className="text-xs uppercase tracking-[0.32em] text-foreground/70">
-        {label}
-        {required && <span className="ml-2 text-accent">*</span>}
-      </span>
-      {isTextArea ? (
-        <textarea
-          rows={4}
-          className="rounded-2xl border border-border/60 bg-background/40 px-4 py-3 text-sm tracking-[0.08em] text-foreground placeholder:text-foreground/40 focus:border-accent focus:outline-none"
-          value={value}
-          placeholder={placeholder}
-          onChange={onChange}
-        />
-      ) : (
-        <input
-          type={type}
-          className="rounded-2xl border border-border/60 bg-background/40 px-4 py-3 text-sm tracking-[0.08em] text-foreground placeholder:text-foreground/40 focus:border-accent focus:outline-none"
-          value={value}
-          placeholder={placeholder}
-          onChange={onChange}
-        />
-      )}
-      {error && (
-        <span className="text-[0.6rem] uppercase tracking-[0.32em] text-accent">
-          {error}
-        </span>
-      )}
-    </label>
-  );
-}
-
-type SelectFieldProps = CommonProps & {
-  options: readonly string[];
-};
-
-function SelectField({
-  label,
-  value,
-  onChange,
-  options,
-  error,
-  required,
-}: SelectFieldProps) {
-  return (
-    <label className="flex flex-col gap-2">
-      <span className="text-xs uppercase tracking-[0.32em] text-foreground/70">
-        {label}
-        {required && <span className="ml-2 text-accent">*</span>}
-      </span>
-      <div className="group relative">
-        <select
-          className="w-full appearance-none rounded-2xl border border-border/60 bg-gradient-to-r from-background/60 via-background/40 to-background/60 px-4 py-3 text-sm tracking-[0.12em] text-foreground shadow-[0_0_40px_-25px_rgba(215,38,61,0.8)] transition focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30 group-hover:border-accent/80"
-          value={value}
-          onChange={onChange}
-        >
-          <option value="">Select...</option>
-          {options.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-        <span className="pointer-events-none absolute right-4 top-1/2 hidden -translate-y-1/2 text-accent/80 group-hover:text-accent sm:block">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            className="h-4 w-4"
-          >
-            <path d="M12 15.75a.75.75 0 0 1-.53-.22l-5-5a.75.75 0 0 1 1.06-1.06L12 13.94l4.47-4.47a.75.75 0 0 1 1.06 1.06l-5 5a.75.75 0 0 1-.53.22Z" />
-          </svg>
-        </span>
+      <div className="flex justify-center gap-2 mb-10">
+        {steps.map((_, i) => (
+          <div
+            key={i}
+            className={`h-2 w-8 rounded-full ${
+              i <= step ? "bg-red-600" : "bg-gray-700"
+            }`}
+          />
+        ))}
       </div>
-      {error && (
-        <span className="text-[0.6rem] uppercase tracking-[0.32em] text-accent">
-          {error}
-        </span>
-      )}
-    </label>
-  );
-}
 
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={step}
+          initial={{ opacity: 0, x: 40 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -40 }}
+          transition={{ duration: 0.25 }}
+        >
+
+          {/* PERSONAL */}
+          {step === 0 && (
+            <div className="space-y-4">
+              <Input label="Age" value={form.age} onChange={(e) => update("age", e.target.value)} />
+              <Input label="Height (cm)" value={form.height} onChange={(e) => update("height", e.target.value)} />
+              <Input label="Weight (kg)" value={form.weight} onChange={(e) => update("weight", e.target.value)} />
+
+              <Select
+                label="Gender"
+                value={form.gender}
+                onChange={(e) => update("gender", e.target.value)}
+                options={[
+                  { value: "", label: "Select" },
+                  { value: "male", label: "Male" },
+                  { value: "female", label: "Female" }
+                ]}
+              />
+            </div>
+          )}
+
+          {/* ACTIVITY */}
+          {step === 1 && (
+            <Select
+              label="Activity Level"
+              value={form.activityLevel}
+              onChange={(e) => update("activityLevel", e.target.value)}
+              options={[
+                { value: "", label: "Select" },
+                { value: "sedentary", label: "Sedentary" },
+                { value: "light", label: "Light (1–3 days/week)" },
+                { value: "moderate", label: "Moderate (3–5 days/week)" },
+                { value: "active", label: "Active (6–7 days/week)" },
+                { value: "very_active", label: "Very Active / Athlete" }
+              ]}
+            />
+          )}
+
+          {/* GOALS */}
+          {step === 2 && (
+            <div className="space-y-4">
+              <Select
+                label="Main Goal"
+                value={form.goal}
+                onChange={(e) => update("goal", e.target.value)}
+                options={[
+                  { value: "", label: "Select" },
+                  { value: "lose", label: "Lose Weight" },
+                  { value: "maintain", label: "Maintain Weight" },
+                  { value: "gain", label: "Gain Weight" }
+                ]}
+              />
+
+              <Input label="Allergies" value={form.allergies} onChange={(e) => update("allergies", e.target.value)} />
+              <Input label="Foods You Like" value={form.likes} onChange={(e) => update("likes", e.target.value)} />
+              <Input label="Foods You Dislike" value={form.dislikes} onChange={(e) => update("dislikes", e.target.value)} />
+            </div>
+          )}
+
+          {/* LIFESTYLE */}
+          {step === 3 && (
+            <div className="space-y-4">
+              <TextArea
+                label="Describe your lifestyle"
+                placeholder="Work, school, daily routine, etc."
+                value={form.lifestyle}
+                onChange={(e) => update("lifestyle", e.target.value)}
+              />
+
+              <TextArea
+                label="Work schedule & availability"
+                placeholder="Waking time, work hours, meal times, flexibility"
+                value={form.workSchedule}
+                onChange={(e) => update("workSchedule", e.target.value)}
+              />
+
+              <TextArea
+                label="Exercise habits"
+                placeholder="Training days, type of workouts, intensity"
+                value={form.exerciseHabits}
+                onChange={(e) => update("exerciseHabits", e.target.value)}
+              />
+
+              <TextArea
+                label=
