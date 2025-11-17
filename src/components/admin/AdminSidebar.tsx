@@ -97,10 +97,13 @@ export function AdminSidebar() {
     const checkMobile = () => {
       const mobile = window.innerWidth < 1024; // lg breakpoint
       setIsMobile(mobile);
-      if (mobile) {
-        setIsOpen(false); // Auto-collapse on mobile
+      // On desktop, always keep sidebar open (no toggle)
+      // On mobile, start closed
+      if (!mobile) {
+        setIsOpen(true);
+      } else {
+        setIsOpen(false);
       }
-      // On desktop, sidebar state is controlled by toggle button
     };
 
     checkMobile();
@@ -108,15 +111,11 @@ export function AdminSidebar() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Initialize desktop sidebar as open
-  useEffect(() => {
-    if (!isMobile) {
-      setIsOpen(true);
-    }
-  }, [isMobile]);
-
   const toggleSidebar = () => {
-    setIsOpen(!isOpen);
+    // Only allow toggle on mobile
+    if (isMobile) {
+      setIsOpen((prev) => !prev);
+    }
   };
 
   const isActive = (href: string) => {
@@ -141,16 +140,6 @@ export function AdminSidebar() {
         )}
       </button>
 
-      {/* Desktop Toggle Button - Always visible when sidebar is closed */}
-      {!isMobile && !isOpen && (
-        <button
-          onClick={toggleSidebar}
-          className="fixed left-4 top-24 z-50 rounded-full border border-border/70 bg-muted/60 p-2 text-foreground/70 transition hover:border-accent hover:text-accent hidden lg:flex items-center justify-center"
-          aria-label="Open sidebar"
-        >
-          <Bars3Icon className="h-6 w-6" />
-        </button>
-      )}
 
       {/* Overlay for mobile */}
       <AnimatePresence>
@@ -165,7 +154,7 @@ export function AdminSidebar() {
         )}
       </AnimatePresence>
 
-      {/* Sidebar */}
+      {/* Sidebar - Always visible on desktop, toggleable on mobile */}
       <AnimatePresence>
         {(isOpen || !isMobile) && (
           <motion.aside
@@ -174,19 +163,9 @@ export function AdminSidebar() {
             exit={isMobile ? { x: -300, opacity: 0 } : { x: 0, opacity: 1 }}
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className={`fixed left-0 top-20 z-40 h-[calc(100vh-5rem)] w-64 flex-col border-r border-border/70 bg-muted/40 px-6 py-10 shadow-[0_0_80px_-40px_rgba(215,38,61,0.6)] backdrop-blur ${
-              isMobile ? (isOpen ? "flex" : "hidden") : isOpen ? "hidden lg:flex" : "hidden lg:hidden"
+              isMobile ? (isOpen ? "flex" : "hidden") : "flex"
             }`}
           >
-            {/* Desktop Toggle Button - Only show when sidebar is open */}
-            {!isMobile && isOpen && (
-              <button
-                onClick={toggleSidebar}
-                className="mb-6 ml-auto flex items-center justify-center rounded-full border border-border/70 bg-background/40 p-2 text-foreground/70 transition hover:border-accent hover:text-accent"
-                aria-label="Close sidebar"
-              >
-                <XMarkIcon className="h-5 w-5" />
-              </button>
-            )}
 
             {/* Brand */}
             <div className={`${!isOpen && !isMobile ? "opacity-0" : "opacity-100"} transition-opacity duration-300`}>
