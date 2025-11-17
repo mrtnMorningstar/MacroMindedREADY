@@ -5,10 +5,10 @@ import Link from "next/link";
 import {
   LockedDashboardScreen,
   ProfileSummary,
-  SkeletonGrid,
 } from "@/components/dashboard/client-components";
 import { useDashboard } from "@/context/dashboard-context";
 import { CTA_BUTTON_CLASSES } from "@/lib/ui";
+import ProfileSkeleton from "@/components/skeletons/ProfileSkeleton";
 
 export default function ProfilePage() {
   const { data, loading, error, isUnlocked } = useDashboard();
