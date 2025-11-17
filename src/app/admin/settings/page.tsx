@@ -1,14 +1,16 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { AdminSidebar } from "@/components/admin";
+import { AdminSidebar, useSidebar } from "@/components/admin";
 
 export default function AdminSettingsPage() {
+  const { isOpen, isMobile } = useSidebar();
+
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       <AdminSidebar />
 
-      <div className="relative isolate flex-1 lg:ml-64">
+      <div className={`relative isolate flex-1 transition-all duration-300 ${!isMobile && isOpen ? "lg:ml-64" : ""}`}>
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
