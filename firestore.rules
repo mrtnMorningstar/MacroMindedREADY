@@ -67,7 +67,11 @@ service cloud.firestore {
         'referredBy',
         'purchaseDate',
         'role',
-        'createdAt'
+        'createdAt',
+        'estimatedMacros',
+        'macroWizardCompleted',
+        'wizardVerified',
+        'adminNotes'
       ];
       
       // Check that all keys in data are in the allowed fields list
@@ -91,7 +95,11 @@ service cloud.firestore {
         && (!('role' in data) || data.role is string || data.role == null)
         && (!('mealPlanDeliveredAt' in data) || data.mealPlanDeliveredAt is timestamp || data.mealPlanDeliveredAt == null)
         && (!('purchaseDate' in data) || data.purchaseDate is timestamp || data.purchaseDate == null)
-        && (!('createdAt' in data) || data.createdAt is timestamp || data.createdAt == null);
+        && (!('createdAt' in data) || data.createdAt is timestamp || data.createdAt == null)
+        && (!('estimatedMacros' in data) || data.estimatedMacros is map || data.estimatedMacros == null)
+        && (!('macroWizardCompleted' in data) || data.macroWizardCompleted is bool || data.macroWizardCompleted == null)
+        && (!('wizardVerified' in data) || data.wizardVerified is bool || data.wizardVerified == null)
+        && (!('adminNotes' in data) || data.adminNotes is string || data.adminNotes == null);
     }
 
     // Users collection rules
