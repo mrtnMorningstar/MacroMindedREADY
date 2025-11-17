@@ -180,7 +180,7 @@ export function ProfileSummary({ profile }: { profile: Profile }) {
         whileHover={{ scale: 1.02 }}
         className="rounded-3xl border border-border/70 bg-muted/60 px-8 py-8 text-center text-xs font-medium uppercase tracking-[0.3em] text-foreground/50 backdrop-blur"
       >
-        No profile metrics yet. Complete the macro intake form to unlock custom
+        No profile metrics yet. Complete the macro wizard to unlock custom
         insights.
       </motion.div>
     );
@@ -898,12 +898,25 @@ export function MealPlanStatusCard({
 export function MacroSummaryPreview({
   goal,
   profile,
+  estimatedMacros,
 }: {
   goal?: string | null;
   profile?: Profile | null;
+  estimatedMacros?: { calories: number; protein: number; carbs: number; fats: number } | null;
 }) {
-  // Placeholder calculations (these would be computed by coach)
+  // Use estimated macros from wizard if available, otherwise show placeholder
   const getEstimatedMacros = () => {
+    // If we have estimated macros from the wizard, use those
+    if (estimatedMacros) {
+      return {
+        calories: estimatedMacros.calories.toString(),
+        protein: `${estimatedMacros.protein}g`,
+        carbs: `${estimatedMacros.carbs}g`,
+        fat: `${estimatedMacros.fats}g`,
+      };
+    }
+
+    // Fallback to placeholder calculations if no wizard data
     if (!goal || !profile) {
       return {
         calories: "—",
@@ -914,7 +927,7 @@ export function MacroSummaryPreview({
     }
 
     // Placeholder estimates based on goal
-    if (goal === "Lose") {
+    if (goal === "Lose" || goal === "lose") {
       return {
         calories: "1,800-2,200",
         protein: "140-180g",
@@ -922,7 +935,7 @@ export function MacroSummaryPreview({
         fat: "50-70g",
       };
     }
-    if (goal === "Gain") {
+    if (goal === "Gain" || goal === "gain") {
       return {
         calories: "2,800-3,400",
         protein: "180-220g",
@@ -951,7 +964,9 @@ export function MacroSummaryPreview({
           Macro Summary
         </h3>
         <p className="mt-2 text-[0.65rem] font-medium uppercase tracking-[0.25em] text-foreground/60">
-          Updated manually by your coach
+          {estimatedMacros
+            ? "Estimated from your macro wizard"
+            : "Updated manually by your coach"}
         </p>
       </div>
 

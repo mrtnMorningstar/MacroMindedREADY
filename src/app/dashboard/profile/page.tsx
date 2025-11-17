@@ -46,13 +46,13 @@ export default function ProfilePage() {
       <ProfileSummary profile={data?.profile ?? {}} />
 
       <div className="rounded-3xl border border-border/70 bg-muted/60 px-8 py-8 text-center text-xs font-medium uppercase tracking-[0.3em] text-foreground/60 backdrop-blur">
-        <p>Need to refresh your stats? Keep your intake up to date so coaching stays precise.</p>
+        <p>Need to refresh your stats? Complete the macro wizard to keep your coaching precise.</p>
         <div className="mt-4 flex justify-center">
           <Link
             href="/macro-wizard"
             className={`${CTA_BUTTON_CLASSES} w-full justify-center sm:w-auto`}
           >
-            Update Macro Intake
+            Update Macro Wizard
           </Link>
         </div>
       </div>

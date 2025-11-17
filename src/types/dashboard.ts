@@ -17,6 +17,13 @@ export type Profile = {
   preferences?: string;
 };
 
+export type EstimatedMacros = {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+};
+
 export type UserDashboardData = {
   displayName?: string | null;
   packageTier?: string | null;
@@ -42,5 +49,7 @@ export type UserDashboardData = {
     | { seconds: number; nanoseconds: number }
     | Date
     | null;
+  estimatedMacros?: EstimatedMacros | null;
+  macroWizardCompleted?: boolean | null;
 };
 

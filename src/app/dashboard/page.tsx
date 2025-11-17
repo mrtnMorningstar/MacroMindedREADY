@@ -197,7 +197,11 @@ export default function DashboardOverviewPage() {
         />
 
         {/* Macro Summary Preview */}
-        <MacroSummaryPreview goal={goal} profile={data?.profile ?? null} />
+        <MacroSummaryPreview
+          goal={goal}
+          profile={data?.profile ?? null}
+          estimatedMacros={data?.estimatedMacros ?? null}
+        />
 
         <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
           <div className="flex flex-col gap-6">
@@ -280,13 +284,13 @@ export default function DashboardOverviewPage() {
         />
 
         <div className="rounded-3xl border border-border/70 bg-muted/60 px-8 py-8 text-center text-xs font-medium uppercase tracking-[0.3em] text-foreground/60 backdrop-blur">
-          <p>Need a plan adjustment? Update your macro intake form to keep your plan accurate.</p>
+          <p>Need a plan adjustment? Update your macro wizard to keep your plan accurate.</p>
           <div className="mt-4 flex justify-center">
             <Link
               href="/macro-wizard"
               className={`${CTA_BUTTON_CLASSES} w-full justify-center sm:w-auto`}
             >
-              Open Macro Intake Form
+              Open Macro Wizard
             </Link>
           </div>
         </div>
