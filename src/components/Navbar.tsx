@@ -71,11 +71,10 @@ export default function Navbar() {
     if (!user) {
       return publicNavLinks;
     }
-    // If user is logged in, show Dashboard and Profile
+    // If user is logged in, show Dashboard
     return [
       ...publicNavLinks,
       ...(hasPackage ? [{ href: "/dashboard", label: "Dashboard" }] : []),
-      { href: "/dashboard/profile", label: "Profile" },
     ];
   };
 
