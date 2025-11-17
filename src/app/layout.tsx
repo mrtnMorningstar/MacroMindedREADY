@@ -5,6 +5,7 @@ import { AuthProvider } from "@/context/auth-context";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PageTransition from "@/components/ui/PageTransition";
+import { ToastProvider } from "@/components/ui/Toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,13 +40,15 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${anton.variable} bg-background text-foreground antialiased`}
       >
         <AuthProvider>
-          <div className="flex min-h-screen flex-col bg-background">
-            <Navbar />
-            <main className="flex-1">
-              <PageTransition>{children}</PageTransition>
-            </main>
-            <Footer />
-          </div>
+          <ToastProvider>
+            <div className="flex min-h-screen flex-col bg-background">
+              <Navbar />
+              <main className="flex-1">
+                <PageTransition>{children}</PageTransition>
+              </main>
+              <Footer />
+            </div>
+          </ToastProvider>
         </AuthProvider>
       </body>
     </html>

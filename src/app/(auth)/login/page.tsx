@@ -1,14 +1,14 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, type Variants } from "framer-motion";
-import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
-import { FirebaseError } from "firebase/app";
+import { signInWithEmailAndPassword } from "firebase/auth";
 
 import { auth } from "@/lib/firebase";
 import { CTA_BUTTON_CLASSES } from "@/lib/ui";
+import { useFriendlyError } from "@/hooks/useFriendlyError";
 
 const heroEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
@@ -23,9 +23,9 @@ const containerVariants: Variants = {
 
 export default function LoginPage() {
   const router = useRouter();
+  const handleError = useFriendlyError();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isDisabled = useMemo(() => !email || !password || isSubmitting, [email, password, isSubmitting]);
 
@@ -34,18 +34,13 @@ export default function LoginPage() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setError(null);
     setIsSubmitting(true);
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
       router.replace("/dashboard");
     } catch (err) {
-      if (err instanceof FirebaseError) {
-        setError(err.message);
-      } else {
-        setError("Something went wrong. Please try again.");
-      }
+      handleError(err);
       setIsSubmitting(false);
     }
   };
@@ -147,12 +142,6 @@ export default function LoginPage() {
                 className="rounded-2xl border border-border/60 bg-background/40 px-4 py-3 text-sm tracking-[0.08em] text-foreground placeholder:text-foreground/40 focus:border-accent focus:outline-none"
               />
             </label>
-
-            {error ? (
-              <p className="text-[0.7rem] uppercase tracking-[0.3em] text-accent" role="alert">
-                {error}
-              </p>
-            ) : null}
 
             <motion.button
               type="submit"
