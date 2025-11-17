@@ -18,7 +18,7 @@ const DEFAULT_REQUIRED_FIELDS = ["age", "height", "weight", "goal"];
 
 export function RequireProfileCompletion({
   children,
-  redirectTo = "/macro-form",
+  redirectTo = "/macro-wizard",
   showBanner = true,
   requiredFields = DEFAULT_REQUIRED_FIELDS,
 }: RequireProfileCompletionProps) {

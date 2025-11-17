@@ -63,7 +63,7 @@ export default function SupportPage() {
               Use the macro intake form whenever your goals or biometrics change.
             </span>
             <Link
-              href="/macro-form"
+              href="/macro-wizard"
               className={`${CTA_BUTTON_CLASSES} w-full justify-center text-center sm:w-auto`}
             >
               Open Macro Intake Form

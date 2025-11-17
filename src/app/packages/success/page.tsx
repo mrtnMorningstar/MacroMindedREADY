@@ -63,7 +63,7 @@ export default function PackageSuccess() {
             Go to Dashboard
           </Link>
           <Link
-            href="/macro-form"
+            href="/macro-wizard"
             className={`${CTA_BUTTON_CLASSES} w-full justify-center border-white/50 bg-transparent text-white hover:text-accent sm:w-auto`}
           >
             Complete Macro Intake

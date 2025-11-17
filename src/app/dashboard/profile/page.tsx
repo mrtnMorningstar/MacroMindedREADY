@@ -49,7 +49,7 @@ export default function ProfilePage() {
         <p>Need to refresh your stats? Keep your intake up to date so coaching stays precise.</p>
         <div className="mt-4 flex justify-center">
           <Link
-            href="/macro-form"
+            href="/macro-wizard"
             className={`${CTA_BUTTON_CLASSES} w-full justify-center sm:w-auto`}
           >
             Update Macro Intake

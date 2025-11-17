@@ -283,7 +283,7 @@ export default function DashboardOverviewPage() {
           <p>Need a plan adjustment? Update your macro intake form to keep your plan accurate.</p>
           <div className="mt-4 flex justify-center">
             <Link
-              href="/macro-form"
+              href="/macro-wizard"
               className={`${CTA_BUTTON_CLASSES} w-full justify-center sm:w-auto`}
             >
               Open Macro Intake Form
