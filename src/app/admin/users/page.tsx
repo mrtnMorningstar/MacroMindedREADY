@@ -12,6 +12,7 @@ import { collection, getDocs, type DocumentData } from "firebase/firestore";
 import Link from "next/link";
 
 import { db } from "@/lib/firebase";
+import { AdminSidebar, useSidebar } from "@/components/admin";
 
 type UserCard = {
   id: string;
@@ -96,8 +97,24 @@ export default function AdminUsersPage() {
     return Math.floor(diffMs / (1000 * 60 * 60 * 24)).toString();
   }, []);
 
+  const { isOpen, isMobile } = useSidebar();
+
   return (
-    <div className="flex min-h-screen flex-col gap-8 bg-background px-6 py-10 text-foreground sm:py-14 lg:px-10">
+    <div className="flex min-h-screen bg-background text-foreground">
+      <AdminSidebar />
+
+      <div className={`relative isolate flex-1 transition-all duration-300 ${!isMobile && isOpen ? "lg:ml-64" : ""}`}>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.1 }}
+          className="pointer-events-none absolute inset-0"
+        >
+          <div className="absolute -top-36 left-1/2 h-[680px] w-[680px] -translate-x-1/2 rounded-full bg-accent/30 blur-3xl" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#161616_0%,rgba(0,0,0,0.92)_55%,#000000_95%)]" />
+        </motion.div>
+
+        <div className="relative flex min-h-screen flex-col gap-8 px-6 py-10 text-foreground sm:py-14 lg:px-10">
       <motion.header
         initial="hidden"
         animate="visible"
@@ -200,6 +217,8 @@ export default function AdminUsersPage() {
           ))}
         </motion.div>
       )}
+        </div>
+      </div>
     </div>
   );
 }
