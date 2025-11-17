@@ -2,13 +2,12 @@
 
 import { useCallback, useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import type { User } from "firebase/auth";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 
 import { auth, db } from "@/lib/firebase";
-import CheckoutWizard, { type WizardFormData } from "@/components/checkout/CheckoutWizard";
 import PackageRequiredModal from "@/components/modals/PackageRequiredModal";
 import { useSearchParams } from "next/navigation";
 import PackageListSkeleton from "@/components/skeletons/PackageListSkeleton";
@@ -80,8 +79,6 @@ function PackagesPageContent() {
   const [savingTier, setSavingTier] = useState<PlanTier["name"] | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [currentTier, setCurrentTier] = useState<PlanTier["name"] | null>(null);
-  const [showWizard, setShowWizard] = useState(false);
-  const [selectedPlanForWizard, setSelectedPlanForWizard] = useState<PlanTier["name"] | null>(null);
   const [showRedirectModal, setShowRedirectModal] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -136,7 +133,7 @@ function PackagesPageContent() {
   }, [currentUser]);
 
   const handleSelect = useCallback(
-    (tier: PlanTier["name"]) => {
+    async (tier: PlanTier["name"]) => {
       setFeedback(null);
 
       if (!currentUser) {
@@ -144,19 +141,7 @@ function PackagesPageContent() {
         return;
       }
 
-      // Show wizard instead of going directly to checkout
-      setSelectedPlanForWizard(tier);
-      setShowWizard(true);
-    },
-    [currentUser, router]
-  );
-
-  const handleWizardComplete = useCallback(
-    async (wizardData: WizardFormData) => {
-      if (!currentUser || !selectedPlanForWizard) return;
-
-      setShowWizard(false);
-      setSavingTier(selectedPlanForWizard);
+      setSavingTier(tier);
 
       try {
         const response = await fetch("/api/checkout", {
@@ -165,10 +150,9 @@ function PackagesPageContent() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            plan: selectedPlanForWizard,
+            plan: tier,
             userId: currentUser.uid,
             email: currentUser.email ?? "",
-            profile: wizardData, // Include wizard data
           }),
         });
 
@@ -195,13 +179,8 @@ function PackagesPageContent() {
         setSavingTier(null);
       }
     },
-    [currentUser, selectedPlanForWizard]
+    [currentUser, router]
   );
-
-  const handleWizardCancel = useCallback(() => {
-    setShowWizard(false);
-    setSelectedPlanForWizard(null);
-  }, []);
 
   return (
     <>
@@ -352,18 +331,6 @@ function PackagesPageContent() {
           </motion.div>
         )}
       </section>
-
-      {/* Checkout Wizard */}
-      <AnimatePresence>
-        {showWizard && selectedPlanForWizard && (
-          <CheckoutWizard
-            selectedPlan={selectedPlanForWizard}
-            planPrice={planConfig[selectedPlanForWizard].price}
-            onComplete={handleWizardComplete}
-            onCancel={handleWizardCancel}
-          />
-        )}
-      </AnimatePresence>
       </div>
     </>
   );
