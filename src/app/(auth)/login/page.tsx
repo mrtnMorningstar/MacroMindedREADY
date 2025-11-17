@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, type Variants } from "framer-motion";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { CTA_BUTTON_CLASSES } from "@/lib/ui";
 import { useFriendlyError } from "@/hooks/useFriendlyError";
 
@@ -37,8 +38,24 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.replace("/dashboard");
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Check if macro wizard is completed
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        if (!userData.macroWizardCompleted) {
+          router.push("/macro-wizard");
+        } else {
+          router.push("/dashboard");
+        }
+      } else {
+        // User document doesn't exist, redirect to wizard
+        router.push("/macro-wizard");
+      }
     } catch (err) {
       handleError(err);
       setIsSubmitting(false);

@@ -6,6 +6,7 @@ import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
 import { useFriendlyError } from "@/hooks/useFriendlyError";
+import { useToast } from "@/components/ui/Toast";
 import { useRouter } from "next/navigation";
 
 const steps = ["Personal", "Activity", "Goals", "Review", "Result"];
@@ -33,6 +34,7 @@ export default function MacroWizard() {
   const { user } = useAuth();
   const router = useRouter();
   const handleError = useFriendlyError();
+  const toast = useToast();
 
   const [step, setStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
@@ -118,7 +120,13 @@ export default function MacroWizard() {
         macroWizardCompleted: true,
       });
 
-      router.push("/dashboard");
+      // Show success message
+      toast.success("Profile saved successfully! Redirecting to dashboard...");
+
+      // Small delay before redirect to show success message
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 1500);
     } catch (error) {
       handleError(error);
     } finally {

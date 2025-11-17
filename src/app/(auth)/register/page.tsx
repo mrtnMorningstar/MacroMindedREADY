@@ -9,7 +9,7 @@ import {
   onAuthStateChanged,
   updateProfile,
 } from "firebase/auth";
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { FirebaseError } from "firebase/app";
 
 import { auth, db } from "@/lib/firebase";
@@ -46,9 +46,28 @@ function RegisterForm() {
   );
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        router.replace("/dashboard");
+        // Check if macro wizard is completed
+        try {
+          const userDocRef = doc(db, "users", user.uid);
+          const userDoc = await getDoc(userDocRef);
+
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            if (!userData.macroWizardCompleted) {
+              router.replace("/macro-wizard");
+            } else {
+              router.replace("/dashboard");
+            }
+          } else {
+            // User document doesn't exist, redirect to wizard
+            router.replace("/macro-wizard");
+          }
+        } catch (error) {
+          console.error("Failed to check wizard completion:", error);
+          router.replace("/macro-wizard");
+        }
       }
     });
 
@@ -98,11 +117,12 @@ function RegisterForm() {
           referredBy: referredBy,
           referralCredits: 0,
           createdAt: serverTimestamp(),
+          macroWizardCompleted: false,
         },
         { merge: true }
       );
 
-      router.replace("/dashboard");
+      router.replace("/macro-wizard");
     } catch (err) {
       if (err instanceof FirebaseError) {
         setError(err.message);

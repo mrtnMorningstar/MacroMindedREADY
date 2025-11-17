@@ -19,6 +19,7 @@ import {
 } from "@/components/dashboard/client-components";
 import { DashboardCardSkeleton } from "@/components/skeletons";
 import MealPlanStatusCard from "@/components/status/MealPlanStatusCard";
+import RequireWizard from "@/components/RequireWizard";
 import { useDashboard } from "@/context/dashboard-context";
 import { db } from "@/lib/firebase";
 import { CTA_BUTTON_CLASSES } from "@/lib/ui";
@@ -144,12 +145,13 @@ export default function DashboardOverviewPage() {
   };
 
   return (
-    <div className="flex flex-col gap-8">
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-40 rounded-2xl border border-accent/40 bg-background px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-accent shadow-[0_0_40px_-20px_rgba(215,38,61,0.6)]">
-          {toastMessage}
-        </div>
-      )}
+    <RequireWizard>
+      <div className="flex flex-col gap-8">
+        {toastMessage && (
+          <div className="fixed bottom-6 right-6 z-40 rounded-2xl border border-accent/40 bg-background px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-accent shadow-[0_0_40px_-20px_rgba(215,38,61,0.6)]">
+            {toastMessage}
+          </div>
+        )}
 
       <header className="flex flex-col gap-4 text-center sm:text-left sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -179,6 +181,28 @@ export default function DashboardOverviewPage() {
       />
 
       <section className="grid gap-6">
+        {/* Macro Wizard CTA */}
+        {user && data && !data.macroWizardCompleted && (
+          <div className="rounded-3xl border border-border/70 bg-muted/60 px-8 py-8 shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] backdrop-blur">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-xl font-bold uppercase tracking-[0.28em] text-foreground mb-2">
+                  Complete Your Setup
+                </h2>
+                <p className="text-xs font-medium uppercase tracking-[0.3em] text-foreground/60">
+                  Fill out your personal details so your coach can start preparing your meal plan.
+                </p>
+              </div>
+              <Link
+                href="/macro-wizard"
+                className={`${CTA_BUTTON_CLASSES} w-full justify-center sm:w-auto whitespace-nowrap`}
+              >
+                Start Setup
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Premium Timeline */}
         <CustomerJourneyTimeline
           accountCreatedAt={accountCreatedAt}
@@ -341,6 +365,7 @@ export default function DashboardOverviewPage() {
         </div>
       )}
       </div>
+    </RequireWizard>
   );
 }
 

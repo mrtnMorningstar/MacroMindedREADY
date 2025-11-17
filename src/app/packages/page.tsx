@@ -12,6 +12,7 @@ import CheckoutWizard, { type WizardFormData } from "@/components/checkout/Check
 import PackageRequiredModal from "@/components/modals/PackageRequiredModal";
 import { useSearchParams } from "next/navigation";
 import PackageListSkeleton from "@/components/skeletons/PackageListSkeleton";
+import Link from "next/link";
 
 type PlanTier = {
   name: "Basic" | "Pro" | "Elite";
@@ -333,6 +334,23 @@ function PackagesPageContent() {
             );
           })}
         </motion.div>
+
+        {/* Macro Wizard Link for Users with Package */}
+        {currentUser && currentTier && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="mt-6"
+          >
+            <Link
+              href="/macro-wizard"
+              className="block text-center text-xs font-semibold uppercase tracking-[0.3em] text-accent underline transition hover:text-accent/80"
+            >
+              Continue your setup →
+            </Link>
+          </motion.div>
+        )}
       </section>
 
       {/* Checkout Wizard */}
