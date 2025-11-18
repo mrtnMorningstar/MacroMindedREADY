@@ -122,15 +122,15 @@ export default function MacroWizard() {
           goal: form.goal,
           allergies: form.allergies,
           preferences: form.likes,
-          dietaryRestrictions: form.dislikes,
+          dietaryRestrictions: form.dislikes
         },
-        estimatedMacros: {
-          calories: macros?.calories ?? null,
-          protein: macros?.protein ?? null,
-          carbs: macros?.carbs ?? null,
-          fats: macros?.fats ?? null,
-        },
-        macroWizardCompleted: true,
+        estimatedMacros: macros ? {
+          calories: macros.calories,
+          protein: macros.protein,
+          carbs: macros.carbs,
+          fats: macros.fats
+        } : null,
+        macroWizardCompleted: true
       });
 
       // Show success message
