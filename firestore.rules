@@ -80,32 +80,8 @@ service cloud.firestore {
     function hasValidUserFieldTypes() {
       let data = request.resource.data;
 
-      // profile must be a map if provided, with validated subfields
-      let profileValid = !('profile' in data) || (
-        data.profile is map
-        && (!('age' in data.profile) || data.profile.age is string)
-        && (!('height' in data.profile) || data.profile.height is string)
-        && (!('weight' in data.profile) || data.profile.weight is string)
-        && (!('gender' in data.profile) || data.profile.gender is string)
-        && (!('activityLevel' in data.profile) || data.profile.activityLevel is string)
-        && (!('goal' in data.profile) || data.profile.goal is string)
-        && (!('allergies' in data.profile) || data.profile.allergies is string)
-        && (!('preferences' in data.profile) || data.profile.preferences is string)
-        && (!('dietaryRestrictions' in data.profile) || data.profile.dietaryRestrictions is string)
-      );
-
-      // estimatedMacros must be a map if provided, with validated subfields, or null
-      let macrosValid = !('estimatedMacros' in data) || data.estimatedMacros == null || (
-        data.estimatedMacros is map
-        && (!('calories' in data.estimatedMacros) || data.estimatedMacros.calories is number)
-        && (!('protein' in data.estimatedMacros) || data.estimatedMacros.protein is number)
-        && (!('carbs' in data.estimatedMacros) || data.estimatedMacros.carbs is number)
-        && (!('fats' in data.estimatedMacros) || data.estimatedMacros.fats is number)
-      );
-
       // base field validators remain
-      return profileValid && macrosValid
-        && (!('email' in data) || data.email is string || data.email == null)
+      return (!('email' in data) || data.email is string || data.email == null)
         && (!('displayName' in data) || data.displayName is string || data.displayName == null)
         && (!('packageTier' in data) || data.packageTier is string || data.packageTier == null)
         && (!('mealPlanStatus' in data) || data.mealPlanStatus is string || data.mealPlanStatus == null)
@@ -119,20 +95,40 @@ service cloud.firestore {
         && (!('mealPlanDeliveredAt' in data) || data.mealPlanDeliveredAt is timestamp || data.mealPlanDeliveredAt == null)
         && (!('createdAt' in data) || data.createdAt is timestamp || data.createdAt == null)
         && (!('purchaseDate' in data) || data.purchaseDate is timestamp || data.purchaseDate == null)
-        && (!('estimatedMacros' in data) || data.estimatedMacros is map || data.estimatedMacros == null)
-        && (!('macroWizardCompleted' in data) || data.macroWizardCompleted is bool || data.macroWizardCompleted == null);
+        && (!('profile' in data) 
+            || (
+              data.profile.activityLevel is string ||
+              data.profile.goal is string ||
+              data.profile.preferences is string ||
+              data.profile.dietaryRestrictions is string ||
+              data.profile.age is string ||
+              data.profile.height is string ||
+              data.profile.weight is string ||
+              data.profile.gender is string ||
+              true
+            )
+        )
+        && (!('estimatedMacros' in data)
+            || (
+              data.estimatedMacros.calories is int &&
+              data.estimatedMacros.protein is int &&
+              data.estimatedMacros.carbs is int &&
+              data.estimatedMacros.fats is int
+            )
+        )
+        && (!('macroWizardCompleted' in data) || data.macroWizardCompleted is bool);
     }
 
     // Users collection rules
     match /users/{userId} {
       // Helper function: Validate profile structure matches macro wizard schema
-      // profile must be a map containing: age, height, weight, gender, activityLevel, goal, allergies, preferences, dietaryRestrictions, likes, dislikes, lifestyle, workSchedule, exerciseHabits, struggles (all strings)
+      // profile must be a map containing: age, height, weight, gender, activityLevel, goal, allergies, preferences, dietaryRestrictions (all strings)
       function isValidProfile() {
         let profile = request.resource.data.profile;
         // Allow null profile, but if present must be valid map with correct fields
         return profile == null || (
           profile is map
-          && profile.keys().hasOnly(['age', 'height', 'weight', 'gender', 'activityLevel', 'goal', 'allergies', 'preferences', 'dietaryRestrictions', 'likes', 'dislikes', 'lifestyle', 'workSchedule', 'exerciseHabits', 'struggles'])
+          && profile.keys().hasOnly(['age', 'height', 'weight', 'gender', 'activityLevel', 'goal', 'allergies', 'preferences', 'dietaryRestrictions'])
           && (!('age' in profile) || profile.age is string || profile.age == null)
           && (!('height' in profile) || profile.height is string || profile.height == null)
           && (!('weight' in profile) || profile.weight is string || profile.weight == null)
@@ -142,12 +138,6 @@ service cloud.firestore {
           && (!('allergies' in profile) || profile.allergies is string || profile.allergies == null)
           && (!('preferences' in profile) || profile.preferences is string || profile.preferences == null)
           && (!('dietaryRestrictions' in profile) || profile.dietaryRestrictions is string || profile.dietaryRestrictions == null)
-          && (!('likes' in profile) || profile.likes is string || profile.likes == null)
-          && (!('dislikes' in profile) || profile.dislikes is string || profile.dislikes == null)
-          && (!('lifestyle' in profile) || profile.lifestyle is string || profile.lifestyle == null)
-          && (!('workSchedule' in profile) || profile.workSchedule is string || profile.workSchedule == null)
-          && (!('exerciseHabits' in profile) || profile.exerciseHabits is string || profile.exerciseHabits == null)
-          && (!('struggles' in profile) || profile.struggles is string || profile.struggles == null)
         );
       }
 
@@ -168,18 +158,19 @@ service cloud.firestore {
 
       // Helper function: Check if this is a wizard/profile update (for macro form)
       // Allows updating profile, estimatedMacros, and macroWizardCompleted together
+      // These fields are NOT restricted - normal users can write them
       function isWizardUpdate() {
         // Check that profile exists and is valid
         // Check that estimatedMacros is valid if present
         // Check that macroWizardCompleted is bool if present
-        // Ensure no restricted fields are being modified
+        // Ensure no restricted fields are being modified (profile, estimatedMacros, macroWizardCompleted are NOT restricted)
         return 'profile' in request.resource.data 
           && request.resource.data.profile is map
           && isValidProfile()
           && (!('estimatedMacros' in request.resource.data) || request.resource.data.estimatedMacros == null || isValidEstimatedMacros())
           && (!('macroWizardCompleted' in request.resource.data) || request.resource.data.macroWizardCompleted is bool || request.resource.data.macroWizardCompleted == null)
           && (
-            // Ensure no restricted fields are being modified
+            // Ensure no restricted fields are being modified (profile, estimatedMacros, macroWizardCompleted are allowed)
             (!exists(resource) && !request.resource.data.keys().hasAny(['mealPlanFileURL', 'mealPlanStatus', 'role', 'mealPlanDeliveredAt'])) ||
             (exists(resource) && 
               (!('mealPlanFileURL' in request.resource.data) || request.resource.data.mealPlanFileURL == resource.data.mealPlanFileURL) &&
@@ -191,12 +182,15 @@ service cloud.firestore {
       }
 
       // Helper function: Prevent non-admins from modifying restricted fields
+      // Note: profile, estimatedMacros, and macroWizardCompleted are NOT restricted - users can write them
       function canModifyRestrictedFields() {
         // Admins can modify any field
         return isAdmin() || (
           // For creates: restricted fields must not be present
+          // profile, estimatedMacros, macroWizardCompleted are allowed
           (!exists(resource) && !request.resource.data.keys().hasAny(['mealPlanFileURL', 'mealPlanStatus', 'role', 'mealPlanDeliveredAt'])) ||
           // For updates: restricted fields must not have changed
+          // profile, estimatedMacros, macroWizardCompleted can be modified by users
           (exists(resource) && 
             (!('mealPlanFileURL' in request.resource.data) || !('mealPlanFileURL' in resource.data) || request.resource.data.mealPlanFileURL == resource.data.mealPlanFileURL) &&
             (!('mealPlanStatus' in request.resource.data) || !('mealPlanStatus' in resource.data) || request.resource.data.mealPlanStatus == resource.data.mealPlanStatus) &&
@@ -211,6 +205,7 @@ service cloud.firestore {
 
       // Create: Users can only create their own document with valid schema
       // Note: setDoc with merge:true may trigger create if document doesn't exist
+      // profile, estimatedMacros, macroWizardCompleted are allowed for normal users
       allow create: if isSignedIn() 
         && isOwner(userId)
         && isValidUserData()
@@ -220,12 +215,13 @@ service cloud.firestore {
       // Update: Users can update their own document (with restrictions), admins can update any
       // Note: setDoc with merge:true triggers update if document exists
       // Special handling for wizard/profile updates from macro form
+      // profile, estimatedMacros, macroWizardCompleted are NOT restricted - normal users can write them
       allow update: if isSignedIn() && isOwner(userId) && (
         // Admins can update anything
         isAdmin() || (
           // Allow wizard updates (profile + estimatedMacros + macroWizardCompleted from macro form)
           // This validates the exact schema: profile map with specific fields, estimatedMacros map with numbers, macroWizardCompleted bool
-          // Only check that restricted fields aren't being modified
+          // These fields are NOT restricted - normal users can write them
           (isWizardUpdate() && canModifyRestrictedFields()) ||
           // For other updates, apply full validation
           (canModifyRestrictedFields() && isValidUserData() && hasValidUserFieldTypes())
