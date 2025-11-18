@@ -104,15 +104,52 @@ service cloud.firestore {
 
     // Users collection rules
     match /users/{userId} {
+      // Helper function: Validate profile structure matches macro wizard schema
+      // profile must be a map containing only: age, height, weight, gender, activityLevel, goal, allergies, preferences, dietaryRestrictions (all strings)
+      function isValidProfile() {
+        let profile = request.resource.data.profile;
+        // Allow null profile, but if present must be valid map with correct fields
+        return profile == null || (
+          profile is map
+          && profile.keys().hasOnly(['age', 'height', 'weight', 'gender', 'activityLevel', 'goal', 'allergies', 'preferences', 'dietaryRestrictions'])
+          && (!('age' in profile) || profile.age is string || profile.age == null)
+          && (!('height' in profile) || profile.height is string || profile.height == null)
+          && (!('weight' in profile) || profile.weight is string || profile.weight == null)
+          && (!('gender' in profile) || profile.gender is string || profile.gender == null)
+          && (!('activityLevel' in profile) || profile.activityLevel is string || profile.activityLevel == null)
+          && (!('goal' in profile) || profile.goal is string || profile.goal == null)
+          && (!('allergies' in profile) || profile.allergies is string || profile.allergies == null)
+          && (!('preferences' in profile) || profile.preferences is string || profile.preferences == null)
+          && (!('dietaryRestrictions' in profile) || profile.dietaryRestrictions is string || profile.dietaryRestrictions == null)
+        );
+      }
+
+      // Helper function: Validate estimatedMacros structure
+      // estimatedMacros must be a map containing: calories, protein, carbs, fats (all numbers)
+      function isValidEstimatedMacros() {
+        let macros = request.resource.data.estimatedMacros;
+        // Allow null macros, but if present must be valid map with correct fields
+        return macros == null || (
+          macros is map
+          && macros.keys().hasOnly(['calories', 'protein', 'carbs', 'fats'])
+          && (!('calories' in macros) || macros.calories is number || macros.calories == null)
+          && (!('protein' in macros) || macros.protein is number || macros.protein == null)
+          && (!('carbs' in macros) || macros.carbs is number || macros.carbs == null)
+          && (!('fats' in macros) || macros.fats is number || macros.fats == null)
+        );
+      }
+
       // Helper function: Check if this is a wizard/profile update (for macro form)
       // Allows updating profile, estimatedMacros, and macroWizardCompleted together
       function isWizardUpdate() {
-        // Check that profile exists and is a map
-        // Allow updating profile, estimatedMacros, and macroWizardCompleted together
-        // Only validate the wizard fields being updated, not the entire document
+        // Check that profile exists and is valid
+        // Check that estimatedMacros is valid if present
+        // Check that macroWizardCompleted is bool if present
+        // Ensure no restricted fields are being modified
         return 'profile' in request.resource.data 
           && request.resource.data.profile is map
-          && (!('estimatedMacros' in request.resource.data) || request.resource.data.estimatedMacros is map || request.resource.data.estimatedMacros == null)
+          && isValidProfile()
+          && (!('estimatedMacros' in request.resource.data) || request.resource.data.estimatedMacros == null || isValidEstimatedMacros())
           && (!('macroWizardCompleted' in request.resource.data) || request.resource.data.macroWizardCompleted is bool || request.resource.data.macroWizardCompleted == null)
           && (
             // Ensure no restricted fields are being modified
@@ -160,7 +197,7 @@ service cloud.firestore {
         // Admins can update anything
         isAdmin() || (
           // Allow wizard updates (profile + estimatedMacros + macroWizardCompleted from macro form)
-          // This allows updating these fields without full document validation
+          // This validates the exact schema: profile map with specific fields, estimatedMacros map with numbers, macroWizardCompleted bool
           // Only check that restricted fields aren't being modified
           (isWizardUpdate() && canModifyRestrictedFields()) ||
           // For other updates, apply full validation
