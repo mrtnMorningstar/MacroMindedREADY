@@ -94,8 +94,8 @@ service cloud.firestore {
         && (!('dietaryRestrictions' in data.profile) || data.profile.dietaryRestrictions is string)
       );
 
-      // estimatedMacros must be a map if provided, with validated subfields
-      let macrosValid = !('estimatedMacros' in data) || (
+      // estimatedMacros must be a map if provided, with validated subfields, or null
+      let macrosValid = !('estimatedMacros' in data) || data.estimatedMacros == null || (
         data.estimatedMacros is map
         && (!('calories' in data.estimatedMacros) || data.estimatedMacros.calories is number)
         && (!('protein' in data.estimatedMacros) || data.estimatedMacros.protein is number)
