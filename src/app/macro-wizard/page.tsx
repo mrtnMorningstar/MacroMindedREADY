@@ -21,6 +21,10 @@ type FormData = {
   allergies: string;
   likes: string;
   dislikes: string;
+  lifestyle: string;
+  workSchedule: string;
+  exerciseHabits: string;
+  struggles: string;
 };
 
 type Macros = {
@@ -49,6 +53,10 @@ export default function MacroWizard() {
     allergies: "",
     likes: "",
     dislikes: "",
+    lifestyle: "",
+    workSchedule: "",
+    exerciseHabits: "",
+    struggles: "",
   });
 
   const update = (key: keyof FormData, value: string) => {
@@ -115,6 +123,12 @@ export default function MacroWizard() {
           allergies: form.allergies,
           preferences: form.likes,
           dietaryRestrictions: form.dislikes,
+          likes: form.likes,
+          dislikes: form.dislikes,
+          lifestyle: form.lifestyle,
+          workSchedule: form.workSchedule,
+          exerciseHabits: form.exerciseHabits,
+          struggles: form.struggles,
         },
         estimatedMacros: macros,
         macroWizardCompleted: true,

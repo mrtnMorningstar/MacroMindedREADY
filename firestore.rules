@@ -105,13 +105,13 @@ service cloud.firestore {
     // Users collection rules
     match /users/{userId} {
       // Helper function: Validate profile structure matches macro wizard schema
-      // profile must be a map containing only: age, height, weight, gender, activityLevel, goal, allergies, preferences, dietaryRestrictions (all strings)
+      // profile must be a map containing: age, height, weight, gender, activityLevel, goal, allergies, preferences, dietaryRestrictions, likes, dislikes, lifestyle, workSchedule, exerciseHabits, struggles (all strings)
       function isValidProfile() {
         let profile = request.resource.data.profile;
         // Allow null profile, but if present must be valid map with correct fields
         return profile == null || (
           profile is map
-          && profile.keys().hasOnly(['age', 'height', 'weight', 'gender', 'activityLevel', 'goal', 'allergies', 'preferences', 'dietaryRestrictions'])
+          && profile.keys().hasOnly(['age', 'height', 'weight', 'gender', 'activityLevel', 'goal', 'allergies', 'preferences', 'dietaryRestrictions', 'likes', 'dislikes', 'lifestyle', 'workSchedule', 'exerciseHabits', 'struggles'])
           && (!('age' in profile) || profile.age is string || profile.age == null)
           && (!('height' in profile) || profile.height is string || profile.height == null)
           && (!('weight' in profile) || profile.weight is string || profile.weight == null)
@@ -121,6 +121,12 @@ service cloud.firestore {
           && (!('allergies' in profile) || profile.allergies is string || profile.allergies == null)
           && (!('preferences' in profile) || profile.preferences is string || profile.preferences == null)
           && (!('dietaryRestrictions' in profile) || profile.dietaryRestrictions is string || profile.dietaryRestrictions == null)
+          && (!('likes' in profile) || profile.likes is string || profile.likes == null)
+          && (!('dislikes' in profile) || profile.dislikes is string || profile.dislikes == null)
+          && (!('lifestyle' in profile) || profile.lifestyle is string || profile.lifestyle == null)
+          && (!('workSchedule' in profile) || profile.workSchedule is string || profile.workSchedule == null)
+          && (!('exerciseHabits' in profile) || profile.exerciseHabits is string || profile.exerciseHabits == null)
+          && (!('struggles' in profile) || profile.struggles is string || profile.struggles == null)
         );
       }
 
