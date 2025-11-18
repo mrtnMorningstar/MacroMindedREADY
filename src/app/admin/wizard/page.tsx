@@ -21,8 +21,8 @@ type UserWizardData = {
     activityLevel?: string | null;
     goal?: string | null;
     allergies?: string | null;
-    preferences?: string | null;
-    dietaryRestrictions?: string | null;
+    likes?: string | null;
+    dislikes?: string | null;
   } | null;
   estimatedMacros?: {
     calories?: number | null;
@@ -190,16 +190,16 @@ export default function AdminWizardPage() {
                             <span>{u.profile.allergies || "None"}</span>
                           </div>
                         )}
-                        {u.profile.preferences && (
+                        {u.profile.likes && (
                           <div className="col-span-2 flex flex-col">
                             <span className="text-foreground/50 mb-1">Foods They Like:</span>
-                            <span>{u.profile.preferences}</span>
+                            <span>{u.profile.likes}</span>
                           </div>
                         )}
-                        {u.profile.dietaryRestrictions && (
+                        {u.profile.dislikes && (
                           <div className="col-span-2 flex flex-col">
                             <span className="text-foreground/50 mb-1">Foods They Dislike:</span>
-                            <span>{u.profile.dietaryRestrictions}</span>
+                            <span>{u.profile.dislikes}</span>
                           </div>
                         )}
                       </div>

@@ -14,7 +14,8 @@ export type Profile = {
   goal?: string;
   dietaryRestrictions?: string;
   allergies?: string;
-  preferences?: string;
+  likes?: string;
+  dislikes?: string;
 };
 
 export type EstimatedMacros = {
