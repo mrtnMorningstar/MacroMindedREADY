@@ -95,28 +95,26 @@ service cloud.firestore {
         && (!('mealPlanDeliveredAt' in data) || data.mealPlanDeliveredAt is timestamp || data.mealPlanDeliveredAt == null)
         && (!('createdAt' in data) || data.createdAt is timestamp || data.createdAt == null)
         && (!('purchaseDate' in data) || data.purchaseDate is timestamp || data.purchaseDate == null)
-        && (!('profile' in data) 
-            || (
-              data.profile.activityLevel is string ||
-              data.profile.goal is string ||
-              data.profile.preferences is string ||
-              data.profile.dietaryRestrictions is string ||
-              data.profile.age is string ||
-              data.profile.height is string ||
-              data.profile.weight is string ||
-              data.profile.gender is string ||
-              true
-            )
-        )
-        && (!('estimatedMacros' in data)
-            || (
-              data.estimatedMacros.calories is int &&
-              data.estimatedMacros.protein is int &&
-              data.estimatedMacros.carbs is int &&
-              data.estimatedMacros.fats is int
-            )
-        )
-        && (!('macroWizardCompleted' in data) || data.macroWizardCompleted is bool);
+        && (!('profile' in data) || data.profile == null || (
+            data.profile is map
+            && (!('age' in data.profile) || data.profile.age is string || data.profile.age == null)
+            && (!('height' in data.profile) || data.profile.height is string || data.profile.height == null)
+            && (!('weight' in data.profile) || data.profile.weight is string || data.profile.weight == null)
+            && (!('gender' in data.profile) || data.profile.gender is string || data.profile.gender == null)
+            && (!('activityLevel' in data.profile) || data.profile.activityLevel is string || data.profile.activityLevel == null)
+            && (!('goal' in data.profile) || data.profile.goal is string || data.profile.goal == null)
+            && (!('allergies' in data.profile) || data.profile.allergies is string || data.profile.allergies == null)
+            && (!('preferences' in data.profile) || data.profile.preferences is string || data.profile.preferences == null)
+            && (!('dietaryRestrictions' in data.profile) || data.profile.dietaryRestrictions is string || data.profile.dietaryRestrictions == null)
+        ))
+        && (!('estimatedMacros' in data) || data.estimatedMacros == null || (
+            data.estimatedMacros is map
+            && (!('calories' in data.estimatedMacros) || data.estimatedMacros.calories is number || data.estimatedMacros.calories == null)
+            && (!('protein' in data.estimatedMacros) || data.estimatedMacros.protein is number || data.estimatedMacros.protein == null)
+            && (!('carbs' in data.estimatedMacros) || data.estimatedMacros.carbs is number || data.estimatedMacros.carbs == null)
+            && (!('fats' in data.estimatedMacros) || data.estimatedMacros.fats is number || data.estimatedMacros.fats == null)
+        ))
+        && (!('macroWizardCompleted' in data) || data.macroWizardCompleted is bool || data.macroWizardCompleted == null);
     }
 
     // Users collection rules
@@ -142,13 +140,12 @@ service cloud.firestore {
       }
 
       // Helper function: Validate estimatedMacros structure
-      // estimatedMacros must be a map containing: calories, protein, carbs, fats (all numbers)
+      // estimatedMacros must be a map containing: calories, protein, carbs, fats (all numbers or null)
       function isValidEstimatedMacros() {
         let macros = request.resource.data.estimatedMacros;
         // Allow null macros, but if present must be valid map with correct fields
         return macros == null || (
           macros is map
-          && macros.keys().hasOnly(['calories', 'protein', 'carbs', 'fats'])
           && (!('calories' in macros) || macros.calories is number || macros.calories == null)
           && (!('protein' in macros) || macros.protein is number || macros.protein == null)
           && (!('carbs' in macros) || macros.carbs is number || macros.carbs == null)
