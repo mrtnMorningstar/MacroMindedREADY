@@ -39,12 +39,35 @@ service cloud.firestore {
       allow delete: if isOwner(userId) || isAdmin();
     }
 
+    // Allow admins to list all users (for admin panel)
+    match /users {
+      allow list: if isAdmin();
+    }
+
     // PURCHASES
     match /purchases/{purchaseId} {
       allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
       allow create: if isSignedIn();
       allow update: if isAdmin();
       allow delete: if isAdmin();
+    }
+
+    // Allow admins to list all purchases (for admin panel)
+    match /purchases {
+      allow list: if isAdmin();
+    }
+
+    // PLAN UPDATE REQUESTS
+    match /planUpdateRequests/{requestId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Allow admins to list all plan update requests (for admin panel)
+    match /planUpdateRequests {
+      allow list: if isAdmin();
     }
 
     // BLOCK EVERYTHING ELSE

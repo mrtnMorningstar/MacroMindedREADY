@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { collection, getDocs, doc, getDoc, type DocumentData } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, query, where, type DocumentData } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 
 import { auth, db } from "@/lib/firebase";

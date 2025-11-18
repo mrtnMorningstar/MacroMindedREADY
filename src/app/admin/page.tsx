@@ -89,7 +89,7 @@ export default function AdminPage() {
               // Get the latest purchase (sorted by createdAt)
               const purchases = purchasesSnapshot.docs.map((doc) => {
                 const data = doc.data();
-                return {
+          return {
                   amount: data?.amount ?? null,
                   createdAt: data?.createdAt ?? null,
                 };
@@ -332,34 +332,34 @@ export default function AdminPage() {
 
   // Handlers for UserDetailPanel
   const handlePdfInputChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
+      (event: ChangeEvent<HTMLInputElement>) => {
       if (!selectedUser) return;
       const files = event.target.files;
       if (!files || files.length === 0) return;
       uploadFileForUser(selectedUser, files[0], "mealPlan");
-      event.target.value = "";
+        event.target.value = "";
     },
     [selectedUser, uploadFileForUser]
   );
 
   const handleImagesInputChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
+      (event: ChangeEvent<HTMLInputElement>) => {
       if (!selectedUser) return;
-      const files = event.target.files;
+        const files = event.target.files;
       if (!files || files.length === 0) return;
       Array.from(files).forEach((file) => uploadFileForUser(selectedUser, file, "images"));
-      event.target.value = "";
+        event.target.value = "";
     },
     [selectedUser, uploadFileForUser]
   );
 
   const handleGroceryInputChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
+      (event: ChangeEvent<HTMLInputElement>) => {
       if (!selectedUser) return;
       const files = event.target.files;
       if (!files || files.length === 0) return;
       uploadFileForUser(selectedUser, files[0], "grocery");
-      event.target.value = "";
+        event.target.value = "";
     },
     [selectedUser, uploadFileForUser]
   );
@@ -453,18 +453,18 @@ export default function AdminPage() {
                 Manage users and meal plans
               </p>
             </div>
-            <button
+              <button
               onClick={() => auth.signOut().then(() => router.replace("/login"))}
-              className="rounded-full border border-accent bg-accent px-4 py-2 text-[0.6rem] font-medium uppercase tracking-[0.3em] text-background transition hover:bg-transparent hover:text-accent"
-            >
-              Logout
-            </button>
+                className="rounded-full border border-accent bg-accent px-4 py-2 text-[0.6rem] font-medium uppercase tracking-[0.3em] text-background transition hover:bg-transparent hover:text-accent"
+              >
+                Logout
+              </button>
           </header>
 
               {/* Toast Notification */}
               <AnimatePresence>
                 {toast && (
-                  <motion.div
+            <motion.div
                     initial={{ opacity: 0, y: -20, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -20, scale: 0.95 }}
@@ -476,8 +476,8 @@ export default function AdminPage() {
                     }`}
                   >
                     {toast.message}
-                  </motion.div>
-                )}
+            </motion.div>
+          )}
               </AnimatePresence>
 
               {/* Dashboard Summary */}
@@ -553,8 +553,8 @@ export default function AdminPage() {
             <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-xl font-bold uppercase tracking-[0.32em] text-foreground">
-                  Users
-                </h2>
+                Users
+              </h2>
                 <p className="mt-1 text-[0.65rem] font-medium uppercase tracking-[0.3em] text-foreground/60">
                   Showing {filteredUsers.length} of {users.length} users
                 </p>
@@ -621,12 +621,12 @@ export default function AdminPage() {
                                   </span>
                                 )}
                               </div>
-                            </td>
+                          </td>
                             <td className="px-4 py-4">
                               <span className="text-[0.65rem] font-medium uppercase tracking-[0.25em] text-foreground/70">
                                 {user.packageTier ?? "—"}
                               </span>
-                            </td>
+                          </td>
                             <td className="px-4 py-4">
                               {(() => {
                                 const badge = getUserStatusBadge(user);
@@ -638,54 +638,54 @@ export default function AdminPage() {
                                   </span>
                                 );
                               })()}
-                            </td>
+                          </td>
                             <td className="px-4 py-4">
                               {user.mealPlanFileURL ? (
-                                <a
+                              <a
                                   href={user.mealPlanFileURL}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                                target="_blank"
+                                rel="noopener noreferrer"
                                   className="text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-accent underline transition hover:text-accent/80"
                                   onClick={(e) => e.stopPropagation()}
-                                >
+                              >
                                   View PDF
-                                </a>
-                              ) : (
+                              </a>
+                            ) : (
                                 <span className="text-[0.65rem] uppercase tracking-[0.25em] text-foreground/50">
                                   Pending
                                 </span>
-                              )}
-                            </td>
+                            )}
+                          </td>
                             <td className="px-4 py-4">
                               <span className="text-[0.65rem] font-medium uppercase tracking-[0.25em] text-foreground/70">
                                 {user.referralCredits ?? 0}
                               </span>
                             </td>
                             <td className="px-4 py-4 text-right">
-                              <button
+                            <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setSelectedUserId(user.id);
                                 }}
                                 className="rounded-full border border-border/70 bg-background/40 px-4 py-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-foreground/70 transition hover:border-accent hover:bg-accent/20 hover:text-accent"
-                              >
-                                Manage
-                              </button>
-                            </td>
+                            >
+                              Manage
+                            </button>
+                          </td>
                           </motion.tr>
                         );
                       })}
-                    </tbody>
-                  </table>
-                </div>
+                  </tbody>
+                </table>
+              </div>
               </div>
             )}
-          </div>
+            </div>
 
           {/* User Detail Panel */}
-          {selectedUser && (
-            <UserDetailPanel
-              user={selectedUser}
+            {selectedUser && (
+              <UserDetailPanel
+                user={selectedUser}
               onPdfInputChange={handlePdfInputChange}
               onImagesInputChange={handleImagesInputChange}
               onGroceryInputChange={handleGroceryInputChange}
