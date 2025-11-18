@@ -60,7 +60,7 @@ service cloud.firestore {
         'mealPlanFileURL',
         'mealPlanImageURLs',
         'profile',
-        'mealPlanDeliveredAt',
+        'estimatedMacros',
         'groceryListURL',
         'referralCode',
         'referralCredits',
@@ -68,10 +68,7 @@ service cloud.firestore {
         'purchaseDate',
         'role',
         'createdAt',
-        'estimatedMacros',
-        'macroWizardCompleted',
-        'wizardVerified',
-        'adminNotes'
+        'mealPlanDeliveredAt'
       ];
       
       // Check that all keys in data are in the allowed fields list
@@ -81,25 +78,46 @@ service cloud.firestore {
     // Helper function: Validate user field types
     function hasValidUserFieldTypes() {
       let data = request.resource.data;
-      return (!('email' in data) || data.email is string || data.email == null)
+
+      // profile must be a map if provided, with validated subfields
+      let profileValid = !('profile' in data) || (
+        data.profile is map
+        && (!('age' in data.profile) || data.profile.age is string)
+        && (!('height' in data.profile) || data.profile.height is string)
+        && (!('weight' in data.profile) || data.profile.weight is string)
+        && (!('gender' in data.profile) || data.profile.gender is string)
+        && (!('activityLevel' in data.profile) || data.profile.activityLevel is string)
+        && (!('goal' in data.profile) || data.profile.goal is string)
+        && (!('allergies' in data.profile) || data.profile.allergies is string)
+        && (!('preferences' in data.profile) || data.profile.preferences is string)
+        && (!('dietaryRestrictions' in data.profile) || data.profile.dietaryRestrictions is string)
+      );
+
+      // estimatedMacros must be a map if provided, with validated subfields
+      let macrosValid = !('estimatedMacros' in data) || (
+        data.estimatedMacros is map
+        && (!('calories' in data.estimatedMacros) || data.estimatedMacros.calories is number)
+        && (!('protein' in data.estimatedMacros) || data.estimatedMacros.protein is number)
+        && (!('carbs' in data.estimatedMacros) || data.estimatedMacros.carbs is number)
+        && (!('fats' in data.estimatedMacros) || data.estimatedMacros.fats is number)
+      );
+
+      // base field validators remain
+      return profileValid && macrosValid
+        && (!('email' in data) || data.email is string || data.email == null)
         && (!('displayName' in data) || data.displayName is string || data.displayName == null)
         && (!('packageTier' in data) || data.packageTier is string || data.packageTier == null)
         && (!('mealPlanStatus' in data) || data.mealPlanStatus is string || data.mealPlanStatus == null)
         && (!('mealPlanFileURL' in data) || data.mealPlanFileURL is string || data.mealPlanFileURL == null)
         && (!('mealPlanImageURLs' in data) || data.mealPlanImageURLs is list || data.mealPlanImageURLs == null)
-        && (!('profile' in data) || data.profile is map || data.profile == null)
         && (!('groceryListURL' in data) || data.groceryListURL is string || data.groceryListURL == null)
         && (!('referralCode' in data) || data.referralCode is string || data.referralCode == null)
         && (!('referredBy' in data) || data.referredBy is string || data.referredBy == null)
         && (!('referralCredits' in data) || data.referralCredits is int || data.referralCredits == null)
         && (!('role' in data) || data.role is string || data.role == null)
         && (!('mealPlanDeliveredAt' in data) || data.mealPlanDeliveredAt is timestamp || data.mealPlanDeliveredAt == null)
-        && (!('purchaseDate' in data) || data.purchaseDate is timestamp || data.purchaseDate == null)
         && (!('createdAt' in data) || data.createdAt is timestamp || data.createdAt == null)
-        && (!('estimatedMacros' in data) || data.estimatedMacros is map || data.estimatedMacros == null)
-        && (!('macroWizardCompleted' in data) || data.macroWizardCompleted is bool || data.macroWizardCompleted == null)
-        && (!('wizardVerified' in data) || data.wizardVerified is bool || data.wizardVerified == null)
-        && (!('adminNotes' in data) || data.adminNotes is string || data.adminNotes == null);
+        && (!('purchaseDate' in data) || data.purchaseDate is timestamp || data.purchaseDate == null);
     }
 
     // Users collection rules
