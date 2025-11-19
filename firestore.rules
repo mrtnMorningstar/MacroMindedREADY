@@ -70,6 +70,17 @@ service cloud.firestore {
       allow list: if isAdmin();
     }
 
+    // RECIPES - Allow authenticated users to read recipes
+    match /recipes/{recipeId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Allow admins to list all recipes (for admin panel)
+    match /recipes {
+      allow list: if isSignedIn();
+    }
+
     // BLOCK EVERYTHING ELSE
     match /{document=**} {
       allow read, write: if false;
