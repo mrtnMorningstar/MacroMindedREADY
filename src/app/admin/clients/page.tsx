@@ -29,7 +29,6 @@ type FilterType = "all" | "needs-plan" | "delivered" | "in-progress";
 export default function AdminClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [slideoverOpen, setSlideoverOpen] = useState(false);
@@ -107,19 +106,8 @@ export default function AdminClientsPage() {
       filtered = filtered.filter((c) => c.mealPlanStatus === "In Progress");
     }
 
-    // Apply search
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (c) =>
-          c.name.toLowerCase().includes(query) ||
-          c.email.toLowerCase().includes(query) ||
-          (c.packageTier && c.packageTier.toLowerCase().includes(query))
-      );
-    }
-
     return filtered;
-  }, [clients, filter, searchQuery]);
+  }, [clients, filter]);
 
   const handleViewClient = useCallback((client: Client) => {
     setSelectedClient(client);
@@ -127,7 +115,6 @@ export default function AdminClientsPage() {
   }, []);
 
   const handleRefresh = useCallback(() => {
-    // Trigger a re-fetch by updating state
     setClients([...clients]);
   }, [clients]);
 
@@ -144,35 +131,33 @@ export default function AdminClientsPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        {/* Filters */}
+      <div className="px-6 py-8 space-y-8">
+        {/* Section 2: Filters */}
         <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap gap-2">
-              {(["all", "needs-plan", "in-progress", "delivered"] as FilterType[]).map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
-                    filter === f
-                      ? "bg-[#D7263D] text-white"
-                      : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
-                  }`}
-                >
-                  {f === "all"
-                    ? "All Clients"
-                    : f === "needs-plan"
-                    ? "Needs Plan"
-                    : f === "in-progress"
-                    ? "In Progress"
-                    : "Delivered"}
-                </button>
-              ))}
-            </div>
+          <div className="flex flex-wrap gap-2">
+            {(["all", "needs-plan", "in-progress", "delivered"] as FilterType[]).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                  filter === f
+                    ? "bg-[#D7263D] text-white"
+                    : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+                }`}
+              >
+                {f === "all"
+                  ? "All Clients"
+                  : f === "needs-plan"
+                  ? "Needs Plan"
+                  : f === "in-progress"
+                  ? "In Progress"
+                  : "Delivered"}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Table */}
+        {/* Section 3: Main Table */}
         {loading ? (
           <SkeletonTable rows={8} />
         ) : (

@@ -20,6 +20,11 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loadingAuth, sessionExpired, setSessionExpired } = useAuth();
+
+  // Hide navbar on admin routes
+  if (pathname?.startsWith("/admin")) {
+    return null;
+  }
   const [isAdmin, setIsAdmin] = useState(false);
   const [hasPackage, setHasPackage] = useState(false);
   const [checkingRole, setCheckingRole] = useState(false);

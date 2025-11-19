@@ -146,14 +146,12 @@ export default function PlanRequestsPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        {/* Header with Actions */}
+      <div className="px-6 py-8 space-y-8">
+        {/* Section 2: Filters */}
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-neutral-400">
-              {unhandledRequests.length} unhandled request{unhandledRequests.length !== 1 ? "s" : ""}
-            </p>
-          </div>
+          <p className="text-sm text-neutral-400">
+            {unhandledRequests.length} unhandled request{unhandledRequests.length !== 1 ? "s" : ""}
+          </p>
           <div className="flex items-center gap-3">
             <div className="flex gap-2">
               {(["all", "unhandled", "handled"] as FilterType[]).map((f) => (
@@ -181,6 +179,7 @@ export default function PlanRequestsPage() {
           </div>
         </div>
 
+        {/* Section 3: Main Content */}
         {loading ? (
           <SkeletonTable rows={5} />
         ) : (
@@ -188,7 +187,9 @@ export default function PlanRequestsPage() {
             {/* Unhandled Requests */}
             {unhandledRequests.length > 0 && (
               <div>
-                <h2 className="text-lg font-semibold text-white mb-4">Unhandled Requests</h2>
+                <p className="uppercase text-xs text-neutral-500 tracking-wide mb-4">
+                  Unhandled Requests
+                </p>
                 <div className="space-y-3">
                   {unhandledRequests.map((request) => (
                     <motion.div
@@ -257,7 +258,9 @@ export default function PlanRequestsPage() {
             {/* Handled Requests */}
             {handledRequests.length > 0 && (
               <div>
-                <h2 className="text-lg font-semibold text-white mb-4">Handled Requests</h2>
+                <p className="uppercase text-xs text-neutral-500 tracking-wide mb-4">
+                  Handled Requests
+                </p>
                 <div className="space-y-3">
                   {handledRequests.map((request) => (
                     <motion.div

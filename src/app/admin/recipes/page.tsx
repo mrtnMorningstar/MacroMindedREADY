@@ -194,14 +194,12 @@ export default function AdminRecipesPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        {/* Header */}
+      <div className="px-6 py-8 space-y-8">
+        {/* Section 2: Header with Create Button */}
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-neutral-400">
-              {recipes.length} recipe{recipes.length !== 1 ? "s" : ""} total
-            </p>
-          </div>
+          <p className="text-sm text-neutral-400">
+            {recipes.length} recipe{recipes.length !== 1 ? "s" : ""} total
+          </p>
           <button
             onClick={() => {
               setFormState(initialFormState);
@@ -217,7 +215,7 @@ export default function AdminRecipesPage() {
           </button>
         </div>
 
-        {/* Recipe Grid */}
+        {/* Section 3: Recipe Grid */}
         {loading ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (

@@ -88,8 +88,8 @@ export default function AdminSalesPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        {/* KPI Cards */}
+      <div className="px-6 py-8 space-y-8">
+        {/* Section 1: KPI Cards */}
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
           {loading ? (
             Array.from({ length: 5 }).map((_, i) => (
@@ -161,9 +161,9 @@ export default function AdminSalesPage() {
           )}
         </div>
 
-        {/* Tier Breakdown */}
+        {/* Section 3: Tier Breakdown */}
         <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
-          <h2 className="text-2xl font-bold text-white mb-6">Plan Breakdown</h2>
+          <p className="uppercase text-xs text-neutral-500 tracking-wide mb-6">Plan Breakdown</p>
           <div className="grid gap-6 sm:grid-cols-3">
             {(["Basic", "Pro", "Elite"] as const).map((tier) => (
               <motion.div

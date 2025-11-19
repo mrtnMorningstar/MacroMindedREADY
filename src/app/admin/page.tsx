@@ -68,7 +68,6 @@ export default function AdminPage() {
         return hasPackage && needsPlan;
       });
     } else if (filterStatus === "overdue") {
-      // Simple overdue check - can be enhanced
       filtered = filtered.filter((u) => u.mealPlanStatus === "Delivered");
     } else if (filterStatus === "inactive") {
       filtered = filtered.filter(
@@ -142,11 +141,11 @@ export default function AdminPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        {/* Dashboard Summary */}
+      <div className="px-6 py-8 space-y-8">
+        {/* Section 1: Metrics */}
         <DashboardSummary />
 
-        {/* Search and Filter Bar */}
+        {/* Section 2: Filters */}
         <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex-1">
@@ -184,7 +183,7 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Users Table */}
+        {/* Section 3: Main Table */}
         {loadingUsers ? (
           <SkeletonTable rows={10} />
         ) : (
