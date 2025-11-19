@@ -132,7 +132,7 @@ export default function AdminLayoutWrapper({ children }: AdminLayoutProps) {
 
             {/* Page Content */}
             <main className="flex-1 p-6">
-              <div className="mx-auto max-w-7xl">{children}</div>
+              <div className="mx-auto max-w-7xl space-y-8">{children}</div>
             </main>
           </div>
 

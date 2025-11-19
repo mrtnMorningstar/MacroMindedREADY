@@ -194,268 +194,266 @@ export default function AdminRecipesPage() {
 
   return (
     <AdminLayout>
-      <div className="px-6 py-8 space-y-8">
-        {/* Section 2: Header with Create Button */}
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-neutral-400">
-            {recipes.length} recipe{recipes.length !== 1 ? "s" : ""} total
-          </p>
-          <button
-            onClick={() => {
-              setFormState(initialFormState);
-              setImageFile(null);
-              setImagePreview(null);
-              setSelectedRecipeId(null);
-              setShowForm(true);
-            }}
-            className="flex items-center gap-2 rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
-          >
-            <PlusIcon className="h-5 w-5" />
-            Create New Recipe
-          </button>
-        </div>
-
-        {/* Section 3: Recipe Grid */}
-        {loading ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <SkeletonCard key={i} className="h-64" />
-            ))}
-          </div>
-        ) : recipes.length === 0 ? (
-          <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-12 text-center">
-            <div className="max-w-md mx-auto">
-              <SparklesIcon className="h-16 w-16 text-neutral-600 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">No recipes yet</h3>
-              <p className="text-sm text-neutral-400 mb-6">
-                Create your first recipe to get started building your recipe library.
-              </p>
-              <button
-                onClick={() => setShowForm(true)}
-                className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
-              >
-                Create Recipe
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {recipes.map((recipe, index) => (
-              <motion.div
-                key={recipe.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className="rounded-2xl border border-neutral-800 bg-neutral-900 overflow-hidden"
-              >
-                {recipe.imageURL && (
-                  <img
-                    src={recipe.imageURL}
-                    alt={recipe.title}
-                    className="h-48 w-full object-cover"
-                  />
-                )}
-                <div className="p-6">
-                  <h3 className="text-lg font-semibold text-white mb-2">{recipe.title}</h3>
-                  <p className="text-sm text-neutral-400 mb-4 line-clamp-2">
-                    {recipe.description}
-                  </p>
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    <span className="rounded-full border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs text-neutral-300">
-                      {recipe.protein}g P
-                    </span>
-                    <span className="rounded-full border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs text-neutral-300">
-                      {recipe.carbs}g C
-                    </span>
-                    <span className="rounded-full border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs text-neutral-300">
-                      {recipe.fats}g F
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleEdit(recipe)}
-                      className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700"
-                    >
-                      <PencilIcon className="h-4 w-4" />
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => setShowDeleteConfirm(recipe.id)}
-                      className="flex items-center justify-center gap-2 rounded-lg border border-red-500/50 bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-500/30"
-                    >
-                      <TrashIcon className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
-
-        {/* Create/Edit Recipe Modal */}
-        <AppModal
-          isOpen={showForm}
-          onClose={() => {
-            setShowForm(false);
+      {/* Header with Create Button */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-neutral-400">
+          {recipes.length} recipe{recipes.length !== 1 ? "s" : ""} total
+        </p>
+        <button
+          onClick={() => {
             setFormState(initialFormState);
             setImageFile(null);
             setImagePreview(null);
             setSelectedRecipeId(null);
+            setShowForm(true);
           }}
-          title={selectedRecipeId ? "Edit Recipe" : "Create New Recipe"}
-          size="lg"
+          className="flex items-center gap-2 rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
         >
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-neutral-300 mb-2">Title</label>
-              <input
-                type="text"
-                value={formState.title}
-                onChange={(e) => setFormState({ ...formState, title: e.target.value })}
-                required
-                className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white focus:border-[#D7263D] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-neutral-300 mb-2">
-                Description
-              </label>
-              <textarea
-                value={formState.description}
-                onChange={(e) => setFormState({ ...formState, description: e.target.value })}
-                required
-                rows={3}
-                className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-3 text-sm text-white focus:border-[#D7263D] focus:outline-none"
-              />
-            </div>
-            <div className="grid grid-cols-4 gap-4">
-              {(["calories", "protein", "carbs", "fats"] as const).map((field) => (
-                <div key={field}>
-                  <label className="block text-sm font-semibold text-neutral-300 mb-2 capitalize">
-                    {field}
-                  </label>
-                  <input
-                    type="number"
-                    value={formState[field]}
-                    onChange={(e) => setFormState({ ...formState, [field]: e.target.value })}
-                    required
-                    className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white focus:border-[#D7263D] focus:outline-none"
-                  />
-                </div>
-              ))}
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-neutral-300 mb-2">
-                Ingredients (one per line)
-              </label>
-              <textarea
-                value={formState.ingredients}
-                onChange={(e) => setFormState({ ...formState, ingredients: e.target.value })}
-                required
-                rows={5}
-                className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-3 text-sm text-white focus:border-[#D7263D] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-neutral-300 mb-2">
-                Steps (one per line)
-              </label>
-              <textarea
-                value={formState.steps}
-                onChange={(e) => setFormState({ ...formState, steps: e.target.value })}
-                required
-                rows={5}
-                className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-3 text-sm text-white focus:border-[#D7263D] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-neutral-300 mb-2">
-                Tags (comma-separated)
-              </label>
-              <input
-                type="text"
-                value={formState.tags}
-                onChange={(e) => setFormState({ ...formState, tags: e.target.value })}
-                className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white focus:border-[#D7263D] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-neutral-300 mb-2">Image</label>
-              <div className="space-y-3">
-                {imagePreview && (
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    className="h-32 w-32 rounded-lg object-cover border border-neutral-800"
-                  />
-                )}
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="hidden"
-                  />
-                  <div className="flex items-center gap-2 rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700">
-                    <ArrowUpTrayIcon className="h-5 w-5" />
-                    {imageFile ? "Change Image" : "Upload Image"}
-                  </div>
-                </label>
-              </div>
-            </div>
-            <div className="flex gap-3 justify-end pt-4 border-t border-neutral-800">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowForm(false);
-                  setFormState(initialFormState);
-                  setImageFile(null);
-                  setImagePreview(null);
-                  setSelectedRecipeId(null);
-                }}
-                className="rounded-lg border border-neutral-700 bg-neutral-800 px-6 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmitting || uploadingAsset}
-                className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-6 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50"
-              >
-                {isSubmitting ? "Saving..." : selectedRecipeId ? "Update" : "Create"}
-              </button>
-            </div>
-          </form>
-        </AppModal>
+          <PlusIcon className="h-5 w-5" />
+          Create New Recipe
+        </button>
+      </div>
 
-        {/* Delete Confirmation Modal */}
-        <AppModal
-          isOpen={!!showDeleteConfirm}
-          onClose={() => setShowDeleteConfirm(null)}
-          title="Delete Recipe"
-          size="sm"
-        >
-          <div className="space-y-4">
-            <p className="text-neutral-300">
-              Are you sure you want to delete this recipe? This action cannot be undone.
+      {/* Recipe Grid */}
+      {loading ? (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <SkeletonCard key={i} className="h-64" />
+          ))}
+        </div>
+      ) : recipes.length === 0 ? (
+        <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-12 text-center">
+          <div className="max-w-md mx-auto">
+            <SparklesIcon className="h-16 w-16 text-neutral-600 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-white mb-2">No recipes yet</h3>
+            <p className="text-sm text-neutral-400 mb-6">
+              Create your first recipe to get started building your recipe library.
             </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setShowDeleteConfirm(null)}
-                className="rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => showDeleteConfirm && handleDelete(showDeleteConfirm)}
-                className="rounded-lg border border-red-500/50 bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-500/30"
-              >
-                Delete Recipe
-              </button>
+            <button
+              onClick={() => setShowForm(true)}
+              className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
+            >
+              Create Recipe
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {recipes.map((recipe, index) => (
+            <motion.div
+              key={recipe.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+              className="rounded-2xl border border-neutral-800 bg-neutral-900 overflow-hidden"
+            >
+              {recipe.imageURL && (
+                <img
+                  src={recipe.imageURL}
+                  alt={recipe.title}
+                  className="h-48 w-full object-cover"
+                />
+              )}
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-white mb-2">{recipe.title}</h3>
+                <p className="text-sm text-neutral-400 mb-4 line-clamp-2">
+                  {recipe.description}
+                </p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="rounded-full border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs text-neutral-300">
+                    {recipe.protein}g P
+                  </span>
+                  <span className="rounded-full border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs text-neutral-300">
+                    {recipe.carbs}g C
+                  </span>
+                  <span className="rounded-full border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs text-neutral-300">
+                    {recipe.fats}g F
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleEdit(recipe)}
+                    className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700"
+                  >
+                    <PencilIcon className="h-4 w-4" />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(recipe.id)}
+                    className="flex items-center justify-center gap-2 rounded-lg border border-red-500/50 bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-500/30"
+                  >
+                    <TrashIcon className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
+
+      {/* Create/Edit Recipe Modal */}
+      <AppModal
+        isOpen={showForm}
+        onClose={() => {
+          setShowForm(false);
+          setFormState(initialFormState);
+          setImageFile(null);
+          setImagePreview(null);
+          setSelectedRecipeId(null);
+        }}
+        title={selectedRecipeId ? "Edit Recipe" : "Create New Recipe"}
+        size="lg"
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-neutral-300 mb-2">Title</label>
+            <input
+              type="text"
+              value={formState.title}
+              onChange={(e) => setFormState({ ...formState, title: e.target.value })}
+              required
+              className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white focus:border-[#D7263D] focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-neutral-300 mb-2">
+              Description
+            </label>
+            <textarea
+              value={formState.description}
+              onChange={(e) => setFormState({ ...formState, description: e.target.value })}
+              required
+              rows={3}
+              className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-3 text-sm text-white focus:border-[#D7263D] focus:outline-none"
+            />
+          </div>
+          <div className="grid grid-cols-4 gap-4">
+            {(["calories", "protein", "carbs", "fats"] as const).map((field) => (
+              <div key={field}>
+                <label className="block text-sm font-semibold text-neutral-300 mb-2 capitalize">
+                  {field}
+                </label>
+                <input
+                  type="number"
+                  value={formState[field]}
+                  onChange={(e) => setFormState({ ...formState, [field]: e.target.value })}
+                  required
+                  className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white focus:border-[#D7263D] focus:outline-none"
+                />
+              </div>
+            ))}
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-neutral-300 mb-2">
+              Ingredients (one per line)
+            </label>
+            <textarea
+              value={formState.ingredients}
+              onChange={(e) => setFormState({ ...formState, ingredients: e.target.value })}
+              required
+              rows={5}
+              className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-3 text-sm text-white focus:border-[#D7263D] focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-neutral-300 mb-2">
+              Steps (one per line)
+            </label>
+            <textarea
+              value={formState.steps}
+              onChange={(e) => setFormState({ ...formState, steps: e.target.value })}
+              required
+              rows={5}
+              className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-3 text-sm text-white focus:border-[#D7263D] focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-neutral-300 mb-2">
+              Tags (comma-separated)
+            </label>
+            <input
+              type="text"
+              value={formState.tags}
+              onChange={(e) => setFormState({ ...formState, tags: e.target.value })}
+              className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white focus:border-[#D7263D] focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-neutral-300 mb-2">Image</label>
+            <div className="space-y-3">
+              {imagePreview && (
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="h-32 w-32 rounded-lg object-cover border border-neutral-800"
+                />
+              )}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+                <div className="flex items-center gap-2 rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700">
+                  <ArrowUpTrayIcon className="h-5 w-5" />
+                  {imageFile ? "Change Image" : "Upload Image"}
+                </div>
+              </label>
             </div>
           </div>
-        </AppModal>
-      </div>
+          <div className="flex gap-3 justify-end pt-4 border-t border-neutral-800">
+            <button
+              type="button"
+              onClick={() => {
+                setShowForm(false);
+                setFormState(initialFormState);
+                setImageFile(null);
+                setImagePreview(null);
+                setSelectedRecipeId(null);
+              }}
+              className="rounded-lg border border-neutral-700 bg-neutral-800 px-6 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting || uploadingAsset}
+              className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-6 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50"
+            >
+              {isSubmitting ? "Saving..." : selectedRecipeId ? "Update" : "Create"}
+            </button>
+          </div>
+        </form>
+      </AppModal>
+
+      {/* Delete Confirmation Modal */}
+      <AppModal
+        isOpen={!!showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(null)}
+        title="Delete Recipe"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-neutral-300">
+            Are you sure you want to delete this recipe? This action cannot be undone.
+          </p>
+          <div className="flex gap-3 justify-end">
+            <button
+              onClick={() => setShowDeleteConfirm(null)}
+              className="rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => showDeleteConfirm && handleDelete(showDeleteConfirm)}
+              className="rounded-lg border border-red-500/50 bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-500/30"
+            >
+              Delete Recipe
+            </button>
+          </div>
+        </div>
+      </AppModal>
     </AdminLayout>
   );
 }

@@ -50,7 +50,6 @@ export default function PlanRequestsPage() {
           let userName = "Unknown User";
           let userEmail = "No email";
 
-          // Fetch user data
           try {
             const userDoc = await getDoc(doc(db, "users", data.userId));
             if (userDoc.exists()) {
@@ -146,186 +145,184 @@ export default function PlanRequestsPage() {
 
   return (
     <AdminLayout>
-      <div className="px-6 py-8 space-y-8">
-        {/* Section 2: Filters */}
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-neutral-400">
-            {unhandledRequests.length} unhandled request{unhandledRequests.length !== 1 ? "s" : ""}
-          </p>
-          <div className="flex items-center gap-3">
-            <div className="flex gap-2">
-              {(["all", "unhandled", "handled"] as FilterType[]).map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
-                    filter === f
-                      ? "bg-[#D7263D] text-white"
-                      : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
-                  }`}
-                >
-                  {f === "all" ? "All" : f === "unhandled" ? "Unhandled" : "Handled"}
-                </button>
-              ))}
-            </div>
-            {unhandledRequests.length > 0 && (
+      {/* Filters */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-neutral-400">
+          {unhandledRequests.length} unhandled request{unhandledRequests.length !== 1 ? "s" : ""}
+        </p>
+        <div className="flex items-center gap-3">
+          <div className="flex gap-2">
+            {(["all", "unhandled", "handled"] as FilterType[]).map((f) => (
               <button
-                onClick={handleMarkAllHandled}
-                className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                  filter === f
+                    ? "bg-[#D7263D] text-white"
+                    : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+                }`}
               >
-                Mark All as Handled
+                {f === "all" ? "All" : f === "unhandled" ? "Unhandled" : "Handled"}
               </button>
-            )}
+            ))}
           </div>
+          {unhandledRequests.length > 0 && (
+            <button
+              onClick={handleMarkAllHandled}
+              className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
+            >
+              Mark All as Handled
+            </button>
+          )}
         </div>
+      </div>
 
-        {/* Section 3: Main Content */}
-        {loading ? (
-          <SkeletonTable rows={5} />
-        ) : (
-          <div className="space-y-4">
-            {/* Unhandled Requests */}
-            {unhandledRequests.length > 0 && (
-              <div>
-                <p className="uppercase text-xs text-neutral-500 tracking-wide mb-4">
-                  Unhandled Requests
-                </p>
-                <div className="space-y-3">
-                  {unhandledRequests.map((request) => (
-                    <motion.div
-                      key={request.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="rounded-2xl border border-neutral-800 bg-neutral-900 overflow-hidden"
+      {/* Main Content */}
+      {loading ? (
+        <SkeletonTable rows={5} />
+      ) : (
+        <div className="space-y-4">
+          {/* Unhandled Requests */}
+          {unhandledRequests.length > 0 && (
+            <div>
+              <p className="uppercase text-xs text-neutral-500 tracking-wide mb-4">
+                Unhandled Requests
+              </p>
+              <div className="space-y-3">
+                {unhandledRequests.map((request) => (
+                  <motion.div
+                    key={request.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-2xl border border-neutral-800 bg-neutral-900 overflow-hidden"
+                  >
+                    <div
+                      className="flex items-center justify-between p-6 cursor-pointer hover:bg-neutral-800/50 transition"
+                      onClick={() =>
+                        setExpandedId(expandedId === request.id ? null : request.id)
+                      }
                     >
-                      <div
-                        className="flex items-center justify-between p-6 cursor-pointer hover:bg-neutral-800/50 transition"
-                        onClick={() =>
-                          setExpandedId(expandedId === request.id ? null : request.id)
-                        }
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-4 mb-2">
-                            <p className="text-sm font-semibold text-white">{request.userName}</p>
-                            <p className="text-xs text-neutral-400">{request.userEmail}</p>
-                            {request.date && (
-                              <p className="text-xs text-neutral-500">
-                                {formatTimeAgo(request.date)}
-                              </p>
-                            )}
-                          </div>
-                          <p className="text-sm text-neutral-300 line-clamp-2">
-                            {request.requestText}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleMarkHandled(request.id);
-                            }}
-                            className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
-                          >
-                            <CheckIcon className="h-4 w-4" />
-                          </button>
-                          {expandedId === request.id ? (
-                            <ChevronUpIcon className="h-5 w-5 text-neutral-400" />
-                          ) : (
-                            <ChevronDownIcon className="h-5 w-5 text-neutral-400" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-4 mb-2">
+                          <p className="text-sm font-semibold text-white">{request.userName}</p>
+                          <p className="text-xs text-neutral-400">{request.userEmail}</p>
+                          {request.date && (
+                            <p className="text-xs text-neutral-500">
+                              {formatTimeAgo(request.date)}
+                            </p>
                           )}
                         </div>
+                        <p className="text-sm text-neutral-300 line-clamp-2">
+                          {request.requestText}
+                        </p>
                       </div>
-                      <AnimatePresence>
-                        {expandedId === request.id && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="border-t border-neutral-800 bg-neutral-800/30 p-6"
-                          >
-                            <p className="text-sm text-neutral-300 whitespace-pre-wrap">
-                              {request.requestText}
-                            </p>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Handled Requests */}
-            {handledRequests.length > 0 && (
-              <div>
-                <p className="uppercase text-xs text-neutral-500 tracking-wide mb-4">
-                  Handled Requests
-                </p>
-                <div className="space-y-3">
-                  {handledRequests.map((request) => (
-                    <motion.div
-                      key={request.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="rounded-2xl border border-neutral-800 bg-neutral-900/50 overflow-hidden opacity-60"
-                    >
-                      <div
-                        className="flex items-center justify-between p-6 cursor-pointer hover:bg-neutral-800/30 transition"
-                        onClick={() =>
-                          setExpandedId(expandedId === request.id ? null : request.id)
-                        }
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-4 mb-2">
-                            <p className="text-sm font-semibold text-white">{request.userName}</p>
-                            <p className="text-xs text-neutral-400">{request.userEmail}</p>
-                            {request.date && (
-                              <p className="text-xs text-neutral-500">
-                                {formatTimeAgo(request.date)}
-                              </p>
-                            )}
-                            <span className="inline-flex items-center rounded-full border border-green-500/50 bg-green-500/20 px-2 py-1 text-xs font-semibold text-green-500">
-                              Handled
-                            </span>
-                          </div>
-                          <p className="text-sm text-neutral-300 line-clamp-2">
-                            {request.requestText}
-                          </p>
-                        </div>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMarkHandled(request.id);
+                          }}
+                          className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
+                        >
+                          <CheckIcon className="h-4 w-4" />
+                        </button>
                         {expandedId === request.id ? (
                           <ChevronUpIcon className="h-5 w-5 text-neutral-400" />
                         ) : (
                           <ChevronDownIcon className="h-5 w-5 text-neutral-400" />
                         )}
                       </div>
-                      <AnimatePresence>
-                        {expandedId === request.id && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="border-t border-neutral-800 bg-neutral-800/30 p-6"
-                          >
-                            <p className="text-sm text-neutral-300 whitespace-pre-wrap">
-                              {request.requestText}
-                            </p>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </motion.div>
-                  ))}
-                </div>
+                    </div>
+                    <AnimatePresence>
+                      {expandedId === request.id && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="border-t border-neutral-800 bg-neutral-800/30 p-6"
+                        >
+                          <p className="text-sm text-neutral-300 whitespace-pre-wrap">
+                            {request.requestText}
+                          </p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                ))}
               </div>
-            )}
+            </div>
+          )}
 
-            {requests.length === 0 && (
-              <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-12 text-center">
-                <p className="text-sm text-neutral-400">No plan update requests found.</p>
+          {/* Handled Requests */}
+          {handledRequests.length > 0 && (
+            <div>
+              <p className="uppercase text-xs text-neutral-500 tracking-wide mb-4">
+                Handled Requests
+              </p>
+              <div className="space-y-3">
+                {handledRequests.map((request) => (
+                  <motion.div
+                    key={request.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-2xl border border-neutral-800 bg-neutral-900/50 overflow-hidden opacity-60"
+                  >
+                    <div
+                      className="flex items-center justify-between p-6 cursor-pointer hover:bg-neutral-800/30 transition"
+                      onClick={() =>
+                        setExpandedId(expandedId === request.id ? null : request.id)
+                      }
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-4 mb-2">
+                          <p className="text-sm font-semibold text-white">{request.userName}</p>
+                          <p className="text-xs text-neutral-400">{request.userEmail}</p>
+                          {request.date && (
+                            <p className="text-xs text-neutral-500">
+                              {formatTimeAgo(request.date)}
+                            </p>
+                          )}
+                          <span className="inline-flex items-center rounded-full border border-green-500/50 bg-green-500/20 px-2 py-1 text-xs font-semibold text-green-500">
+                            Handled
+                          </span>
+                        </div>
+                        <p className="text-sm text-neutral-300 line-clamp-2">
+                          {request.requestText}
+                        </p>
+                      </div>
+                      {expandedId === request.id ? (
+                        <ChevronUpIcon className="h-5 w-5 text-neutral-400" />
+                      ) : (
+                        <ChevronDownIcon className="h-5 w-5 text-neutral-400" />
+                      )}
+                    </div>
+                    <AnimatePresence>
+                      {expandedId === request.id && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="border-t border-neutral-800 bg-neutral-800/30 p-6"
+                        >
+                          <p className="text-sm text-neutral-300 whitespace-pre-wrap">
+                            {request.requestText}
+                          </p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                ))}
               </div>
-            )}
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+
+          {requests.length === 0 && (
+            <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-12 text-center">
+              <p className="text-sm text-neutral-400">No plan update requests found.</p>
+            </div>
+          )}
+        </div>
+      )}
     </AdminLayout>
   );
 }

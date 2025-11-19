@@ -88,108 +88,106 @@ export default function AdminSalesPage() {
 
   return (
     <AdminLayout>
-      <div className="px-6 py-8 space-y-8">
-        {/* Section 1: KPI Cards */}
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
-          {loading ? (
-            Array.from({ length: 5 }).map((_, i) => (
-              <SkeletonCard key={i} className="h-32" />
-            ))
-          ) : (
-            <>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6"
-              >
-                <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">
-                  Total Revenue
-                </p>
-                <p className="text-3xl font-bold text-white">
-                  ${metrics.totalRevenue.toLocaleString()}
-                </p>
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6"
-              >
-                <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">
-                  Last 30 Days
-                </p>
-                <p className="text-3xl font-bold text-[#D7263D]">
-                  ${metrics.revenueLast30Days.toLocaleString()}
-                </p>
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6"
-              >
-                <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">
-                  Total Purchases
-                </p>
-                <p className="text-3xl font-bold text-white">{metrics.totalPurchases}</p>
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6"
-              >
-                <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">
-                  Avg Purchase
-                </p>
-                <p className="text-3xl font-bold text-white">
-                  ${metrics.avgPurchaseValue.toFixed(0)}
-                </p>
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6"
-              >
-                <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">
-                  Active Users
-                </p>
-                <p className="text-3xl font-bold text-white">{metrics.activeUsers}</p>
-              </motion.div>
-            </>
-          )}
-        </div>
+      {/* KPI Cards */}
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
+        {loading ? (
+          Array.from({ length: 5 }).map((_, i) => (
+            <SkeletonCard key={i} className="h-32" />
+          ))
+        ) : (
+          <>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6"
+            >
+              <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">
+                Total Revenue
+              </p>
+              <p className="text-3xl font-bold text-white">
+                ${metrics.totalRevenue.toLocaleString()}
+              </p>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6"
+            >
+              <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">
+                Last 30 Days
+              </p>
+              <p className="text-3xl font-bold text-[#D7263D]">
+                ${metrics.revenueLast30Days.toLocaleString()}
+              </p>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6"
+            >
+              <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">
+                Total Purchases
+              </p>
+              <p className="text-3xl font-bold text-white">{metrics.totalPurchases}</p>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6"
+            >
+              <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">
+                Avg Purchase
+              </p>
+              <p className="text-3xl font-bold text-white">
+                ${metrics.avgPurchaseValue.toFixed(0)}
+              </p>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6"
+            >
+              <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">
+                Active Users
+              </p>
+              <p className="text-3xl font-bold text-white">{metrics.activeUsers}</p>
+            </motion.div>
+          </>
+        )}
+      </div>
 
-        {/* Section 3: Tier Breakdown */}
-        <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
-          <p className="uppercase text-xs text-neutral-500 tracking-wide mb-6">Plan Breakdown</p>
-          <div className="grid gap-6 sm:grid-cols-3">
-            {(["Basic", "Pro", "Elite"] as const).map((tier) => (
-              <motion.div
-                key={tier}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-xl border border-neutral-800 bg-neutral-800/50 p-6"
-              >
-                <p className="text-sm uppercase tracking-wide text-neutral-500 mb-4">{tier} Plan</p>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-xs text-neutral-500 mb-1">Purchases</p>
-                    <p className="text-2xl font-bold text-white">
-                      {loading ? "—" : metrics.tierMetrics[tier].count}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-neutral-500 mb-1">Revenue</p>
-                    <p className="text-2xl font-bold text-[#D7263D]">
-                      {loading ? "—" : `$${metrics.tierMetrics[tier].revenue.toLocaleString()}`}
-                    </p>
-                  </div>
+      {/* Tier Breakdown */}
+      <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
+        <p className="uppercase text-xs text-neutral-500 tracking-wide mb-6">Plan Breakdown</p>
+        <div className="grid gap-6 sm:grid-cols-3">
+          {(["Basic", "Pro", "Elite"] as const).map((tier) => (
+            <motion.div
+              key={tier}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-xl border border-neutral-800 bg-neutral-800/50 p-6"
+            >
+              <p className="text-sm uppercase tracking-wide text-neutral-500 mb-4">{tier} Plan</p>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs text-neutral-500 mb-1">Purchases</p>
+                  <p className="text-2xl font-bold text-white">
+                    {loading ? "—" : metrics.tierMetrics[tier].count}
+                  </p>
                 </div>
-              </motion.div>
-            ))}
-          </div>
+                <div>
+                  <p className="text-xs text-neutral-500 mb-1">Revenue</p>
+                  <p className="text-2xl font-bold text-[#D7263D]">
+                    {loading ? "—" : `$${metrics.tierMetrics[tier].revenue.toLocaleString()}`}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          ))}
         </div>
       </div>
     </AdminLayout>

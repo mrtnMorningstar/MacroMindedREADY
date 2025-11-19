@@ -94,76 +94,69 @@ export default function AdminAnalyticsPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold text-white mb-2">Analytics</h2>
-          <p className="text-sm text-neutral-400">Revenue and plan distribution insights</p>
-        </div>
+      {/* Revenue Chart */}
+      <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
+        <p className="uppercase text-xs text-neutral-500 tracking-wide mb-4">Revenue (Last 30 Days)</p>
+        {loading ? (
+          <SkeletonCard className="h-64" />
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={revenueData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#404040" />
+              <XAxis dataKey="date" stroke="#888" />
+              <YAxis stroke="#888" />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "#1a1a1a",
+                  border: "1px solid #404040",
+                  borderRadius: "8px",
+                }}
+              />
+              <Line
+                type="monotone"
+                dataKey="revenue"
+                stroke="#D7263D"
+                strokeWidth={2}
+                dot={{ fill: "#D7263D" }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
+      </div>
 
-        {/* Revenue Chart */}
-        <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Revenue (Last 30 Days)</h3>
-          {loading ? (
-            <SkeletonCard className="h-64" />
-          ) : (
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={revenueData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#404040" />
-                <XAxis dataKey="date" stroke="#888" />
-                <YAxis stroke="#888" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#1a1a1a",
-                    border: "1px solid #404040",
-                    borderRadius: "8px",
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#D7263D"
-                  strokeWidth={2}
-                  dot={{ fill: "#D7263D" }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-
-        {/* Plan Distribution Chart */}
-        <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Plan Distribution</h3>
-          {loading ? (
-            <SkeletonCard className="h-64" />
-          ) : (
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={planDistribution}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {planDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#1a1a1a",
-                    border: "1px solid #404040",
-                    borderRadius: "8px",
-                  }}
-                />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          )}
-        </div>
+      {/* Plan Distribution Chart */}
+      <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
+        <p className="uppercase text-xs text-neutral-500 tracking-wide mb-4">Plan Distribution</p>
+        {loading ? (
+          <SkeletonCard className="h-64" />
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={planDistribution}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {planDistribution.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "#1a1a1a",
+                  border: "1px solid #404040",
+                  borderRadius: "8px",
+                }}
+              />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </AdminLayout>
   );
