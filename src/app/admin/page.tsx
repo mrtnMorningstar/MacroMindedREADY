@@ -28,7 +28,6 @@ type FilterStatus = "all" | "needs-plan" | "delivered" | "overdue" | "inactive";
 export default function AdminPage() {
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
   const [selectedClient, setSelectedClient] = useState<UserRecord | null>(null);
   const [slideoverOpen, setSlideoverOpen] = useState(false);
@@ -75,18 +74,8 @@ export default function AdminPage() {
       );
     }
 
-    // Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter((user) => {
-        const name = (user.displayName ?? "").toLowerCase();
-        const email = (user.email ?? "").toLowerCase();
-        return name.includes(query) || email.includes(query);
-      });
-    }
-
     return filtered;
-  }, [users, searchQuery, filterStatus]);
+  }, [users, filterStatus]);
 
   const handleViewClient = useCallback((user: UserRecord) => {
     setSelectedClient({
@@ -141,39 +130,40 @@ export default function AdminPage() {
 
   return (
     <AdminLayout>
-      {/* Metrics Section */}
+      {/* Dashboard Title */}
+      <h2 className="text-2xl font-semibold text-white">Dashboard</h2>
+
+      {/* Metrics */}
       <DashboardSummary />
 
       {/* Filters */}
       <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap gap-2">
-            {(["all", "needs-plan", "delivered", "overdue", "inactive"] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilterStatus(f)}
-                className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
-                  filterStatus === f
-                    ? "bg-[#D7263D] text-white"
-                    : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
-                }`}
-              >
-                {f === "all"
-                  ? "All"
-                  : f === "needs-plan"
-                  ? "Needs Plan"
-                  : f === "delivered"
-                  ? "Delivered"
-                  : f === "overdue"
-                  ? "Overdue"
-                  : "Inactive"}
-              </button>
-            ))}
-          </div>
+        <div className="flex flex-wrap gap-2">
+          {(["all", "needs-plan", "delivered", "overdue", "inactive"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilterStatus(f)}
+              className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                filterStatus === f
+                  ? "bg-[#D7263D] text-white"
+                  : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+              }`}
+            >
+              {f === "all"
+                ? "All"
+                : f === "needs-plan"
+                ? "Needs Plan"
+                : f === "delivered"
+                ? "Delivered"
+                : f === "overdue"
+                ? "Overdue"
+                : "Inactive"}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Main Table */}
+      {/* Clients Table */}
       {loadingUsers ? (
         <SkeletonTable rows={10} />
       ) : (
@@ -273,9 +263,7 @@ export default function AdminPage() {
           {filteredUsers.length === 0 && (
             <div className="px-6 py-12 text-center">
               <p className="text-sm text-neutral-400">
-                {searchQuery || filterStatus !== "all"
-                  ? "No users match your filters."
-                  : "No users found."}
+                {filterStatus !== "all" ? "No users match your filters." : "No users found."}
               </p>
             </div>
           )}
