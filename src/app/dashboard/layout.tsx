@@ -22,7 +22,7 @@ import type { DashboardContextValue } from "@/context/dashboard-context";
 import { generateUniqueReferralCode } from "@/lib/referral";
 import { getUserPurchase } from "@/lib/purchases";
 import type { UserDashboardData } from "@/types/dashboard";
-import { RequireAuth, RequirePackage } from "@/components/auth";
+import { RequireAuth } from "@/components/auth";
 import { RequireProfileCompletion } from "@/components/guards";
 import { useAuth } from "@/context/auth-context";
 
@@ -146,10 +146,9 @@ export default function DashboardLayout({
 
   return (
     <RequireAuth>
-      <RequirePackage>
-        {checkingAuth || !user ? null : (
-          <RequireProfileCompletion>
-            <DashboardProvider value={contextValue}>
+      {checkingAuth || !user ? null : (
+        <RequireProfileCompletion>
+          <DashboardProvider value={contextValue}>
               <div className="flex min-h-screen bg-background text-foreground">
         <motion.aside
           initial={{ x: -40, opacity: 0 }}
@@ -202,7 +201,6 @@ export default function DashboardLayout({
         </DashboardProvider>
           </RequireProfileCompletion>
         )}
-      </RequirePackage>
     </RequireAuth>
   );
 }

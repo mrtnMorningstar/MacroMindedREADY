@@ -7,7 +7,6 @@ import type { Timestamp } from "firebase/firestore";
 
 import {
   DashboardMetrics,
-  LockedDashboardScreen,
   MealPlanSection,
   ProfileSummary,
   ProgressTracker,
@@ -19,7 +18,9 @@ import {
 } from "@/components/dashboard/client-components";
 import { DashboardCardSkeleton } from "@/components/skeletons";
 import MealPlanStatusCard from "@/components/status/MealPlanStatusCard";
+import LockedDashboard from "@/components/dashboard/LockedDashboard";
 import RequireWizard from "@/components/RequireWizard";
+import FullScreenLoader from "@/components/FullScreenLoader";
 import { useDashboard } from "@/context/dashboard-context";
 import { db } from "@/lib/firebase";
 import { CTA_BUTTON_CLASSES } from "@/lib/ui";
@@ -96,14 +97,9 @@ export default function DashboardOverviewPage() {
     checkUpdateRequests();
   }, [user?.uid]);
 
-  if (loading) {
-    return (
-      <div className="flex flex-col gap-8">
-        <DashboardCardSkeleton />
-        <DashboardCardSkeleton />
-        <DashboardCardSkeleton />
-      </div>
-    );
+  // Show loader while Firebase Auth and Firestore are loading
+  if (loading || !user) {
+    return <FullScreenLoader />;
   }
 
   if (error) {
@@ -114,8 +110,9 @@ export default function DashboardOverviewPage() {
     );
   }
 
-  if (!isUnlocked) {
-    return <LockedDashboardScreen />;
+  // Show locked dashboard preview if user is authenticated but has no package
+  if (!isUnlocked || !data?.packageTier) {
+    return <LockedDashboard />;
   }
 
   const handleSubmitPlanUpdateRequest = async () => {
