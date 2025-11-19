@@ -39,10 +39,7 @@ export default function AdminPage() {
         .map((docSnapshot) => {
           const data = docSnapshot.data();
           if (data?.role === "admin") return null;
-          return {
-            id: docSnapshot.id,
-            ...data,
-          } as UserRecord;
+          return { id: docSnapshot.id, ...data } as UserRecord;
         })
         .filter(Boolean) as UserRecord[];
 
@@ -56,21 +53,24 @@ export default function AdminPage() {
   const filteredUsers = useMemo(() => {
     let filtered = users;
 
-    // Filter by status
     if (filterStatus === "delivered") {
       filtered = filtered.filter((u) => u.mealPlanStatus === "Delivered");
     } else if (filterStatus === "needs-plan") {
       filtered = filtered.filter((u) => {
         const hasPackage = !!u.packageTier;
         const needsPlan =
-          !u.mealPlanStatus || u.mealPlanStatus === "Not Started" || u.mealPlanStatus === "In Progress";
+          !u.mealPlanStatus ||
+          u.mealPlanStatus === "Not Started" ||
+          u.mealPlanStatus === "In Progress";
         return hasPackage && needsPlan;
       });
     } else if (filterStatus === "overdue") {
       filtered = filtered.filter((u) => u.mealPlanStatus === "Delivered");
     } else if (filterStatus === "inactive") {
       filtered = filtered.filter(
-        (u) => !u.packageTier || (!u.mealPlanStatus || u.mealPlanStatus === "Not Started")
+        (u) =>
+          !u.packageTier ||
+          (!u.mealPlanStatus || u.mealPlanStatus === "Not Started")
       );
     }
 
@@ -95,44 +95,18 @@ export default function AdminPage() {
     setUsers([...users]);
   }, [users]);
 
-  const getUserStatusBadge = (user: UserRecord) => {
-    if (user.mealPlanStatus === "Delivered") {
-      return {
-        label: "Delivered",
-        color: "text-green-500",
-        bgColor: "bg-green-500/10",
-        borderColor: "border-green-500/30",
-      };
-    }
-    if (user.mealPlanStatus === "In Progress") {
-      return {
-        label: "In Progress",
-        color: "text-amber-500",
-        bgColor: "bg-amber-500/10",
-        borderColor: "border-amber-500/30",
-      };
-    }
-    if (!user.packageTier || user.mealPlanStatus === "Not Started" || !user.mealPlanStatus) {
-      return {
-        label: "Inactive",
-        color: "text-neutral-400",
-        bgColor: "bg-neutral-600/10",
-        borderColor: "border-neutral-600/30",
-      };
-    }
-    return {
-      label: user.mealPlanStatus ?? "Not Started",
-      color: "text-neutral-400",
-      bgColor: "bg-neutral-600/10",
-      borderColor: "border-neutral-600/30",
-    };
+  const badgeStyles = (user: UserRecord) => {
+    if (user.mealPlanStatus === "Delivered")
+      return "text-green-500 bg-green-500/10 border-green-500/30";
+    if (user.mealPlanStatus === "In Progress")
+      return "text-amber-500 bg-amber-500/10 border-amber-500/30";
+    if (!user.packageTier || !user.mealPlanStatus)
+      return "text-neutral-400 bg-neutral-600/10 border-neutral-600/30";
+    return "text-neutral-400 bg-neutral-600/10 border-neutral-600/30";
   };
 
   return (
     <AdminLayout>
-      {/* Dashboard Title */}
-      <h2 className="text-2xl font-semibold text-white">Dashboard</h2>
-
       {/* Metrics */}
       <DashboardSummary />
 
@@ -149,21 +123,19 @@ export default function AdminPage() {
                   : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
               }`}
             >
-              {f === "all"
-                ? "All"
-                : f === "needs-plan"
-                ? "Needs Plan"
-                : f === "delivered"
-                ? "Delivered"
-                : f === "overdue"
-                ? "Overdue"
-                : "Inactive"}
+              {{
+                all: "All",
+                "needs-plan": "Needs Plan",
+                delivered: "Delivered",
+                overdue: "Overdue",
+                inactive: "Inactive",
+              }[f]}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Clients Table */}
+      {/* Table */}
       {loadingUsers ? (
         <SkeletonTable rows={10} />
       ) : (
@@ -172,105 +144,89 @@ export default function AdminPage() {
             <table className="w-full">
               <thead className="bg-neutral-800/50 sticky top-0">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
-                    User
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
-                    Package
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
-                    Meal Plan
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
-                    Referrals
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
-                    Actions
-                  </th>
+                  {["User", "Package", "Status", "Meal Plan", "Referrals", "Actions"].map((h) => (
+                    <th
+                      key={h}
+                      className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400"
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-800">
-                {filteredUsers.map((user, index) => {
-                  const badge = getUserStatusBadge(user);
-                  return (
-                    <motion.tr
-                      key={user.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className={`hover:bg-neutral-800/30 transition ${
-                        index % 2 === 0 ? "bg-neutral-900/50" : "bg-neutral-900"
-                      }`}
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-semibold text-white">
-                            {user.displayName ?? user.email ?? "Unnamed User"}
-                          </span>
-                          {user.email && (
-                            <span className="text-xs text-neutral-400">{user.email}</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-neutral-300">{user.packageTier ?? "—"}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${badge.color} ${badge.bgColor} ${badge.borderColor}`}
-                        >
-                          {badge.label}
+                {filteredUsers.map((user, index) => (
+                  <motion.tr
+                    key={user.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className={`hover:bg-neutral-800/30 transition ${
+                      index % 2 === 0
+                        ? "bg-neutral-900/50"
+                        : "bg-neutral-900"
+                    }`}
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-white">
+                          {user.displayName ?? user.email ?? "Unnamed User"}
                         </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        {user.mealPlanFileURL ? (
-                          <a
-                            href={user.mealPlanFileURL}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-[#D7263D] hover:underline"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            View PDF
-                          </a>
-                        ) : (
-                          <span className="text-sm text-neutral-500">Pending</span>
+                        {user.email && (
+                          <span className="text-xs text-neutral-400">{user.email}</span>
                         )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center rounded-full bg-[#D7263D]/20 px-3 py-1 text-xs font-semibold text-[#D7263D]">
-                          {user.referralCredits ?? 0}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <button
-                          onClick={() => handleViewClient(user)}
-                          className="rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700 flex items-center gap-2"
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-neutral-300">
+                        {user.packageTier ?? "—"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${badgeStyles(
+                          user
+                        )}`}
+                      >
+                        {user.mealPlanStatus ?? "Inactive"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {user.mealPlanFileURL ? (
+                        <a
+                          href={user.mealPlanFileURL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-[#D7263D] hover:underline"
                         >
-                          <EyeIcon className="h-4 w-4" />
-                          View
-                        </button>
-                      </td>
-                    </motion.tr>
-                  );
-                })}
+                          View PDF
+                        </a>
+                      ) : (
+                        <span className="text-sm text-neutral-500">Pending</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center rounded-full bg-[#D7263D]/20 px-3 py-1 text-xs font-semibold text-[#D7263D]">
+                        {user.referralCredits ?? 0}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => handleViewClient(user)}
+                        className="rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700 flex items-center gap-2"
+                      >
+                        <EyeIcon className="h-4 w-4" />
+                        View
+                      </button>
+                    </td>
+                  </motion.tr>
+                ))}
               </tbody>
             </table>
           </div>
-          {filteredUsers.length === 0 && (
-            <div className="px-6 py-12 text-center">
-              <p className="text-sm text-neutral-400">
-                {filterStatus !== "all" ? "No users match your filters." : "No users found."}
-              </p>
-            </div>
-          )}
         </div>
       )}
 
-      {/* Client Detail Slideover */}
       <ClientDetailSlideover
         client={selectedClient as any}
         isOpen={slideoverOpen}
