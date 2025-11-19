@@ -70,107 +70,100 @@ export default function AdminWizardPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold text-white mb-2">Wizard Progress</h2>
-          <p className="text-sm text-neutral-400">Track macro wizard completion status</p>
-        </div>
-
-        {loading ? (
-          <SkeletonTable rows={10} />
-        ) : (
-          <div className="rounded-2xl border border-neutral-800 bg-neutral-900 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-neutral-800/50 sticky top-0">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
-                      User
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
-                      Completed
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
-                      Verified
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
-                      Macros
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-800">
-                  {users.map((user, index) => (
-                    <motion.tr
-                      key={user.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className={`hover:bg-neutral-800/30 transition ${
-                        index % 2 === 0 ? "bg-neutral-900/50" : "bg-neutral-900"
-                      }`}
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-semibold text-white">
-                            {user.displayName ?? user.email ?? "Unnamed User"}
-                          </span>
-                          {user.email && (
-                            <span className="text-xs text-neutral-400">{user.email}</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${
-                            user.macroWizardCompleted
-                              ? "bg-green-500/20 text-green-500 border-green-500/50"
-                              : "bg-neutral-600/20 text-neutral-400 border-neutral-600/50"
-                          }`}
-                        >
-                          {user.macroWizardCompleted ? "Yes" : "No"}
+      {loading ? (
+        <SkeletonTable rows={10} />
+      ) : (
+        <div className="rounded-2xl border border-neutral-800 bg-neutral-900 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-neutral-800/50 sticky top-0">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                    User
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                    Completed
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                    Verified
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                    Macros
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-800">
+                {users.map((user, index) => (
+                  <motion.tr
+                    key={user.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className={`hover:bg-neutral-800/30 transition ${
+                      index % 2 === 0 ? "bg-neutral-900/50" : "bg-neutral-900"
+                    }`}
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-white">
+                          {user.displayName ?? user.email ?? "Unnamed User"}
                         </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${
-                            user.wizardVerified
-                              ? "bg-green-500/20 text-green-500 border-green-500/50"
-                              : "bg-neutral-600/20 text-neutral-400 border-neutral-600/50"
-                          }`}
-                        >
-                          {user.wizardVerified ? "Yes" : "No"}
+                        {user.email && (
+                          <span className="text-xs text-neutral-400">{user.email}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${
+                          user.macroWizardCompleted
+                            ? "bg-green-500/20 text-green-500 border-green-500/50"
+                            : "bg-neutral-600/20 text-neutral-400 border-neutral-600/50"
+                        }`}
+                      >
+                        {user.macroWizardCompleted ? "Yes" : "No"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${
+                          user.wizardVerified
+                            ? "bg-green-500/20 text-green-500 border-green-500/50"
+                            : "bg-neutral-600/20 text-neutral-400 border-neutral-600/50"
+                        }`}
+                      >
+                        {user.wizardVerified ? "Yes" : "No"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {user.estimatedMacros ? (
+                        <span className="text-sm text-neutral-300">
+                          {user.estimatedMacros.calories} cal
                         </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        {user.estimatedMacros ? (
-                          <span className="text-sm text-neutral-300">
-                            {user.estimatedMacros.calories} cal
-                          </span>
-                        ) : (
-                          <span className="text-sm text-neutral-500">—</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        {!user.wizardVerified && (
-                          <button
-                            onClick={() => handleVerify(user.id)}
-                            className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
-                          >
-                            Mark Verified
-                          </button>
-                        )}
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      ) : (
+                        <span className="text-sm text-neutral-500">—</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      {!user.wizardVerified && (
+                        <button
+                          onClick={() => handleVerify(user.id)}
+                          className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
+                        >
+                          Mark Verified
+                        </button>
+                      )}
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }

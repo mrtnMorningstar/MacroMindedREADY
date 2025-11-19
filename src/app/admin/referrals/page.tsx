@@ -68,99 +68,91 @@ export default function AdminReferralsPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h2 className="text-2xl font-bold text-white mb-2">Referrals</h2>
-          <p className="text-sm text-neutral-400">Track referral codes and credits</p>
-        </div>
+      {/* Referral Stats */}
+      <ReferralStats users={users} />
 
-        {/* Referral Stats */}
-        <ReferralStats users={users} />
-
-        {/* Search */}
-        <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name or email..."
-            className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white placeholder:text-neutral-500 focus:border-[#D7263D] focus:outline-none"
-          />
-        </div>
-
-        {/* Users Table */}
-        {loadingUsers ? (
-          <SkeletonTable rows={10} />
-        ) : (
-          <div className="rounded-2xl border border-neutral-800 bg-neutral-900 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-neutral-800/50 sticky top-0">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
-                      User
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
-                      Referral Code
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
-                      Credits
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
-                      Referred By
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-800">
-                  {filteredUsers.map((user, index) => (
-                    <motion.tr
-                      key={user.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className={`hover:bg-neutral-800/30 transition ${
-                        index % 2 === 0 ? "bg-neutral-900/50" : "bg-neutral-900"
-                      }`}
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-semibold text-white">
-                            {user.displayName ?? user.email ?? "Unnamed User"}
-                          </span>
-                          {user.email && (
-                            <span className="text-xs text-neutral-400">{user.email}</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-neutral-300 font-mono">
-                          {user.referralCode ?? "—"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center rounded-full bg-[#D7263D]/20 px-3 py-1 text-xs font-semibold text-[#D7263D]">
-                          {user.referralCredits ?? 0}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-neutral-300">
-                          {user.referredBy ? "Yes" : "—"}
-                        </span>
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {filteredUsers.length === 0 && (
-              <div className="px-6 py-12 text-center">
-                <p className="text-sm text-neutral-400">No users found.</p>
-              </div>
-            )}
-          </div>
-        )}
+      {/* Page-specific Search */}
+      <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by name or email..."
+          className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white placeholder:text-neutral-500 focus:border-[#D7263D] focus:outline-none"
+        />
       </div>
+
+      {/* Users Table */}
+      {loadingUsers ? (
+        <SkeletonTable rows={10} />
+      ) : (
+        <div className="rounded-2xl border border-neutral-800 bg-neutral-900 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-neutral-800/50 sticky top-0">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                    User
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                    Referral Code
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                    Credits
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                    Referred By
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-800">
+                {filteredUsers.map((user, index) => (
+                  <motion.tr
+                    key={user.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className={`hover:bg-neutral-800/30 transition ${
+                      index % 2 === 0 ? "bg-neutral-900/50" : "bg-neutral-900"
+                    }`}
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-white">
+                          {user.displayName ?? user.email ?? "Unnamed User"}
+                        </span>
+                        {user.email && (
+                          <span className="text-xs text-neutral-400">{user.email}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-neutral-300 font-mono">
+                        {user.referralCode ?? "—"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center rounded-full bg-[#D7263D]/20 px-3 py-1 text-xs font-semibold text-[#D7263D]">
+                        {user.referralCredits ?? 0}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-neutral-300">
+                        {user.referredBy ? "Yes" : "—"}
+                      </span>
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {filteredUsers.length === 0 && (
+            <div className="px-6 py-12 text-center">
+              <p className="text-sm text-neutral-400">No users found.</p>
+            </div>
+          )}
+        </div>
+      )}
     </AdminLayout>
   );
 }

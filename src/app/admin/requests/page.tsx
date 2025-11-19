@@ -79,93 +79,84 @@ export default function AdminRequestsPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold text-white mb-2">Pending Requests</h2>
-          <p className="text-sm text-neutral-400">
-            {users.length} client{users.length !== 1 ? "s" : ""} need meal plans
-          </p>
-        </div>
-
-        {loading ? (
-          <SkeletonTable rows={8} />
-        ) : (
-          <div className="rounded-2xl border border-neutral-800 bg-neutral-900 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-neutral-800/50 sticky top-0">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
-                      User
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
-                      Package
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
-                      Status
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-800">
-                  {users.map((user, index) => (
-                    <motion.tr
-                      key={user.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className={`hover:bg-neutral-800/30 transition ${
-                        index % 2 === 0 ? "bg-neutral-900/50" : "bg-neutral-900"
-                      }`}
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-semibold text-white">{user.name}</span>
-                          {user.email && (
-                            <span className="text-xs text-neutral-400">{user.email}</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-neutral-300">
-                          {user.packageTier ?? "—"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${
-                            user.mealPlanStatus === "In Progress"
-                              ? "bg-amber-500/20 text-amber-500 border-amber-500/50"
-                              : "bg-neutral-600/20 text-neutral-400 border-neutral-600/50"
-                          }`}
-                        >
-                          {user.mealPlanStatus}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <button
-                          onClick={() => handleViewClient(user)}
-                          className="rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700 flex items-center gap-2"
-                        >
-                          <EyeIcon className="h-4 w-4" />
-                          View
-                        </button>
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {users.length === 0 && (
-              <div className="px-6 py-12 text-center">
-                <p className="text-sm text-neutral-400">No pending requests found.</p>
-              </div>
-            )}
+      {loading ? (
+        <SkeletonTable rows={8} />
+      ) : (
+        <div className="rounded-2xl border border-neutral-800 bg-neutral-900 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-neutral-800/50 sticky top-0">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                    User
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                    Package
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                    Status
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-800">
+                {users.map((user, index) => (
+                  <motion.tr
+                    key={user.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className={`hover:bg-neutral-800/30 transition ${
+                      index % 2 === 0 ? "bg-neutral-900/50" : "bg-neutral-900"
+                    }`}
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-white">{user.name}</span>
+                        {user.email && (
+                          <span className="text-xs text-neutral-400">{user.email}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-neutral-300">
+                        {user.packageTier ?? "—"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${
+                          user.mealPlanStatus === "In Progress"
+                            ? "bg-amber-500/20 text-amber-500 border-amber-500/50"
+                            : "bg-neutral-600/20 text-neutral-400 border-neutral-600/50"
+                        }`}
+                      >
+                        {user.mealPlanStatus}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => handleViewClient(user)}
+                        className="rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700 flex items-center gap-2"
+                      >
+                        <EyeIcon className="h-4 w-4" />
+                        View
+                      </button>
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
-      </div>
+          {users.length === 0 && (
+            <div className="px-6 py-12 text-center">
+              <p className="text-sm text-neutral-400">No pending requests found.</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Client Detail Slideover */}
       <ClientDetailSlideover
