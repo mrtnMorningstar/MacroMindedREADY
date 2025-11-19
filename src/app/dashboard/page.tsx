@@ -5,25 +5,16 @@ import { useMemo, useState, useEffect } from "react";
 import { addDoc, collection, serverTimestamp, query, where, getDocs } from "firebase/firestore";
 import type { Timestamp } from "firebase/firestore";
 
-import {
-  DashboardMetrics,
-  MealPlanSection,
-  ProfileSummary,
-  ProgressTracker,
-  ReferralsCard,
-  StatusOverview,
-  useDeliveryMeta,
-  CustomerJourneyTimeline,
-  MacroSummaryPreview,
-} from "@/components/dashboard/client-components";
-import { DashboardCardSkeleton } from "@/components/skeletons";
-import MealPlanStatusCard from "@/components/status/MealPlanStatusCard";
 import LockedDashboard from "@/components/dashboard/LockedDashboard";
+import MealPlanStatusCard from "@/components/dashboard/MealPlanStatusCard";
+import PlanTimelineCard from "@/components/dashboard/PlanTimelineCard";
+import MacrosOverviewCard from "@/components/dashboard/MacrosOverviewCard";
+import ReferralsCard from "@/components/dashboard/ReferralsCard";
+import RecipesPreviewCard from "@/components/dashboard/RecipesPreviewCard";
 import RequireWizard from "@/components/RequireWizard";
 import FullScreenLoader from "@/components/FullScreenLoader";
 import { useDashboard } from "@/context/dashboard-context";
 import { db } from "@/lib/firebase";
-import { CTA_BUTTON_CLASSES } from "@/lib/ui";
 import { progressSteps, type MealPlanStatus } from "@/types/dashboard";
 
 export default function DashboardOverviewPage() {
@@ -37,8 +28,6 @@ export default function DashboardOverviewPage() {
       : "Not Started";
   }, [data]);
 
-  const statusIndex = progressSteps.indexOf(status);
-  const { daysSinceDelivery } = useDeliveryMeta(data?.mealPlanDeliveredAt ?? null);
   const goal = data?.profile?.goal ?? null;
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestText, setRequestText] = useState("");
@@ -104,8 +93,17 @@ export default function DashboardOverviewPage() {
 
   if (error) {
     return (
-      <div className="rounded-3xl border border-accent/40 bg-muted/70 px-6 py-6 text-center text-xs font-semibold uppercase tracking-[0.3em] text-accent">
-        {error}
+      <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-8 text-center">
+        <h3 className="text-xl font-semibold text-white mb-2">Something went wrong</h3>
+        <p className="text-sm text-neutral-400 mb-4">
+          We couldn't load your dashboard. Try refreshing or logging in again.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="rounded-lg bg-[#D7263D] px-6 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
+        >
+          Refresh Page
+        </button>
       </div>
     );
   }
@@ -141,226 +139,130 @@ export default function DashboardOverviewPage() {
     }
   };
 
+  // Get first name from displayName
+  const firstName = user?.displayName?.split(" ")[0] ?? "Athlete";
+
   return (
     <RequireWizard>
       <div className="flex flex-col gap-8">
         {toastMessage && (
-          <div className="fixed bottom-6 right-6 z-40 rounded-2xl border border-accent/40 bg-background px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-accent shadow-[0_0_40px_-20px_rgba(215,38,61,0.6)]">
+          <div className="fixed bottom-6 right-6 z-40 rounded-2xl border border-[#D7263D]/40 bg-neutral-900 px-6 py-3 text-sm font-semibold text-[#D7263D] shadow-[0_0_40px_-20px_rgba(215,38,61,0.6)]">
             {toastMessage}
           </div>
         )}
 
-      <header className="flex flex-col gap-4 text-center sm:text-left sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-[0.45em] text-foreground/70">
-            Macro Command Center
+        {/* Header Section */}
+        <header className="flex flex-col gap-2">
+          <h1 className="text-3xl font-semibold text-white sm:text-4xl">
+            Welcome back, {firstName}
+          </h1>
+          <p className="text-sm text-neutral-400">
+            Here's what's happening with your plan today.
           </p>
-          <h1 className="mt-2 text-3xl font-bold uppercase tracking-[0.22em] text-foreground sm:text-4xl">
-            Welcome back, {user?.displayName ?? "Athlete"}
-              </h1>
-              <p className="mt-2 text-xs font-medium uppercase tracking-[0.3em] text-foreground/60 sm:text-sm">
-            {user?.email ?? "Stay connected to your coaching team."}
-              </p>
-            </div>
-            <button
-              type="button"
-          onClick={signOutAndRedirect}
-              className="rounded-full border border-border/70 px-5 py-2 text-xs font-medium uppercase tracking-[0.3em] text-foreground/70 transition hover:border-accent hover:text-accent"
-            >
-              Sign Out
-            </button>
         </header>
 
-        <DashboardMetrics
-          goal={goal}
-          daysSinceDelivery={daysSinceDelivery}
-        nextCheckInDate={null}
-      />
+        {/* Main Dashboard Grid */}
+        <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Meal Plan Status Card */}
+          <MealPlanStatusCard
+            mealPlanStatus={status}
+            mealPlanDeliveredAt={mealPlanDeliveredAt}
+            packageTier={data?.packageTier ?? null}
+            fileUrl={data?.mealPlanFileURL}
+            imageUrls={data?.mealPlanImageURLs}
+          />
 
-      <section className="grid gap-6">
-        {/* Macro Wizard CTA */}
-        {user && data && !data.macroWizardCompleted && (
-          <div className="rounded-3xl border border-border/70 bg-muted/60 px-8 py-8 shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] backdrop-blur">
+          {/* Plan Delivery Timeline Card */}
+          <PlanTimelineCard
+            accountCreatedAt={accountCreatedAt}
+            purchaseDate={purchaseDate}
+            mealPlanStatus={status}
+            mealPlanDeliveredAt={mealPlanDeliveredAt}
+          />
+
+          {/* Macros Overview Card */}
+          <MacrosOverviewCard estimatedMacros={data?.estimatedMacros ?? null} />
+
+          {/* Referrals Card */}
+          <ReferralsCard
+            referralCode={data?.referralCode ?? null}
+            referralCredits={data?.referralCredits ?? 0}
+          />
+
+          {/* Recipe Library Preview Card */}
+          <RecipesPreviewCard />
+        </section>
+
+        {/* Plan Update Request Section (if delivered) */}
+        {status === "Delivered" && (
+          <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6 shadow-sm">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="text-xl font-bold uppercase tracking-[0.28em] text-foreground mb-2">
-                  Complete Your Setup
-                </h2>
-                <p className="text-xs font-medium uppercase tracking-[0.3em] text-foreground/60">
-                  Fill out your personal details so your coach can start preparing your meal plan.
+                <h3 className="text-xl font-semibold text-white mb-1">Need an adjustment?</h3>
+                <p className="text-sm text-neutral-400">
+                  Request a plan update and your coach will follow up.
                 </p>
               </div>
-              <Link
-                href="/macro-wizard"
-                className={`${CTA_BUTTON_CLASSES} w-full justify-center sm:w-auto whitespace-nowrap`}
+              <button
+                type="button"
+                onClick={() => {
+                  setRequestText("");
+                  setRequestError(null);
+                  setShowRequestModal(true);
+                }}
+                className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
               >
-                Start Setup
-              </Link>
+                Request Plan Update
+              </button>
             </div>
           </div>
         )}
 
-        {/* Premium Timeline */}
-        <CustomerJourneyTimeline
-          accountCreatedAt={accountCreatedAt}
-          purchaseDate={purchaseDate}
-          mealPlanStatus={status}
-          mealPlanDeliveredAt={mealPlanDeliveredAt}
-          hasUpdateRequest={hasUpdateRequest}
-        />
-
-        {/* Meal Plan Status Card */}
-        <MealPlanStatusCard
-          status={status}
-          packageTier={data?.packageTier ?? null}
-          showDownload={status === "Delivered"}
-          fileUrl={data?.mealPlanFileURL}
-        />
-
-        {/* Macro Summary Preview */}
-        <MacroSummaryPreview
-          goal={goal}
-          profile={data?.profile ?? null}
-          estimatedMacros={data?.estimatedMacros ?? null}
-        />
-
-        <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-          <div className="flex flex-col gap-6">
-            <MealPlanSection
-              status={status}
-              fileUrl={data?.mealPlanFileURL}
-              imageUrls={data?.mealPlanImageURLs}
-              daysSinceDelivery={daysSinceDelivery}
-              groceryListUrl={data?.groceryListURL}
-              packageTier={data?.packageTier ?? null}
-            />
-
-            {(status === "Delivered" || (daysSinceDelivery ?? null) !== null) && (
-              <div className="rounded-3xl border border-border/70 bg-muted/60 px-8 py-8 shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] backdrop-blur">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.35em] text-foreground/60">
-                      Need an adjustment?
-                    </p>
-                    <h3 className="text-xl font-bold uppercase tracking-[0.28em] text-foreground">
-                      Request a plan update
-                    </h3>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRequestText("");
-                      setRequestError(null);
-                      setShowRequestModal(true);
-                    }}
-                    className="rounded-full border border-accent bg-accent px-6 py-3 text-xs font-semibold uppercase tracking-[0.32em] text-background transition hover:bg-transparent hover:text-accent"
-                  >
-                    Request Plan Update
-                  </button>
-      </div>
-                <p className="mt-2 text-[0.7rem] uppercase tracking-[0.28em] text-foreground/60">
-                  This alerts your coach that a tweak is needed—no extra purchase required.
-                </p>
-              </div>
-            )}
-
-            {daysSinceDelivery !== null && daysSinceDelivery > 28 && (
-              <div className="rounded-3xl border border-border/70 bg-muted/60 px-8 py-8 shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] backdrop-blur">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.35em] text-foreground/60">
-                      It’s been {daysSinceDelivery} days
-                    </p>
-                    <h3 className="text-xl font-bold uppercase tracking-[0.28em] text-foreground">
-                      Want a fresh update?
-                    </h3>
-                    <p className="mt-1 text-[0.7rem] uppercase tracking-[0.28em] text-foreground/60">
-                      Month-old plans can drift from your routine. Request a refresh to stay dialed in.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRequestText("");
-                      setRequestError(null);
-                      setShowRequestModal(true);
-                    }}
-                    className="rounded-full border border-accent bg-accent px-6 py-3 text-xs font-semibold uppercase tracking-[0.32em] text-background transition hover:bg-transparent hover:text-accent"
-                  >
-                    Request Update
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <ProgressTracker statusIndex={statusIndex} />
-        </div>
-
-        <ProfileSummary profile={data?.profile ?? {}} />
-
-        <ReferralsCard
-          referralCode={data?.referralCode ?? null}
-          referralCredits={data?.referralCredits ?? 0}
-        />
-
-        <div className="rounded-3xl border border-border/70 bg-muted/60 px-8 py-8 text-center text-xs font-medium uppercase tracking-[0.3em] text-foreground/60 backdrop-blur">
-          <p>Need a plan adjustment? Update your macro wizard to keep your plan accurate.</p>
-          <div className="mt-4 flex justify-center">
-            <Link
-              href="/macro-wizard"
-              className={`${CTA_BUTTON_CLASSES} w-full justify-center sm:w-auto`}
-            >
-              Open Macro Wizard
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {showRequestModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
-          <div className="w-full max-w-lg rounded-3xl border border-border/70 bg-background px-8 py-8 text-foreground shadow-[0_0_80px_-30px_rgba(215,38,61,0.7)]">
-            <h3 className="text-xl font-bold uppercase tracking-[0.28em]">
-              Tell us what needs to change
-        </h3>
-            <p className="mt-2 text-xs uppercase tracking-[0.3em] text-foreground/60">
-              Describe the adjustments you’d like. Your coach will follow up.
-            </p>
-            <textarea
-              value={requestText}
-              onChange={(event) => setRequestText(event.target.value)}
-              rows={6}
-              className="mt-5 w-full rounded-2xl border border-border/70 bg-muted/40 px-4 py-3 text-sm text-foreground focus:border-accent focus:outline-none"
-              placeholder="Example: Increase carbs on training days, swap meal 2 for a quick option..."
-            />
-            {requestError && (
-              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.28em] text-accent">
-                {requestError}
+        {/* Plan Update Request Modal */}
+        {showRequestModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm">
+            <div className="w-full max-w-lg rounded-2xl border border-neutral-800 bg-neutral-900 px-8 py-8 shadow-lg">
+              <h3 className="text-xl font-semibold text-white mb-2">
+                Tell us what needs to change
+              </h3>
+              <p className="text-sm text-neutral-400 mb-5">
+                Describe the adjustments you'd like. Your coach will follow up.
               </p>
-            )}
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowRequestModal(false);
-                  setRequestError(null);
-                }}
-                className="rounded-full border border-border/70 px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-foreground/70 transition hover:border-accent hover:text-accent"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSubmitPlanUpdateRequest}
-                disabled={requestSubmitting}
-                className="rounded-full border border-accent bg-accent px-6 py-2 text-xs font-semibold uppercase tracking-[0.32em] text-background transition hover:bg-transparent hover:text-accent disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {requestSubmitting ? "Sending..." : "Submit Request"}
-              </button>
-      </div>
+              <textarea
+                value={requestText}
+                onChange={(event) => setRequestText(event.target.value)}
+                rows={6}
+                className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-3 text-sm text-white placeholder:text-neutral-500 focus:border-[#D7263D] focus:outline-none"
+                placeholder="Example: Increase carbs on training days, swap meal 2 for a quick option..."
+              />
+              {requestError && (
+                <p className="mt-3 text-sm font-semibold text-[#D7263D]">
+                  {requestError}
+                </p>
+              )}
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowRequestModal(false);
+                    setRequestError(null);
+                  }}
+                  className="rounded-lg border border-neutral-700 bg-neutral-800 px-5 py-2 text-sm font-semibold text-neutral-200 transition hover:bg-neutral-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSubmitPlanUpdateRequest}
+                  disabled={requestSubmitting}
+                  className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-6 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {requestSubmitting ? "Sending..." : "Submit Request"}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
     </RequireWizard>
   );
