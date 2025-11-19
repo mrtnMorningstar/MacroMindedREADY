@@ -1,7 +1,8 @@
 "use client";
 
 import { type ReactNode } from "react";
-import AuthGate from "@/components/AuthGate";
+import { RequireAuth } from "@/components/auth";
+import { RequireAdmin } from "@/components/auth";
 
 export default function AdminLayout({
   children,
@@ -9,9 +10,11 @@ export default function AdminLayout({
   children: ReactNode;
 }) {
   return (
-    <AuthGate requireAuth requireAdmin>
-      {children}
-    </AuthGate>
+    <RequireAuth>
+      <RequireAdmin>
+        {children}
+      </RequireAdmin>
+    </RequireAuth>
   );
 }
 

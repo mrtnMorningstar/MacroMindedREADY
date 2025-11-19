@@ -22,7 +22,8 @@ import type { DashboardContextValue } from "@/context/dashboard-context";
 import { generateUniqueReferralCode } from "@/lib/referral";
 import { getUserPurchase } from "@/lib/purchases";
 import type { UserDashboardData } from "@/types/dashboard";
-import { RequireAuth, RequirePackage, RequireProfileCompletion } from "@/components/guards";
+import { RequireAuth, RequirePackage } from "@/components/auth";
+import { RequireProfileCompletion } from "@/components/guards";
 import { useAuth } from "@/context/auth-context";
 
 const navItems = [
