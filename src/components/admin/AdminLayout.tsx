@@ -1,9 +1,12 @@
 "use client";
 
-import { type ReactNode, useState } from "react";
-import { usePathname } from "next/navigation";
+import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import AdminSidebar from "./AdminSidebar";
+
+// Icons
 import {
   HomeIcon,
   UsersIcon,
@@ -11,140 +14,85 @@ import {
   SparklesIcon,
   ChartBarIcon,
   Cog6ToothIcon,
-  ShieldCheckIcon,
-  MagnifyingGlassIcon,
-  PlusIcon,
-  GlobeAltIcon,
   Bars3Icon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { RequireAuth } from "@/components/auth/RequireAuth";
-import { RequireAdmin } from "@/components/auth/RequireAdmin";
-import AdminSidebar from "./AdminSidebar";
 
 type AdminLayoutProps = {
-  children: ReactNode;
+  children: React.ReactNode;
 };
 
+// Page titles for the top bar
 const pageTitles: Record<string, string> = {
   "/admin": "Dashboard",
   "/admin/clients": "Clients",
   "/admin/plan-requests": "Plan Requests",
   "/admin/recipes": "Recipes",
   "/admin/sales": "Sales & Revenue",
+  "/admin/settings": "Settings",
 };
 
 export default function AdminLayoutWrapper({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const { user } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // We only need ONE search and ONE quick actions for all admin pages
   const [searchQuery, setSearchQuery] = useState("");
-  const [showQuickActions, setShowQuickActions] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const pageTitle = pageTitles[pathname] || "Admin Panel";
 
   return (
-    <RequireAuth>
-      <RequireAdmin>
-        <div className="flex min-h-screen bg-black text-white">
-          {/* Sidebar */}
-          <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <div className="flex h-screen bg-black text-white">
 
-          {/* Main Content */}
-          <div className="flex-1 flex flex-col lg:ml-64">
-            {/* Top Bar */}
-            <header className="sticky top-0 z-30 border-b border-neutral-800 bg-neutral-900">
-              <div className="flex items-center justify-between px-6 py-4">
-                {/* Left: Menu + Title */}
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => setSidebarOpen(!sidebarOpen)}
-                    className="lg:hidden rounded-lg p-2 text-neutral-400 hover:text-white hover:bg-neutral-800 transition"
-                  >
-                    {sidebarOpen ? (
-                      <XMarkIcon className="h-6 w-6" />
-                    ) : (
-                      <Bars3Icon className="h-6 w-6" />
-                    )}
-                  </button>
-                  <h1 className="text-xl font-semibold text-white">{pageTitle}</h1>
-                </div>
+      {/* SIDEBAR */}
+      <AdminSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
 
-                {/* Center: Search */}
-                <div className="hidden md:flex flex-1 max-w-md mx-8">
-                  <div className="relative w-full">
-                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-500" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search clients, recipes..."
-                      className="w-full pl-10 pr-4 py-2 rounded-lg border border-neutral-800 bg-neutral-800/50 text-white placeholder:text-neutral-500 focus:border-[#D7263D] focus:outline-none text-sm"
-                    />
-                  </div>
-                </div>
+      {/* MAIN CONTENT */}
+      <div className="flex flex-col flex-1 overflow-hidden">
 
-                {/* Right: Quick Actions + Avatar */}
-                <div className="flex items-center gap-3">
-                  {/* Quick Actions Dropdown */}
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowQuickActions(!showQuickActions)}
-                      className="flex items-center gap-2 rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700"
-                    >
-                      <PlusIcon className="h-4 w-4" />
-                      <span className="hidden sm:inline">Quick Actions</span>
-                    </button>
-                    {showQuickActions && (
-                      <div className="absolute right-0 mt-2 w-48 rounded-lg border border-neutral-800 bg-neutral-900 shadow-xl py-2">
-                        <Link
-                          href="/admin/recipes"
-                          onClick={() => setShowQuickActions(false)}
-                          className="flex items-center gap-3 px-4 py-2 text-sm text-neutral-300 hover:bg-neutral-800 transition"
-                        >
-                          <SparklesIcon className="h-5 w-5" />
-                          Create Recipe
-                        </Link>
-                        <Link
-                          href="/recipes"
-                          onClick={() => setShowQuickActions(false)}
-                          className="flex items-center gap-3 px-4 py-2 text-sm text-neutral-300 hover:bg-neutral-800 transition"
-                        >
-                          <GlobeAltIcon className="h-5 w-5" />
-                          View Site
-                        </Link>
-                      </div>
-                    )}
-                  </div>
+        {/* TOP BAR — Only one bar for all admin pages */}
+        <header className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-neutral-950">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="md:hidden text-neutral-300 hover:text-white"
+            >
+              <Bars3Icon className="w-6 h-6" />
+            </button>
 
-                  {/* Admin Avatar */}
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-[#D7263D] flex items-center justify-center text-sm font-semibold text-white">
-                      {user?.displayName?.[0]?.toUpperCase() || "A"}
-                    </div>
-                    <span className="hidden sm:inline text-sm text-neutral-300">
-                      {user?.displayName || "Admin"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </header>
-
-            {/* Page Content */}
-            <main className="flex-1 p-6">
-              <div className="mx-auto max-w-7xl space-y-8">{children}</div>
-            </main>
+            <h1 className="text-xl font-semibold">{pageTitle}</h1>
           </div>
 
-          {/* Click outside to close quick actions */}
-          {showQuickActions && (
-            <div
-              className="fixed inset-0 z-10"
-              onClick={() => setShowQuickActions(false)}
+          {/* SEARCH BAR */}
+          <div className="hidden md:block w-96">
+            <input
+              type="text"
+              placeholder="Search clients, recipes..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm focus:outline-none"
             />
-          )}
-        </div>
-      </RequireAdmin>
-    </RequireAuth>
+          </div>
+
+          {/* QUICK ACTIONS */}
+          <div className="flex items-center gap-4">
+            <button className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm">
+              + Quick Actions
+            </button>
+
+            {/* USER AVATAR */}
+            <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-sm font-bold uppercase">
+              {user?.displayName?.[0] || "M"}
+            </div>
+          </div>
+        </header>
+
+        {/* CONTENT */}
+        <main className="flex-1 overflow-y-auto px-6 py-8">
+          {children}
+        </main>
+      </div>
+    </div>
   );
 }
