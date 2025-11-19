@@ -1,24 +1,29 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   collection,
   deleteDoc,
   doc,
-  getDoc,
   onSnapshot,
   setDoc,
   updateDoc,
 } from "firebase/firestore";
-import { onAuthStateChanged } from "firebase/auth";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import {
+  PlusIcon,
+  PencilIcon,
+  TrashIcon,
+  ArrowUpTrayIcon,
+} from "@heroicons/react/24/outline";
 import type { ChangeEvent, FormEvent } from "react";
 
-import { auth, db, storage } from "@/lib/firebase";
+import { db, storage } from "@/lib/firebase";
 import type { RecipeDocument } from "@/types/recipe";
-import { AdminSidebar, useSidebar } from "@/components/admin";
+import AdminLayout from "@/components/admin/AdminLayout";
+import { SkeletonCard } from "@/components/common/Skeleton";
+import { useToast } from "@/components/ui/Toast";
 
 type RecipeFormState = {
   title: string;
@@ -46,114 +51,110 @@ const initialFormState: RecipeFormState = {
   imageURL: "",
 };
 
-
 export default function AdminRecipesPage() {
-  const router = useRouter();
-
-  const [checkingAuth, setCheckingAuth] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-
   const [recipes, setRecipes] = useState<RecipeDocument[]>([]);
-  const [loadingRecipes, setLoadingRecipes] = useState(true);
-
+  const [loading, setLoading] = useState(true);
   const [formState, setFormState] = useState<RecipeFormState>(initialFormState);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingAsset, setUploadingAsset] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (!currentUser) {
-        router.replace("/login");
-        setCheckingAuth(false);
-        return;
-      }
-
-      try {
-        const docRef = doc(db, "users", currentUser.uid);
-        const snapshot = await getDoc(docRef);
-        const role = snapshot.data()?.role;
-        if (role !== "admin") {
-          router.replace("/dashboard");
-          setCheckingAuth(false);
-          return;
-        }
-        setIsAdmin(true);
-      } catch (error) {
-        console.error("Failed to verify admin role:", error);
-        router.replace("/dashboard");
-      } finally {
-        setCheckingAuth(false);
-      }
+    setLoading(true);
+    const unsubscribe = onSnapshot(collection(db, "recipes"), (snapshot) => {
+      const recipesData: RecipeDocument[] = snapshot.docs.map((docSnapshot) => ({
+        id: docSnapshot.id,
+        ...docSnapshot.data(),
+      })) as RecipeDocument[];
+      setRecipes(recipesData);
+      setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, []);
 
-  useEffect(() => {
-    if (!isAdmin) return;
-
-    setLoadingRecipes(true);
-    const unsubscribe = onSnapshot(
-      collection(db, "recipes"),
-      (snapshot) => {
-        const docs = snapshot.docs
-          .map((docSnapshot) => {
-            const data = docSnapshot.data();
-            return {
-              id: docSnapshot.id,
-              title: data?.title ?? "",
-              description: data?.description ?? "",
-              calories: Number(data?.calories ?? 0),
-              protein: Number(data?.protein ?? 0),
-              carbs: Number(data?.carbs ?? 0),
-              fats: Number(data?.fats ?? 0),
-              ingredients: Array.isArray(data?.ingredients)
-                ? data.ingredients
-                : [],
-              steps: Array.isArray(data?.steps) ? data.steps : [],
-              imageURL: data?.imageURL ?? "",
-              tags: Array.isArray(data?.tags) ? data.tags : [],
-            } as RecipeDocument;
-          })
-          .sort((a, b) => a.title.localeCompare(b.title));
-
-        setRecipes(docs);
-        setLoadingRecipes(false);
-      },
-      (error) => {
-        console.error("Failed to load recipes:", error);
-        setLoadingRecipes(false);
-        setFeedback("Unable to load recipes. Please refresh.");
+  const handleImageChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please select an image file");
+        return;
       }
-    );
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  }, [toast]);
 
-    return () => unsubscribe();
-  }, [isAdmin]);
+  const handleUploadImage = useCallback(async (): Promise<string | null> => {
+    if (!imageFile) return formState.imageURL || null;
 
-  const handleInputChange = useCallback(
-    (field: keyof RecipeFormState) =>
-      (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const value = event.target.value;
-        setFormState((prev) => ({ ...prev, [field]: value }));
-      },
-    []
+    setUploadingAsset(true);
+    try {
+      const storageRef = ref(storage, `recipes/${Date.now()}_${imageFile.name}`);
+      await uploadBytes(storageRef, imageFile);
+      const downloadURL = await getDownloadURL(storageRef);
+      setUploadingAsset(false);
+      return downloadURL;
+    } catch (error) {
+      console.error("Failed to upload image:", error);
+      toast.error("Failed to upload image");
+      setUploadingAsset(false);
+      return null;
+    }
+  }, [imageFile, formState.imageURL, toast]);
+
+  const handleSubmit = useCallback(
+    async (e: FormEvent) => {
+      e.preventDefault();
+      setIsSubmitting(true);
+
+      try {
+        const imageURL = await handleUploadImage();
+        const recipeData = {
+          title: formState.title,
+          description: formState.description,
+          calories: Number(formState.calories) || 0,
+          protein: Number(formState.protein) || 0,
+          carbs: Number(formState.carbs) || 0,
+          fats: Number(formState.fats) || 0,
+          ingredients: formState.ingredients.split("\n").filter((line) => line.trim()),
+          steps: formState.steps.split("\n").filter((line) => line.trim()),
+          tags: formState.tags.split(",").map((tag) => tag.trim()).filter((tag) => tag),
+          imageURL: imageURL || formState.imageURL || "",
+        };
+
+        if (selectedRecipeId) {
+          await updateDoc(doc(db, "recipes", selectedRecipeId), recipeData);
+          toast.success("Recipe updated successfully");
+        } else {
+          await setDoc(doc(collection(db, "recipes")), recipeData);
+          toast.success("Recipe created successfully");
+        }
+
+        setFormState(initialFormState);
+        setImageFile(null);
+        setImagePreview(null);
+        setSelectedRecipeId(null);
+        setShowForm(false);
+      } catch (error) {
+        console.error("Failed to save recipe:", error);
+        toast.error("Failed to save recipe");
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [formState, imageFile, selectedRecipeId, handleUploadImage, toast]
   );
 
-  const handleImageChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    setImageFile(event.target.files?.[0] ?? null);
-  }, []);
-
-  const resetForm = useCallback(() => {
-    setFormState(initialFormState);
-    setImageFile(null);
-    setSelectedRecipeId(null);
-  }, []);
-
   const handleEdit = useCallback((recipe: RecipeDocument) => {
-    setSelectedRecipeId(recipe.id);
     setFormState({
       title: recipe.title,
       description: recipe.description,
@@ -166,376 +167,255 @@ export default function AdminRecipesPage() {
       tags: recipe.tags.join(", "),
       imageURL: recipe.imageURL,
     });
-    setImageFile(null);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setImagePreview(recipe.imageURL);
+    setSelectedRecipeId(recipe.id);
+    setShowForm(true);
   }, []);
 
   const handleDelete = useCallback(
-    async (recipe: RecipeDocument) => {
-      if (!window.confirm(`Delete "${recipe.title}" permanently?`)) return;
-
+    async (recipeId: string) => {
+      if (!confirm("Are you sure you want to delete this recipe?")) return;
       try {
-        await deleteDoc(doc(db, "recipes", recipe.id));
-        setFeedback("Recipe deleted.");
-        if (selectedRecipeId === recipe.id) {
-          resetForm();
-        }
+        await deleteDoc(doc(db, "recipes", recipeId));
+        toast.success("Recipe deleted successfully");
       } catch (error) {
         console.error("Failed to delete recipe:", error);
-        setFeedback("Failed to delete recipe.");
+        toast.error("Failed to delete recipe");
       }
     },
-    [resetForm, selectedRecipeId]
+    [toast]
   );
-
-  const uploadImageIfNeeded = useCallback(
-    async (recipeId: string) => {
-      if (!imageFile) {
-        return formState.imageURL;
-      }
-
-      setUploadingAsset(true);
-      try {
-        const storageRef = ref(
-          storage,
-          `recipes/${recipeId}/${Date.now()}-${imageFile.name}`
-        );
-        await uploadBytes(storageRef, imageFile);
-        return await getDownloadURL(storageRef);
-      } finally {
-        setUploadingAsset(false);
-      }
-    },
-    [formState.imageURL, imageFile]
-  );
-
-  const handleSubmit = useCallback(
-    async (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      if (!formState.title.trim()) {
-        setFeedback("Title is required.");
-        return;
-      }
-
-      setIsSubmitting(true);
-      try {
-        const ingredients = formState.ingredients
-          .split("\n")
-          .map((line) => line.trim())
-          .filter(Boolean);
-        const steps = formState.steps
-          .split("\n")
-          .map((line) => line.trim())
-          .filter(Boolean);
-        const tags = formState.tags
-          .split(",")
-          .map((tag) => tag.trim())
-          .filter(Boolean);
-
-        const payload = {
-          title: formState.title.trim(),
-          description: formState.description.trim(),
-          calories: Number(formState.calories) || 0,
-          protein: Number(formState.protein) || 0,
-          carbs: Number(formState.carbs) || 0,
-          fats: Number(formState.fats) || 0,
-          ingredients,
-          steps,
-          tags,
-        };
-
-        if (selectedRecipeId) {
-          const docRef = doc(db, "recipes", selectedRecipeId);
-          const imageURL = await uploadImageIfNeeded(selectedRecipeId);
-          await updateDoc(docRef, { ...payload, imageURL });
-          setFeedback("Recipe updated.");
-        } else {
-          const docRef = doc(collection(db, "recipes"));
-          const imageURL = await uploadImageIfNeeded(docRef.id);
-          await setDoc(docRef, { ...payload, imageURL });
-          setFeedback("Recipe created.");
-        }
-
-        resetForm();
-      } catch (error) {
-        console.error("Failed to save recipe:", error);
-        setFeedback("Failed to save recipe.");
-      } finally {
-        setIsSubmitting(false);
-      }
-    },
-    [formState, resetForm, selectedRecipeId, uploadImageIfNeeded]
-  );
-
-  if (checkingAuth) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
-        <p className="text-xs uppercase tracking-[0.3em] text-foreground/60">
-          Validating access...
-        </p>
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return null;
-  }
-
-  const { isOpen, isMobile } = useSidebar();
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
-      <AdminSidebar />
+    <AdminLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-semibold text-white mb-2">Recipe Manager</h1>
+            <p className="text-sm text-neutral-400">Create and manage recipe library</p>
+          </div>
+          <button
+            onClick={() => {
+              setFormState(initialFormState);
+              setImageFile(null);
+              setImagePreview(null);
+              setSelectedRecipeId(null);
+              setShowForm(true);
+            }}
+            className="flex items-center gap-2 rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
+          >
+            <PlusIcon className="h-5 w-5" />
+            Create New Recipe
+          </button>
+        </div>
 
-      <div className={`relative isolate flex-1 transition-all duration-300 ${!isMobile && isOpen ? "lg:ml-64" : ""}`}>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.1 }}
-          className="pointer-events-none absolute inset-0"
-        >
-          <div className="absolute -top-36 left-1/2 h-[680px] w-[680px] -translate-x-1/2 rounded-full bg-accent/30 blur-3xl" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#161616_0%,rgba(0,0,0,0.92)_55%,#000000_95%)]" />
-        </motion.div>
-
-        <div className="relative flex flex-col gap-10 px-6 py-10 sm:py-16 lg:px-10">
-          <header className="flex flex-col gap-4 rounded-3xl border border-border/70 bg-muted/60 px-6 py-6 shadow-[0_0_70px_-35px_rgba(215,38,61,0.6)] backdrop-blur sm:flex-row sm:items-baseline sm:justify-between">
-            <div>
-              <h1 className="font-bold text-2xl uppercase tracking-[0.32em] text-foreground sm:text-3xl">
-                Recipe Manager
-              </h1>
-              <p className="mt-2 text-[0.7rem] font-medium uppercase tracking-[0.3em] text-foreground/60">
-                Add, edit, and publish meal ideas for clients.
-              </p>
-            </div>
-          </header>
-
-          {feedback && (
+        {/* Recipe Form Modal */}
+        {showForm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm">
             <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-3xl border border-accent/40 bg-muted/70 px-6 py-4 text-center text-xs font-semibold uppercase tracking-[0.28em] text-accent"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-neutral-800 bg-neutral-900 p-6"
             >
-              {feedback}
-            </motion.div>
-          )}
-
-          <section className="grid gap-10 xl:grid-cols-[1.2fr_1fr]">
-            <form
-              onSubmit={handleSubmit}
-              className="flex flex-col gap-5 rounded-3xl border border-border/70 bg-muted/60 px-6 py-6 shadow-[0_0_60px_-30px_rgba(215,38,61,0.6)] backdrop-blur"
-            >
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold uppercase tracking-[0.32em] text-foreground">
-                  {selectedRecipeId ? "Edit Recipe" : "Add New Recipe"}
-                </h2>
-                {selectedRecipeId && (
-                  <button
-                    type="button"
-                    onClick={resetForm}
-                    className="text-xs uppercase tracking-[0.3em] text-foreground/60 hover:text-accent"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-foreground/70">
-                  Title
+              <h2 className="text-xl font-semibold text-white mb-6">
+                {selectedRecipeId ? "Edit Recipe" : "Create New Recipe"}
+              </h2>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-neutral-300 mb-2">
+                    Title
+                  </label>
                   <input
                     type="text"
                     value={formState.title}
-                    onChange={handleInputChange("title")}
-                    className="rounded-2xl border border-border/70 bg-background/20 px-4 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
+                    onChange={(e) => setFormState({ ...formState, title: e.target.value })}
                     required
+                    className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white focus:border-[#D7263D] focus:outline-none"
                   />
-                </label>
-                <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-foreground/70">
-                  Calories
-                  <input
-                    type="number"
-                    value={formState.calories}
-                    onChange={handleInputChange("calories")}
-                    className="rounded-2xl border border-border/70 bg-background/20 px-4 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
-                    min="0"
-                  />
-                </label>
-                <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-foreground/70">
-                  Protein (g)
-                  <input
-                    type="number"
-                    value={formState.protein}
-                    onChange={handleInputChange("protein")}
-                    className="rounded-2xl border border-border/70 bg-background/20 px-4 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
-                    min="0"
-                  />
-                </label>
-                <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-foreground/70">
-                  Carbs (g)
-                  <input
-                    type="number"
-                    value={formState.carbs}
-                    onChange={handleInputChange("carbs")}
-                    className="rounded-2xl border border-border/70 bg-background/20 px-4 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
-                    min="0"
-                  />
-                </label>
-                <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-foreground/70">
-                  Fats (g)
-                  <input
-                    type="number"
-                    value={formState.fats}
-                    onChange={handleInputChange("fats")}
-                    className="rounded-2xl border border-border/70 bg-background/20 px-4 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
-                    min="0"
-                  />
-                </label>
-              </div>
-
-              <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-foreground/70">
-                Description
-                <textarea
-                  value={formState.description}
-                  onChange={handleInputChange("description")}
-                  className="min-h-[100px] rounded-2xl border border-border/70 bg-background/20 px-4 py-3 text-sm text-foreground focus:border-accent focus:outline-none"
-                />
-              </label>
-
-              <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-foreground/70">
-                Ingredients (one per line)
-                <textarea
-                  value={formState.ingredients}
-                  onChange={handleInputChange("ingredients")}
-                  className="min-h-[120px] rounded-2xl border border-border/70 bg-background/20 px-4 py-3 text-sm text-foreground focus:border-accent focus:outline-none"
-                />
-              </label>
-
-              <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-foreground/70">
-                Steps (one per line)
-                <textarea
-                  value={formState.steps}
-                  onChange={handleInputChange("steps")}
-                  className="min-h-[120px] rounded-2xl border border-border/70 bg-background/20 px-4 py-3 text-sm text-foreground focus:border-accent focus:outline-none"
-                />
-              </label>
-
-              <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-foreground/70">
-                Tags (comma separated)
-                <input
-                  type="text"
-                  value={formState.tags}
-                  onChange={handleInputChange("tags")}
-                  className="rounded-2xl border border-border/70 bg-background/20 px-4 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
-                  placeholder="high-protein, vegetarian"
-                />
-              </label>
-
-              <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-foreground/70">
-                Image Upload
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="rounded-2xl border border-border/70 bg-background/20 px-4 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
-                />
-              </label>
-              {uploadingAsset && (
-                <p className="text-[0.65rem] uppercase tracking-[0.25em] text-foreground/60">
-                  Uploading high-res preview…
-                </p>
-              )}
-              {formState.imageURL && !imageFile && (
-                <div className="rounded-2xl border border-border/70 bg-background/10 px-4 py-3 text-center text-[0.65rem] uppercase tracking-[0.25em] text-foreground/60">
-                  Using existing image
                 </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={isSubmitting || uploadingAsset}
-                className="rounded-full border border-accent bg-accent px-6 py-3 text-xs font-bold uppercase tracking-[0.32em] text-background transition hover:bg-transparent hover:text-accent disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isSubmitting
-                  ? "Saving..."
-                  : selectedRecipeId
-                    ? "Update Recipe"
-                    : "Add Recipe"}
-              </button>
-            </form>
-
-            <section className="flex flex-col gap-4 rounded-3xl border border-border/70 bg-muted/60 px-6 py-6 shadow-[0_0_60px_-30px_rgba(215,38,61,0.6)] backdrop-blur">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <h2 className="text-xl font-bold uppercase tracking-[0.32em] text-foreground">
-                  Existing Recipes
-                </h2>
-                <p className="text-[0.65rem] font-medium uppercase tracking-[0.3em] text-foreground/60">
-                  {loadingRecipes
-                    ? "Loading..."
-                    : `${recipes.length} recipe${recipes.length === 1 ? "" : "s"}`}
-                </p>
-              </div>
-
-              {loadingRecipes ? (
-                <div className="rounded-2xl border border-border/70 bg-background/20 px-4 py-6 text-center text-xs uppercase tracking-[0.3em] text-foreground/50">
-                  Fetching recipes...
+                <div>
+                  <label className="block text-sm font-semibold text-neutral-300 mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    value={formState.description}
+                    onChange={(e) => setFormState({ ...formState, description: e.target.value })}
+                    required
+                    rows={3}
+                    className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-3 text-sm text-white focus:border-[#D7263D] focus:outline-none"
+                  />
                 </div>
-              ) : recipes.length === 0 ? (
-                <div className="rounded-2xl border border-border/70 bg-background/20 px-4 py-6 text-center text-xs uppercase tracking-[0.3em] text-foreground/50">
-                  No recipes found.
-                </div>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {recipes.map((recipe) => (
-                    <motion.div
-                      key={recipe.id}
-                      whileHover={{ scale: 1.01 }}
-                      className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-background/5 px-4 py-4 text-sm text-foreground"
-                    >
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                          <h3 className="text-base font-bold uppercase tracking-[0.2em]">
-                            {recipe.title}
-                          </h3>
-                          <p className="text-[0.7rem] uppercase tracking-[0.25em] text-foreground/60">
-                            {recipe.tags.join(", ") || "No tags"}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleEdit(recipe)}
-                            className="rounded-full border border-border/70 px-4 py-1 text-[0.6rem] uppercase tracking-[0.2em] text-foreground/70 transition hover:border-accent hover:text-accent"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(recipe)}
-                            className="rounded-full border border-border/70 px-4 py-1 text-[0.6rem] uppercase tracking-[0.2em] text-accent transition hover:border-accent hover:text-background hover:bg-accent"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                      <p className="text-[0.8rem] text-foreground/70">
-                        {recipe.description.slice(0, 160)}
-                        {recipe.description.length > 160 ? "…" : ""}
-                      </p>
-                      <div className="flex flex-wrap gap-2 text-[0.65rem] uppercase tracking-[0.28em] text-foreground/60">
-                        <span>Calories: {recipe.calories}</span>
-                        <span>Protein: {recipe.protein}g</span>
-                        <span>Carbs: {recipe.carbs}g</span>
-                        <span>Fats: {recipe.fats}g</span>
-                      </div>
-                    </motion.div>
+                <div className="grid grid-cols-4 gap-4">
+                  {(["calories", "protein", "carbs", "fats"] as const).map((field) => (
+                    <div key={field}>
+                      <label className="block text-sm font-semibold text-neutral-300 mb-2 capitalize">
+                        {field}
+                      </label>
+                      <input
+                        type="number"
+                        value={formState[field]}
+                        onChange={(e) => setFormState({ ...formState, [field]: e.target.value })}
+                        required
+                        className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white focus:border-[#D7263D] focus:outline-none"
+                      />
+                    </div>
                   ))}
                 </div>
-              )}
-            </section>
-          </section>
-        </div>
+                <div>
+                  <label className="block text-sm font-semibold text-neutral-300 mb-2">
+                    Ingredients (one per line)
+                  </label>
+                  <textarea
+                    value={formState.ingredients}
+                    onChange={(e) => setFormState({ ...formState, ingredients: e.target.value })}
+                    required
+                    rows={5}
+                    className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-3 text-sm text-white focus:border-[#D7263D] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-neutral-300 mb-2">
+                    Steps (one per line)
+                  </label>
+                  <textarea
+                    value={formState.steps}
+                    onChange={(e) => setFormState({ ...formState, steps: e.target.value })}
+                    required
+                    rows={5}
+                    className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-3 text-sm text-white focus:border-[#D7263D] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-neutral-300 mb-2">
+                    Tags (comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    value={formState.tags}
+                    onChange={(e) => setFormState({ ...formState, tags: e.target.value })}
+                    className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white focus:border-[#D7263D] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-neutral-300 mb-2">
+                    Image
+                  </label>
+                  <div className="space-y-3">
+                    {imagePreview && (
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="h-32 w-32 rounded-lg object-cover border border-neutral-800"
+                      />
+                    )}
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="hidden"
+                      />
+                      <div className="flex items-center gap-2 rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700">
+                        <ArrowUpTrayIcon className="h-5 w-5" />
+                        {imageFile ? "Change Image" : "Upload Image"}
+                      </div>
+                    </label>
+                  </div>
+                </div>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowForm(false);
+                      setFormState(initialFormState);
+                      setImageFile(null);
+                      setImagePreview(null);
+                      setSelectedRecipeId(null);
+                    }}
+                    className="rounded-lg border border-neutral-700 bg-neutral-800 px-6 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting || uploadingAsset}
+                    className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-6 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50"
+                  >
+                    {isSubmitting ? "Saving..." : selectedRecipeId ? "Update" : "Create"}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Recipe Grid */}
+        {loading ? (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonCard key={i} className="h-64" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {recipes.map((recipe, index) => (
+              <motion.div
+                key={recipe.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="rounded-2xl border border-neutral-800 bg-neutral-900 overflow-hidden"
+              >
+                {recipe.imageURL && (
+                  <img
+                    src={recipe.imageURL}
+                    alt={recipe.title}
+                    className="h-48 w-full object-cover"
+                  />
+                )}
+                <div className="p-6">
+                  <h3 className="text-lg font-semibold text-white mb-2">{recipe.title}</h3>
+                  <p className="text-sm text-neutral-400 mb-4 line-clamp-2">
+                    {recipe.description}
+                  </p>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {recipe.tags.slice(0, 3).map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-full border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs text-neutral-300"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleEdit(recipe)}
+                      className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700"
+                    >
+                      <PencilIcon className="h-4 w-4" />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(recipe.id)}
+                      className="flex items-center justify-center gap-2 rounded-lg border border-red-500/50 bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-500/30"
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+
+        {recipes.length === 0 && !loading && (
+          <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-12 text-center">
+            <p className="text-sm text-neutral-400">No recipes found. Create your first recipe!</p>
+          </div>
+        )}
       </div>
-    </div>
+    </AdminLayout>
   );
 }

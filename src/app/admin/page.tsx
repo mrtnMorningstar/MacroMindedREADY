@@ -7,9 +7,11 @@ import { collection, doc, getDoc, onSnapshot, updateDoc, serverTimestamp, query,
 import { getDownloadURL, ref, uploadBytesResumable, deleteObject } from "firebase/storage";
 
 import { auth, db, storage } from "@/lib/firebase";
-import { AdminSidebar, UserDetailPanel, useSidebar } from "@/components/admin";
+import AdminLayout from "@/components/admin/AdminLayout";
 import DashboardSummary from "@/components/admin/DashboardSummary";
-import { AdminTableSkeleton } from "@/components/skeletons";
+import { SkeletonTable } from "@/components/common/Skeleton";
+import { useToast } from "@/components/ui/Toast";
+import Link from "next/link";
 
 type UserRecord = {
   id: string;
@@ -425,290 +427,166 @@ export default function AdminPage() {
     }
   }, [selectedUserId]);
 
-  const { isOpen, isMobile } = useSidebar();
-
-  // AuthGate handles auth checks and loading, so we can just render
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
-      <AdminSidebar />
+    <AdminLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-xl font-semibold text-white mb-2">Dashboard</h1>
+          <p className="text-sm text-neutral-400">Overview of all clients and meal plans</p>
+        </div>
 
-      <div className={`relative isolate flex-1 transition-all duration-300 ${!isMobile && isOpen ? "lg:ml-64" : ""}`}>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.1 }}
-          className="pointer-events-none absolute inset-0"
-        >
-          <div className="absolute -top-36 left-1/2 h-[680px] w-[680px] -translate-x-1/2 rounded-full bg-accent/30 blur-3xl" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#161616_0%,rgba(0,0,0,0.92)_55%,#000000_95%)]" />
-        </motion.div>
+        {/* Dashboard Summary */}
+        <DashboardSummary />
 
-        <div className="relative flex flex-col gap-10 px-6 py-10 sm:py-16 lg:px-10">
-          <header className="flex flex-col gap-4 rounded-3xl border border-border/70 bg-muted/60 px-6 py-6 shadow-[0_0_70px_-35px_rgba(215,38,61,0.6)] backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="font-bold text-2xl uppercase tracking-[0.32em] text-foreground sm:text-3xl">
-                User Management
-              </h1>
-              <p className="mt-2 text-[0.7rem] font-medium uppercase tracking-[0.3em] text-foreground/60">
-                Manage users and meal plans
-              </p>
-            </div>
-              <button
-              onClick={() => auth.signOut().then(() => router.replace("/login"))}
-                className="rounded-full border border-accent bg-accent px-4 py-2 text-[0.6rem] font-medium uppercase tracking-[0.3em] text-background transition hover:bg-transparent hover:text-accent"
-              >
-                Logout
-              </button>
-          </header>
-
-              {/* Toast Notification */}
-              <AnimatePresence>
-                {toast && (
-            <motion.div
-                    initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                    className={`fixed top-20 left-1/2 z-50 -translate-x-1/2 rounded-3xl border px-6 py-4 text-center text-xs font-semibold uppercase tracking-[0.28em] shadow-lg backdrop-blur sm:top-24 ${
-                      toast.type === "success"
-                        ? "border-accent/40 bg-muted/90 text-accent"
-                        : "border-red-500/40 bg-red-500/20 text-red-500"
-                    }`}
-                  >
-                    {toast.message}
-            </motion.div>
-          )}
-              </AnimatePresence>
-
-              {/* Dashboard Summary */}
-              <DashboardSummary />
-
-          {/* Search and Filter Bar */}
-          <div className="flex flex-col gap-4 rounded-3xl border border-border/70 bg-muted/60 px-6 py-6 shadow-[0_0_60px_-30px_rgba(215,38,61,0.6)] backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+        {/* Search and Filter Bar */}
+        <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex-1">
               <input
                 type="text"
                 placeholder="Search by name or email..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-full border border-border/70 bg-background/40 px-4 py-2.5 text-[0.65rem] uppercase tracking-[0.2em] text-foreground placeholder:text-foreground/40 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white placeholder:text-neutral-500 focus:border-[#D7263D] focus:outline-none"
               />
             </div>
             <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setFilterStatus("all")}
-                className={`rounded-full border px-4 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.3em] transition ${
-                  filterStatus === "all"
-                    ? "border-accent bg-accent/20 text-accent"
-                    : "border-border/70 bg-background/40 text-foreground/70 hover:border-accent hover:text-accent"
-                }`}
-              >
-                All
-              </button>
-              <button
-                onClick={() => setFilterStatus("needs-plan")}
-                className={`rounded-full border px-4 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.3em] transition ${
-                  filterStatus === "needs-plan"
-                    ? "border-accent bg-accent/20 text-accent"
-                    : "border-border/70 bg-background/40 text-foreground/70 hover:border-accent hover:text-accent"
-                }`}
-              >
-                Needs Plan
-              </button>
-              <button
-                onClick={() => setFilterStatus("delivered")}
-                className={`rounded-full border px-4 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.3em] transition ${
-                  filterStatus === "delivered"
-                    ? "border-accent bg-accent/20 text-accent"
-                    : "border-border/70 bg-background/40 text-foreground/70 hover:border-accent hover:text-accent"
-                }`}
-              >
-                Delivered
-              </button>
-              <button
-                onClick={() => setFilterStatus("overdue")}
-                className={`rounded-full border px-4 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.3em] transition ${
-                  filterStatus === "overdue"
-                    ? "border-accent bg-accent/20 text-accent"
-                    : "border-border/70 bg-background/40 text-foreground/70 hover:border-accent hover:text-accent"
-                }`}
-              >
-                Overdue / Expiring Soon
-              </button>
-              <button
-                onClick={() => setFilterStatus("inactive")}
-                className={`rounded-full border px-4 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.3em] transition ${
-                  filterStatus === "inactive"
-                    ? "border-accent bg-accent/20 text-accent"
-                    : "border-border/70 bg-background/40 text-foreground/70 hover:border-accent hover:text-accent"
-                }`}
-              >
-                Inactive
-              </button>
+              {(["all", "needs-plan", "delivered", "overdue", "inactive"] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilterStatus(f)}
+                  className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                    filterStatus === f
+                      ? "bg-[#D7263D] text-white"
+                      : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+                  }`}
+                >
+                  {f === "all"
+                    ? "All"
+                    : f === "needs-plan"
+                    ? "Needs Plan"
+                    : f === "delivered"
+                    ? "Delivered"
+                    : f === "overdue"
+                    ? "Overdue"
+                    : "Inactive"}
+                </button>
+              ))}
             </div>
           </div>
+        </div>
 
-          {/* Users Table */}
-          <div className="rounded-3xl border border-border/70 bg-muted/60 px-4 py-6 shadow-[0_0_60px_-30px_rgba(215,38,61,0.6)] backdrop-blur sm:px-6">
-            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-xl font-bold uppercase tracking-[0.32em] text-foreground">
-                Users
-              </h2>
-                <p className="mt-1 text-[0.65rem] font-medium uppercase tracking-[0.3em] text-foreground/60">
-                  Showing {filteredUsers.length} of {users.length} users
-                </p>
-              </div>
+        {/* Users Table */}
+        {loadingUsers ? (
+          <SkeletonTable rows={10} />
+        ) : (
+          <div className="rounded-2xl border border-neutral-800 bg-neutral-900 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-neutral-800/50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                      User
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                      Package
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                      Status
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                      Meal Plan
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                      Referrals
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-800">
+                  {filteredUsers.map((user, index) => {
+                    const badge = getUserStatusBadge(user);
+                    return (
+                      <motion.tr
+                        key={user.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="hover:bg-neutral-800/30 transition cursor-pointer"
+                        onClick={() => setSelectedUserId(user.id)}
+                      >
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-semibold text-white">
+                              {user.displayName ?? user.email ?? "Unnamed User"}
+                            </span>
+                            {user.email && (
+                              <span className="text-xs text-neutral-400">{user.email}</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-sm text-neutral-300">{user.packageTier ?? "—"}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${badge.color} ${badge.bgColor} ${badge.borderColor}`}
+                          >
+                            {badge.label}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          {user.mealPlanFileURL ? (
+                            <a
+                              href={user.mealPlanFileURL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-[#D7263D] hover:underline"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              View PDF
+                            </a>
+                          ) : (
+                            <span className="text-sm text-neutral-500">Pending</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="inline-flex items-center rounded-full bg-[#D7263D]/20 px-3 py-1 text-xs font-semibold text-[#D7263D]">
+                            {user.referralCredits ?? 0}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <Link
+                            href={`/admin/clients/${user.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700"
+                          >
+                            View
+                          </Link>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-
-            {loadingUsers ? (
-              <AdminTableSkeleton rows={10} />
-            ) : filteredUsers.length === 0 ? (
-              <div className="rounded-2xl border border-border/70 bg-background/20 px-4 py-12 text-center">
-                <p className="text-xs uppercase tracking-[0.3em] text-foreground/50">
+            {filteredUsers.length === 0 && (
+              <div className="px-6 py-12 text-center">
+                <p className="text-sm text-neutral-400">
                   {searchQuery || filterStatus !== "all"
                     ? "No users match your filters."
                     : "No users found."}
                 </p>
               </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <div className="max-h-[600px] overflow-y-auto">
-                  <table className="min-w-full divide-y divide-border/60">
-                    <thead className="sticky top-0 z-10 bg-muted/95 backdrop-blur">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-[0.6rem] font-semibold uppercase tracking-[0.3em] text-foreground/60">
-                          User
-                        </th>
-                        <th className="px-4 py-3 text-left text-[0.6rem] font-semibold uppercase tracking-[0.3em] text-foreground/60">
-                          Package
-                        </th>
-                        <th className="px-4 py-3 text-left text-[0.6rem] font-semibold uppercase tracking-[0.3em] text-foreground/60">
-                          Status
-                        </th>
-                        <th className="px-4 py-3 text-left text-[0.6rem] font-semibold uppercase tracking-[0.3em] text-foreground/60">
-                          Meal Plan
-                        </th>
-                        <th className="px-4 py-3 text-left text-[0.6rem] font-semibold uppercase tracking-[0.3em] text-foreground/60">
-                          Referrals
-                        </th>
-                        <th className="px-4 py-3 text-right text-[0.6rem] font-semibold uppercase tracking-[0.3em] text-foreground/60">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border/50 bg-background/5">
-                      {filteredUsers.map((user) => {
-                        const isSelected = selectedUserId === user.id;
-                        return (
-                          <motion.tr
-                            key={user.id}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className={`transition hover:bg-background/10 cursor-pointer ${
-                              isSelected ? "bg-accent/10 border-l-4 border-l-accent" : ""
-                            }`}
-                            onClick={() => setSelectedUserId(user.id)}
-                          >
-                            <td className="px-4 py-4">
-                              <div className="flex flex-col">
-                                <span className="text-sm font-semibold uppercase tracking-[0.2em] text-foreground">
-                                  {user.displayName ?? user.email ?? "Unnamed User"}
-                                </span>
-                                {user.email && (
-                                  <span className="mt-1 text-[0.65rem] uppercase tracking-[0.25em] text-foreground/60">
-                                    {user.email}
-                                  </span>
-                                )}
-                              </div>
-                          </td>
-                            <td className="px-4 py-4">
-                              <span className="text-[0.65rem] font-medium uppercase tracking-[0.25em] text-foreground/70">
-                                {user.packageTier ?? "—"}
-                              </span>
-                          </td>
-                            <td className="px-4 py-4">
-                              {(() => {
-                                const badge = getUserStatusBadge(user);
-                                return (
-                                  <span
-                                    className={`inline-flex items-center rounded-full border px-3 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.2em] ${badge.color} ${badge.bgColor} ${badge.borderColor}`}
-                                  >
-                                    {badge.label}
-                                  </span>
-                                );
-                              })()}
-                          </td>
-                            <td className="px-4 py-4">
-                              {user.mealPlanFileURL ? (
-                              <a
-                                  href={user.mealPlanFileURL}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                  className="text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-accent underline transition hover:text-accent/80"
-                                  onClick={(e) => e.stopPropagation()}
-                              >
-                                  View PDF
-                              </a>
-                            ) : (
-                                <span className="text-[0.65rem] uppercase tracking-[0.25em] text-foreground/50">
-                                  Pending
-                                </span>
-                            )}
-                          </td>
-                            <td className="px-4 py-4">
-                              <span className="text-[0.65rem] font-medium uppercase tracking-[0.25em] text-foreground/70">
-                                {user.referralCredits ?? 0}
-                              </span>
-                            </td>
-                            <td className="px-4 py-4 text-right">
-                            <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedUserId(user.id);
-                                }}
-                                className="rounded-full border border-border/70 bg-background/40 px-4 py-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-foreground/70 transition hover:border-accent hover:bg-accent/20 hover:text-accent"
-                            >
-                              Manage
-                            </button>
-                          </td>
-                          </motion.tr>
-                        );
-                      })}
-                  </tbody>
-                </table>
-              </div>
-              </div>
             )}
-            </div>
+          </div>
+        )}
 
-          {/* User Detail Panel */}
-            {selectedUser && (
-              <UserDetailPanel
-                user={selectedUser}
-              onPdfInputChange={handlePdfInputChange}
-              onImagesInputChange={handleImagesInputChange}
-              onGroceryInputChange={handleGroceryInputChange}
-              pdfStatus={uploadStates[selectedUser.id]?.mealPlan ?? null}
-              imageStatus={
-                (() => {
-                  const userStates = uploadStates[selectedUser.id];
-                  if (!userStates) return null;
-                  const imageKey = Object.keys(userStates).find((k) => k !== "mealPlan" && k !== "grocery");
-                  return imageKey ? userStates[imageKey] : null;
-                })()
-              }
-              groceryStatus={uploadStates[selectedUser.id]?.grocery ?? null}
-              onDeleteMealPlan={selectedUser.mealPlanFileURL ? handleDeleteMealPlan : undefined}
-              onDeleteGroceryList={selectedUser.groceryListURL ? handleDeleteGroceryList : undefined}
-              onDeleteImage={handleDeleteImage}
-              onNotesSaved={handleNotesSaved}
-              onStatusUpdated={handleStatusUpdated}
-            />
-          )}
-        </div>
       </div>
-    </div>
+    </AdminLayout>
   );
 }
 
