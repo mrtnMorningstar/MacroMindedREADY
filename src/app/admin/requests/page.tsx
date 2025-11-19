@@ -9,6 +9,7 @@ import Link from "next/link";
 
 import { auth, db } from "@/lib/firebase";
 import { AdminSidebar, useSidebar } from "@/components/admin";
+import FullScreenLoader from "@/components/FullScreenLoader";
 
 type PendingUser = {
   id: string;
@@ -132,7 +133,7 @@ export default function AdminRequestsPage() {
   }
 
   if (!isAdmin) {
-    return null;
+    return <FullScreenLoader />;
   }
 
   const { isOpen, isMobile } = useSidebar();

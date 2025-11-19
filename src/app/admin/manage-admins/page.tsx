@@ -9,6 +9,7 @@ import { getIdToken } from "firebase/auth";
 
 import { auth, db } from "@/lib/firebase";
 import { AdminSidebar, useSidebar } from "@/components/admin";
+import FullScreenLoader from "@/components/FullScreenLoader";
 
 type UserRecord = {
   id: string;
@@ -220,7 +221,7 @@ export default function ManageAdminsPage() {
   }
 
   if (!isAdmin) {
-    return null;
+    return <FullScreenLoader />;
   }
 
   const { isOpen, isMobile } = useSidebar();

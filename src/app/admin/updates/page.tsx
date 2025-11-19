@@ -19,6 +19,7 @@ import { onAuthStateChanged } from "firebase/auth";
 
 import { auth, db } from "@/lib/firebase";
 import { AdminSidebar, useSidebar } from "@/components/admin";
+import FullScreenLoader from "@/components/FullScreenLoader";
 
 type PlanUpdateRequest = {
   id: string;
@@ -162,7 +163,7 @@ export default function AdminPlanUpdatesPage() {
   }
 
   if (!isAdmin) {
-    return null;
+    return <FullScreenLoader />;
   }
 
   const { isOpen, isMobile } = useSidebar();

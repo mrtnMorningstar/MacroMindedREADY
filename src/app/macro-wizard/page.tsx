@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { useAuth } from "@/context/auth-context";
+import { useAuth } from "@/context/AuthContext";
 import { useFriendlyError } from "@/hooks/useFriendlyError";
 import { useToast } from "@/components/ui/Toast";
 import { useRouter } from "next/navigation";

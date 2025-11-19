@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
-import { useAuth } from "@/context/auth-context";
+import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import { getUserPurchase } from "@/lib/purchases";
 import FullScreenLoader from "./FullScreenLoader";
@@ -21,14 +21,14 @@ export default function AuthGate({
   requireAdmin = false,
   requirePurchase = false,
 }: AuthGateProps) {
-  const { user, authLoading } = useAuth();
+  const { user, userDoc, loadingAuth, loadingUserDoc } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [checkingPermissions, setCheckingPermissions] = useState(false);
   const [hasPermission, setHasPermission] = useState(false);
 
   useEffect(() => {
-    if (authLoading) return;
+    if (loadingAuth || loadingUserDoc) return;
 
     // If auth is required but no user, redirect to login
     if (requireAuth && !user) {
@@ -42,63 +42,49 @@ export default function AuthGate({
       return;
     }
 
-    // Check admin permission
+    // Check admin permission using userDoc
     if (requireAdmin) {
-      setCheckingPermissions(true);
-      const checkAdmin = async () => {
-        if (!user) {
-          router.replace("/login");
-          return;
-        }
+      if (!user) {
+        router.replace("/login");
+        return;
+      }
 
-        try {
-          const userDoc = await getDoc(doc(db, "users", user.uid));
-          const role = userDoc.data()?.role;
-
-          if (role !== "admin") {
-            router.replace("/dashboard");
-            return;
-          }
-
-          setHasPermission(true);
-        } catch (error) {
-          console.error("Failed to verify admin role:", error);
-          router.replace("/dashboard");
-        } finally {
-          setCheckingPermissions(false);
-        }
-      };
-
-      checkAdmin();
+      if (userDoc && userDoc.role === "admin") {
+        setHasPermission(true);
+      } else if (userDoc && userDoc.role !== "admin") {
+        router.replace("/dashboard");
+      }
       return;
     }
 
-    // Check purchase permission
+    // Check purchase permission using userDoc
     if (requirePurchase) {
-      setCheckingPermissions(true);
-      const checkPurchase = async () => {
-        if (!user) {
-          router.replace("/login");
-          return;
-        }
+      if (!user) {
+        router.replace("/login");
+        return;
+      }
 
-        try {
-          const purchase = await getUserPurchase(user.uid);
-          if (!purchase) {
+      if (userDoc?.packageTier) {
+        setHasPermission(true);
+      } else {
+        setCheckingPermissions(true);
+        const checkPurchase = async () => {
+          try {
+            const purchase = await getUserPurchase(user.uid);
+            if (purchase) {
+              setHasPermission(true);
+            } else {
+              router.replace("/packages");
+            }
+          } catch (error) {
+            console.error("Failed to check purchase:", error);
             router.replace("/packages");
-            return;
+          } finally {
+            setCheckingPermissions(false);
           }
-
-          setHasPermission(true);
-        } catch (error) {
-          console.error("Failed to check purchase:", error);
-          router.replace("/packages");
-        } finally {
-          setCheckingPermissions(false);
-        }
-      };
-
-      checkPurchase();
+        };
+        void checkPurchase();
+      }
       return;
     }
 
@@ -106,21 +92,21 @@ export default function AuthGate({
     if (requireAuth && user) {
       setHasPermission(true);
     }
-  }, [user, authLoading, requireAuth, requireAdmin, requirePurchase, router]);
+  }, [user, userDoc, loadingAuth, loadingUserDoc, requireAuth, requireAdmin, requirePurchase, router]);
 
   // Show loader while checking auth or permissions
-  if (authLoading || checkingPermissions) {
+  if (loadingAuth || loadingUserDoc || checkingPermissions) {
     return <FullScreenLoader />;
   }
 
-  // If no user and auth is required, don't render (redirect is happening)
+  // If no user and auth is required, show loader during redirect
   if (requireAuth && !user) {
-    return null;
+    return <FullScreenLoader />;
   }
 
-  // If permissions check failed, don't render (redirect is happening)
+  // If permissions check failed, show loader during redirect
   if ((requireAdmin || requirePurchase) && !hasPermission) {
-    return null;
+    return <FullScreenLoader />;
   }
 
   return <>{children}</>;

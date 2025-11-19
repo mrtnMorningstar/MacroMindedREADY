@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { useAuth } from "@/context/auth-context";
+import { useAuth } from "@/context/AuthContext";
 import { auth, db } from "@/lib/firebase";
 import { getUserPurchase } from "@/lib/purchases";
 import SessionExpiredModal from "./modals/SessionExpiredModal";
@@ -19,14 +19,14 @@ const publicNavLinks = [
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, authLoading, sessionExpired, setSessionExpired } = useAuth();
+  const { user, loadingAuth, sessionExpired, setSessionExpired } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   const [hasPackage, setHasPackage] = useState(false);
   const [checkingRole, setCheckingRole] = useState(false);
 
   // Check if user is admin and has package
   useEffect(() => {
-    if (!user || authLoading) {
+    if (!user || loadingAuth) {
       setIsAdmin(false);
       setHasPackage(false);
       return;
@@ -50,7 +50,7 @@ export default function Navbar() {
     };
 
     checkUserData();
-  }, [user, authLoading]);
+  }, [user, loadingAuth]);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -143,7 +143,7 @@ export default function Navbar() {
           </nav>
 
           <div className="flex items-center">
-            {authLoading || checkingRole ? (
+            {loadingAuth || checkingRole ? (
               <span className="h-8 w-24 animate-pulse rounded-full bg-muted/60" />
             ) : user ? (
               <button

@@ -11,6 +11,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { getRecipeById } from "@/lib/recipes";
 import type { RecipeDocument } from "@/types/recipe";
+import FullScreenLoader from "@/components/FullScreenLoader";
 
 export default function RecipeDetailsPage() {
   const router = useRouter();
@@ -86,7 +87,7 @@ export default function RecipeDetailsPage() {
   }
 
   if (!authorized) {
-    return null;
+    return <FullScreenLoader />;
   }
 
   return (

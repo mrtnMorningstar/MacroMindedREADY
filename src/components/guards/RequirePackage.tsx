@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/auth-context";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useAuth } from "@/context/AuthContext";
 import { getUserPurchase } from "@/lib/purchases";
 import FullScreenLoader from "../FullScreenLoader";
 import PackageRequiredModal from "../modals/PackageRequiredModal";
@@ -15,62 +13,67 @@ type RequirePackageProps = {
 };
 
 export function RequirePackage({ children, redirectTo = "/packages" }: RequirePackageProps) {
-  const { user, authLoading } = useAuth();
+  const { user, userDoc, loadingAuth, loadingUserDoc } = useAuth();
   const router = useRouter();
-  const [checkingPurchase, setCheckingPurchase] = useState(true);
+  const [checkingPurchase, setCheckingPurchase] = useState(false);
   const [hasPackage, setHasPackage] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-    if (authLoading) return;
+    if (loadingAuth || loadingUserDoc) return;
 
     if (!user) {
       router.replace("/login");
       return;
     }
 
+    // Check userDoc first
+    const packageTier = userDoc?.packageTier;
+    if (packageTier) {
+      setHasPackage(true);
+      return;
+    }
+
+    // Fallback: check purchases
+    setCheckingPurchase(true);
     const checkPurchase = async () => {
       try {
         const purchase = await getUserPurchase(user.uid);
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        const packageTier = userDoc.data()?.packageTier;
-
-        if (purchase || packageTier) {
+        if (purchase) {
           setHasPackage(true);
         } else {
           setShowModal(true);
-          // Redirect after showing modal
           setTimeout(() => {
             router.replace(`${redirectTo}?redirect=dashboard`);
-          }, 100);
+          }, 2000);
         }
       } catch (error) {
         console.error("Failed to check purchase:", error);
         setShowModal(true);
         setTimeout(() => {
           router.replace(redirectTo);
-        }, 100);
+        }, 2000);
       } finally {
         setCheckingPurchase(false);
       }
     };
 
-    checkPurchase();
-  }, [user, authLoading, router, redirectTo]);
+    void checkPurchase();
+  }, [user, userDoc, loadingAuth, loadingUserDoc, router, redirectTo]);
 
-  if (authLoading || checkingPurchase) {
+  if (loadingAuth || loadingUserDoc || checkingPurchase) {
     return <FullScreenLoader />;
   }
 
   if (!user) {
-    return null;
+    return <FullScreenLoader />;
   }
 
   if (!hasPackage) {
     return (
       <>
         <PackageRequiredModal isOpen={showModal} onClose={() => setShowModal(false)} />
-        {null}
+        <FullScreenLoader />
       </>
     );
   }

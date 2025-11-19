@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/auth-context";
+import { useAuth } from "@/context/AuthContext";
 import FullScreenLoader from "../FullScreenLoader";
 
 type RequireAuthProps = {
@@ -11,21 +11,22 @@ type RequireAuthProps = {
 };
 
 export function RequireAuth({ children, redirectTo = "/login" }: RequireAuthProps) {
-  const { user, authLoading } = useAuth();
+  const { user, loadingAuth, loadingUserDoc } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (loadingAuth || loadingUserDoc) return;
+    if (!user) {
       router.replace(redirectTo);
     }
-  }, [user, authLoading, router, redirectTo]);
+  }, [user, loadingAuth, loadingUserDoc, router, redirectTo]);
 
-  if (authLoading) {
+  if (loadingAuth || loadingUserDoc) {
     return <FullScreenLoader />;
   }
 
   if (!user) {
-    return null;
+    return <FullScreenLoader />;
   }
 
   return <>{children}</>;

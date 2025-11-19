@@ -2,10 +2,11 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/auth-context";
+import { useAuth } from "@/context/AuthContext";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import ProfileIncompleteBanner from "../banners/ProfileIncompleteBanner";
+import FullScreenLoader from "../FullScreenLoader";
 
 type RequireProfileCompletionProps = {
   children: React.ReactNode;
@@ -22,7 +23,7 @@ export function RequireProfileCompletion({
   showBanner = true,
   requiredFields = DEFAULT_REQUIRED_FIELDS,
 }: RequireProfileCompletionProps) {
-  const { user, authLoading } = useAuth();
+  const { user, loadingAuth, loadingUserDoc } = useAuth();
   const router = useRouter();
   const [checkingProfile, setCheckingProfile] = useState(true);
   const [profile, setProfile] = useState<Record<string, any> | null>(null);
@@ -34,7 +35,7 @@ export function RequireProfileCompletion({
   }, [profile, requiredFields]);
 
   useEffect(() => {
-    if (authLoading || !user) return;
+    if (loadingAuth || loadingUserDoc || !user) return;
 
     const checkProfile = async () => {
       try {
@@ -58,14 +59,14 @@ export function RequireProfileCompletion({
     };
 
     checkProfile();
-  }, [user, authLoading, requiredFields]);
+  }, [user, loadingAuth, loadingUserDoc, requiredFields]);
 
-  if (authLoading || checkingProfile) {
-    return null; // Let parent handle loading
+  if (loadingAuth || loadingUserDoc || checkingProfile) {
+    return <FullScreenLoader />;
   }
 
   if (!user) {
-    return null;
+    return <FullScreenLoader />;
   }
 
   return (

@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/auth-context";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useAuth } from "@/context/AuthContext";
 import { getUserPurchase } from "@/lib/purchases";
 import FullScreenLoader from "../FullScreenLoader";
 import PackageRequiredModal from "../modals/PackageRequiredModal";
+import { useState } from "react";
 
 type RequirePackageProps = {
   children: React.ReactNode;
@@ -17,48 +16,48 @@ type RequirePackageProps = {
 
 /**
  * Protected route wrapper that ensures user has purchased a package.
- * - Waits for Firebase Auth to finish loading
- * - Fetches user's Firestore document to check packageTier
- * - Checks purchases collection as fallback
+ * - Waits for Firebase Auth and Firestore userDoc to finish loading
+ * - Checks userDoc.packageTier and purchases collection
  * - Redirects to /packages if no package found
+ * - NEVER returns null - always shows FullScreenLoader during transitions
  */
 export function RequirePackage({ 
   children, 
   redirectTo = "/packages",
   showModal = true 
 }: RequirePackageProps) {
-  const { user, authLoading } = useAuth();
+  const { user, userDoc, loadingAuth, loadingUserDoc } = useAuth();
   const router = useRouter();
-  const [checkingPackage, setCheckingPackage] = useState(true);
+  const [checkingPurchase, setCheckingPurchase] = useState(false);
   const [hasPackage, setHasPackage] = useState(false);
   const [showPackageModal, setShowPackageModal] = useState(false);
 
   useEffect(() => {
-    if (authLoading) return;
+    // Wait for auth and userDoc to load
+    if (loadingAuth || loadingUserDoc) return;
 
     if (!user) {
       router.replace("/login");
       return;
     }
 
-    const checkPackage = async () => {
-      setCheckingPackage(true);
+    // Check if user has package from userDoc
+    const packageTier = userDoc?.packageTier;
+    if (packageTier) {
+      setHasPackage(true);
+      return;
+    }
+
+    // Fallback: check purchases collection
+    setCheckingPurchase(true);
+    const checkPurchase = async () => {
       try {
-        // Fetch user document
-        const userDocRef = doc(db, "users", user.uid);
-        const userDoc = await getDoc(userDocRef);
-        const userData = userDoc.data();
-        const packageTier = userData?.packageTier;
-
-        // Also check purchases collection as fallback
         const purchase = await getUserPurchase(user.uid);
-
-        if (packageTier || purchase) {
+        if (purchase) {
           setHasPackage(true);
         } else {
           if (showModal) {
             setShowPackageModal(true);
-            // Redirect after showing modal
             setTimeout(() => {
               router.replace(`${redirectTo}?redirect=dashboard`);
             }, 2000);
@@ -67,7 +66,7 @@ export function RequirePackage({
           }
         }
       } catch (error) {
-        console.error("Failed to check package:", error);
+        console.error("Failed to check purchase:", error);
         if (showModal) {
           setShowPackageModal(true);
           setTimeout(() => {
@@ -77,24 +76,24 @@ export function RequirePackage({
           router.replace(redirectTo);
         }
       } finally {
-        setCheckingPackage(false);
+        setCheckingPurchase(false);
       }
     };
 
-    void checkPackage();
-  }, [user, authLoading, router, redirectTo, showModal]);
+    void checkPurchase();
+  }, [user, userDoc, loadingAuth, loadingUserDoc, router, redirectTo, showModal]);
 
-  // Show loader while checking
-  if (authLoading || checkingPackage) {
+  // Show loader while loading auth, userDoc, or checking purchase
+  if (loadingAuth || loadingUserDoc || checkingPurchase) {
     return <FullScreenLoader />;
   }
 
-  // Redirect if not authenticated
+  // Show loader during redirect (never return null)
   if (!user) {
-    return null;
+    return <FullScreenLoader />;
   }
 
-  // Show modal and redirect if no package
+  // Show modal and loader if no package
   if (!hasPackage) {
     return (
       <>
@@ -107,7 +106,7 @@ export function RequirePackage({
             }} 
           />
         )}
-        {null}
+        <FullScreenLoader />
       </>
     );
   }

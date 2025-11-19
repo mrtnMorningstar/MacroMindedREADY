@@ -24,7 +24,8 @@ import { getUserPurchase } from "@/lib/purchases";
 import type { UserDashboardData } from "@/types/dashboard";
 import { RequireAuth } from "@/components/auth";
 import { RequireProfileCompletion } from "@/components/guards";
-import { useAuth } from "@/context/auth-context";
+import { useAuth } from "@/context/AuthContext";
+import FullScreenLoader from "@/components/FullScreenLoader";
 
 const navItems = [
   { href: "/dashboard", label: "Overview" },
@@ -146,7 +147,7 @@ export default function DashboardLayout({
 
   return (
     <RequireAuth>
-      {checkingAuth || !user ? null : (
+      {checkingAuth || !user ? <FullScreenLoader /> : (
         <RequireProfileCompletion>
           <DashboardProvider value={contextValue}>
               <div className="flex min-h-screen bg-background text-foreground">

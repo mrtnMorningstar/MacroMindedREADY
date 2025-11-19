@@ -11,6 +11,7 @@ import { doc, getDoc } from "firebase/firestore";
 
 import { auth, db } from "@/lib/firebase";
 import { listRecipes } from "@/lib/recipes";
+import FullScreenLoader from "@/components/FullScreenLoader";
 import type { RecipeDocument } from "@/types/recipe";
 
 export default function RecipesPage() {
@@ -116,7 +117,7 @@ export default function RecipesPage() {
   }
 
   if (!authorized) {
-    return null;
+    return <FullScreenLoader />;
   }
 
   return (

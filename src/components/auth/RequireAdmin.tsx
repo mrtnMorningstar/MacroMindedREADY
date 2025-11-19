@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/auth-context";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useAuth } from "@/context/AuthContext";
 import FullScreenLoader from "../FullScreenLoader";
 
 type RequireAdminProps = {
@@ -14,62 +12,47 @@ type RequireAdminProps = {
 
 /**
  * Protected route wrapper that ensures user is an admin.
- * - Waits for Firebase Auth to finish loading
- * - Fetches user's Firestore document to check role
+ * - Waits for Firebase Auth and Firestore userDoc to finish loading
+ * - Checks userDoc.role === "admin"
  * - Redirects to /dashboard if not admin
+ * - NEVER returns null - always shows FullScreenLoader during transitions
  */
 export function RequireAdmin({ children, redirectTo = "/dashboard" }: RequireAdminProps) {
-  const { user, authLoading } = useAuth();
+  const { user, userDoc, loadingAuth, loadingUserDoc } = useAuth();
   const router = useRouter();
-  const [checkingAdmin, setCheckingAdmin] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    if (authLoading) return;
+    // Only redirect after loading is complete
+    if (loadingAuth || loadingUserDoc) return;
 
     if (!user) {
       router.replace("/login");
       return;
     }
 
-    const checkAdminRole = async () => {
-      setCheckingAdmin(true);
-      try {
-        // Fetch user document
-        const userDocRef = doc(db, "users", user.uid);
-        const userDoc = await getDoc(userDocRef);
-        const userData = userDoc.data();
-        const role = userData?.role;
+    if (userDoc && userDoc.role !== "admin") {
+      router.replace(redirectTo);
+    }
+  }, [user, userDoc, loadingAuth, loadingUserDoc, router, redirectTo]);
 
-        if (role === "admin") {
-          setIsAdmin(true);
-        } else {
-          router.replace(redirectTo);
-        }
-      } catch (error) {
-        console.error("Failed to check admin role:", error);
-        router.replace(redirectTo);
-      } finally {
-        setCheckingAdmin(false);
-      }
-    };
-
-    void checkAdminRole();
-  }, [user, authLoading, router, redirectTo]);
-
-  // Show loader while checking
-  if (authLoading || checkingAdmin) {
+  // Show loader while auth or userDoc is loading
+  if (loadingAuth || loadingUserDoc) {
     return <FullScreenLoader />;
   }
 
-  // Redirect if not authenticated
+  // Show loader during redirect (never return null)
   if (!user) {
-    return null;
+    return <FullScreenLoader />;
   }
 
-  // Redirect if not admin
-  if (!isAdmin) {
-    return null;
+  // Show loader if not admin (during redirect)
+  if (userDoc && userDoc.role !== "admin") {
+    return <FullScreenLoader />;
+  }
+
+  // If userDoc is null but user exists, wait a bit more (document might be loading)
+  if (!userDoc && user) {
+    return <FullScreenLoader />;
   }
 
   return <>{children}</>;

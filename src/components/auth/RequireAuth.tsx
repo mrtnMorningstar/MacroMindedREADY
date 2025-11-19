@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/auth-context";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useAuth } from "@/context/AuthContext";
 import FullScreenLoader from "../FullScreenLoader";
 
 type RequireAuthProps = {
@@ -14,48 +12,31 @@ type RequireAuthProps = {
 
 /**
  * Protected route wrapper that ensures user is authenticated.
- * - Waits for Firebase Auth to finish loading (no UI flashing)
- * - Fetches user's Firestore document
+ * - Waits for Firebase Auth and Firestore userDoc to finish loading
  * - Redirects to /login if not authenticated
+ * - NEVER returns null - always shows FullScreenLoader during transitions
  */
 export function RequireAuth({ children, redirectTo = "/login" }: RequireAuthProps) {
-  const { user, authLoading } = useAuth();
+  const { user, loadingAuth, loadingUserDoc } = useAuth();
   const router = useRouter();
-  const [loadingUserDoc, setLoadingUserDoc] = useState(false);
 
   useEffect(() => {
-    if (authLoading) return;
+    // Only redirect after loading is complete
+    if (loadingAuth || loadingUserDoc) return;
 
     if (!user) {
       router.replace(redirectTo);
-      return;
     }
+  }, [user, loadingAuth, loadingUserDoc, router, redirectTo]);
 
-    // Fetch user document from Firestore
-    const fetchUserDoc = async () => {
-      setLoadingUserDoc(true);
-      try {
-        await getDoc(doc(db, "users", user.uid));
-        // Document fetched successfully, user is authenticated
-      } catch (error) {
-        console.error("Failed to fetch user document:", error);
-        // Still allow access, document might not exist yet
-      } finally {
-        setLoadingUserDoc(false);
-      }
-    };
-
-    void fetchUserDoc();
-  }, [user, authLoading, router, redirectTo]);
-
-  // Show loader while auth is loading or user document is being fetched
-  if (authLoading || loadingUserDoc) {
+  // Show loader while auth or userDoc is loading
+  if (loadingAuth || loadingUserDoc) {
     return <FullScreenLoader />;
   }
 
-  // Redirect if not authenticated
+  // Show loader during redirect (never return null)
   if (!user) {
-    return null;
+    return <FullScreenLoader />;
   }
 
   return <>{children}</>;

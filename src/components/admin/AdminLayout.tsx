@@ -4,8 +4,8 @@ import { type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AdminSidebar, useSidebar } from "./AdminSidebar";
-import { RequireAuth } from "@/components/auth";
-import { RequireAdmin } from "@/components/auth";
+import { RequireAuth } from "@/components/auth/RequireAuth";
+import { RequireAdmin } from "@/components/auth/RequireAdmin";
 
 type AdminLayoutProps = {
   children: ReactNode;

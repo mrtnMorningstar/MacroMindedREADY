@@ -16,6 +16,7 @@ import Link from "next/link";
 
 import { auth, db } from "@/lib/firebase";
 import { AdminSidebar, ReferralStats, useSidebar } from "@/components/admin";
+import FullScreenLoader from "@/components/FullScreenLoader";
 
 type UserRecord = {
   id: string;
@@ -140,7 +141,7 @@ export default function AdminReferralsPage() {
   }
 
   if (!isAdmin) {
-    return null;
+    return <FullScreenLoader />;
   }
 
   const filteredUsers = users.filter((user) => {
