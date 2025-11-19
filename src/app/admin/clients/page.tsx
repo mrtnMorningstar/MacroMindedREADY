@@ -1,14 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { motion } from "framer-motion";
-import { collection, onSnapshot, query, where, getDocs, updateDoc, doc, serverTimestamp } from "firebase/firestore";
-import { CheckIcon, EyeIcon, ArrowUpTrayIcon, ClipboardIcon } from "@heroicons/react/24/outline";
+import { collection, onSnapshot } from "firebase/firestore";
+import { EyeIcon } from "@heroicons/react/24/outline";
 import { db } from "@/lib/firebase";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { SkeletonTable } from "@/components/common/Skeleton";
-import { useToast } from "@/components/ui/Toast";
+import ClientDetailSlideover from "@/components/admin/ClientDetailSlideover";
 
 type Client = {
   id: string;
@@ -19,6 +18,10 @@ type Client = {
   referralCredits: number;
   purchaseDate: Date | null;
   daysSincePurchase: number;
+  mealPlanFileURL?: string | null;
+  mealPlanImageURLs?: string[] | null;
+  adminNotes?: string | null;
+  role?: string;
 };
 
 type FilterType = "all" | "needs-plan" | "delivered" | "in-progress";
@@ -28,7 +31,8 @@ export default function AdminClientsPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
-  const toast = useToast();
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [slideoverOpen, setSlideoverOpen] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -55,7 +59,9 @@ export default function AdminClientsPage() {
             }
 
             if (purchaseDate) {
-              daysSincePurchase = Math.floor((Date.now() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24));
+              daysSincePurchase = Math.floor(
+                (Date.now() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24)
+              );
             }
           }
 
@@ -68,6 +74,10 @@ export default function AdminClientsPage() {
             referralCredits: data?.referralCredits ?? 0,
             purchaseDate,
             daysSincePurchase,
+            mealPlanFileURL: data?.mealPlanFileURL ?? null,
+            mealPlanImageURLs: data?.mealPlanImageURLs ?? null,
+            adminNotes: data?.adminNotes ?? null,
+            role: data?.role ?? null,
           });
         }
 
@@ -88,7 +98,9 @@ export default function AdminClientsPage() {
 
     // Apply status filter
     if (filter === "needs-plan") {
-      filtered = filtered.filter((c) => !c.packageTier || c.mealPlanStatus === "Not Started");
+      filtered = filtered.filter(
+        (c) => !c.packageTier || c.mealPlanStatus === "Not Started"
+      );
     } else if (filter === "delivered") {
       filtered = filtered.filter((c) => c.mealPlanStatus === "Delivered");
     } else if (filter === "in-progress") {
@@ -109,27 +121,15 @@ export default function AdminClientsPage() {
     return filtered;
   }, [clients, filter, searchQuery]);
 
-  const handleMarkDelivered = useCallback(async (clientId: string) => {
-    try {
-      await updateDoc(doc(db, "users", clientId), {
-        mealPlanStatus: "Delivered",
-        mealPlanDeliveredAt: serverTimestamp(),
-      });
-      toast.success("Meal plan marked as delivered");
-    } catch (error) {
-      console.error("Failed to mark as delivered:", error);
-      toast.error("Failed to update status");
-    }
-  }, [toast]);
+  const handleViewClient = useCallback((client: Client) => {
+    setSelectedClient(client);
+    setSlideoverOpen(true);
+  }, []);
 
-  const handleCopyEmail = useCallback(async (email: string) => {
-    try {
-      await navigator.clipboard.writeText(email);
-      toast.success("Email copied to clipboard");
-    } catch (error) {
-      toast.error("Failed to copy email");
-    }
-  }, [toast]);
+  const handleRefresh = useCallback(() => {
+    // Trigger a re-fetch by updating state
+    setClients([...clients]);
+  }, [clients]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -145,27 +145,9 @@ export default function AdminClientsPage() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-xl font-semibold text-white mb-2">Clients</h1>
-          <p className="text-sm text-neutral-400">Manage all client accounts and meal plans</p>
-        </div>
-
-        {/* Filters and Search */}
+        {/* Filters */}
         <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            {/* Search */}
-            <div className="flex-1">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by name, email, or package..."
-                className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white placeholder:text-neutral-500 focus:border-[#D7263D] focus:outline-none"
-              />
-            </div>
-
-            {/* Filter Buttons */}
             <div className="flex flex-wrap gap-2">
               {(["all", "needs-plan", "in-progress", "delivered"] as FilterType[]).map((f) => (
                 <button
@@ -197,7 +179,7 @@ export default function AdminClientsPage() {
           <div className="rounded-2xl border border-neutral-800 bg-neutral-900 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-neutral-800/50">
+                <thead className="bg-neutral-800/50 sticky top-0">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
                       Name
@@ -229,21 +211,15 @@ export default function AdminClientsPage() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      className="hover:bg-neutral-800/30 transition"
+                      className={`hover:bg-neutral-800/30 transition ${
+                        index % 2 === 0 ? "bg-neutral-900/50" : "bg-neutral-900"
+                      }`}
                     >
                       <td className="px-6 py-4 text-sm font-semibold text-white">
                         {client.name}
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-neutral-300">{client.email}</span>
-                          <button
-                            onClick={() => handleCopyEmail(client.email)}
-                            className="text-neutral-500 hover:text-[#D7263D] transition"
-                          >
-                            <ClipboardIcon className="h-4 w-4" />
-                          </button>
-                        </div>
+                        <span className="text-sm text-neutral-300">{client.email}</span>
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-sm text-neutral-300">
@@ -252,7 +228,9 @@ export default function AdminClientsPage() {
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-sm text-neutral-300">
-                          {client.daysSincePurchase > 0 ? `${client.daysSincePurchase} days` : "—"}
+                          {client.daysSincePurchase > 0
+                            ? `${client.daysSincePurchase} days`
+                            : "—"}
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -270,22 +248,13 @@ export default function AdminClientsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <Link
-                            href={`/admin/clients/${client.id}`}
-                            className="rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-xs font-semibold text-neutral-300 transition hover:bg-neutral-700"
-                          >
-                            <EyeIcon className="h-4 w-4" />
-                          </Link>
-                          {client.mealPlanStatus !== "Delivered" && (
-                            <button
-                              onClick={() => handleMarkDelivered(client.id)}
-                              className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#D7263D]/90"
-                            >
-                              <CheckIcon className="h-4 w-4" />
-                            </button>
-                          )}
-                        </div>
+                        <button
+                          onClick={() => handleViewClient(client)}
+                          className="rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-xs font-semibold text-neutral-300 transition hover:bg-neutral-700 flex items-center gap-2"
+                        >
+                          <EyeIcon className="h-4 w-4" />
+                          View
+                        </button>
                       </td>
                     </motion.tr>
                   ))}
@@ -295,13 +264,25 @@ export default function AdminClientsPage() {
 
             {filteredClients.length === 0 && (
               <div className="px-6 py-12 text-center">
-                <p className="text-sm text-neutral-400">No clients found matching your filters.</p>
+                <p className="text-sm text-neutral-400">
+                  No clients found matching your filters.
+                </p>
               </div>
             )}
           </div>
         )}
       </div>
+
+      {/* Client Detail Slideover */}
+      <ClientDetailSlideover
+        client={selectedClient}
+        isOpen={slideoverOpen}
+        onClose={() => {
+          setSlideoverOpen(false);
+          setSelectedClient(null);
+        }}
+        onUpdate={handleRefresh}
+      />
     </AdminLayout>
   );
 }
-

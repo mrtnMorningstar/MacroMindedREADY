@@ -1,18 +1,13 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type ChangeEvent,
-} from "react";
+import { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { collection, getDocs, type DocumentData } from "firebase/firestore";
-import Link from "next/link";
-
+import { collection, onSnapshot } from "firebase/firestore";
+import { EyeIcon } from "@heroicons/react/24/outline";
 import { db } from "@/lib/firebase";
-import { AdminSidebar, useSidebar } from "@/components/admin";
+import AdminLayout from "@/components/admin/AdminLayout";
+import { SkeletonTable } from "@/components/common/Skeleton";
+import ClientDetailSlideover from "@/components/admin/ClientDetailSlideover";
 
 type UserCard = {
   id: string;
@@ -21,58 +16,58 @@ type UserCard = {
   packageTier: string | null;
   mealPlanStatus: string;
   createdAt?: Date | null;
+  mealPlanFileURL?: string | null;
+  mealPlanImageURLs?: string[] | null;
+  adminNotes?: string | null;
+  role?: string | null;
+  referralCredits?: number;
 };
-
-const variants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0 },
-};
-
-const packageFilters = ["All", "Basic", "Pro", "Elite"] as const;
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<(typeof packageFilters)[number]>("All");
+  const [filter, setFilter] = useState<"All" | "Basic" | "Pro" | "Elite">("All");
+  const [selectedClient, setSelectedClient] = useState<UserCard | null>(null);
+  const [slideoverOpen, setSlideoverOpen] = useState(false);
 
   useEffect(() => {
-    const loadUsers = async () => {
-      setLoading(true);
-      try {
-        const usersRef = collection(db, "users");
-        const snapshot = await getDocs(usersRef);
-        const records: UserCard[] = snapshot.docs
-          .map((docSnapshot) => {
-            const data = docSnapshot.data() as DocumentData;
-            if (data?.role === "admin") return null;
+    setLoading(true);
+    const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
+      const records: UserCard[] = snapshot.docs
+        .map((docSnapshot) => {
+          const data = docSnapshot.data();
+          if (data?.role === "admin") return null;
 
-            const createdAt = data?.createdAt;
-            let createdAtDate: Date | null = null;
-            if (createdAt?.toDate) {
-              createdAtDate = createdAt.toDate();
-            } else if (createdAt instanceof Date) {
-              createdAtDate = createdAt;
-            }
+          const createdAt = data?.createdAt;
+          let createdAtDate: Date | null = null;
+          if (createdAt?.toDate) {
+            createdAtDate = createdAt.toDate();
+          } else if (createdAt instanceof Date) {
+            createdAtDate = createdAt;
+          }
 
-            return {
-              id: docSnapshot.id,
-              name: data?.displayName ?? "Unnamed User",
-              email: data?.email ?? "No email",
-              packageTier: data?.packageTier ?? null,
-              mealPlanStatus: data?.mealPlanStatus ?? "Not Started",
-              createdAt: createdAtDate,
-            };
-          })
-          .filter(Boolean) as UserCard[];
+          return {
+            id: docSnapshot.id,
+            name: data?.displayName ?? "Unnamed User",
+            email: data?.email ?? "No email",
+            packageTier: data?.packageTier ?? null,
+            mealPlanStatus: data?.mealPlanStatus ?? "Not Started",
+            createdAt: createdAtDate,
+            mealPlanFileURL: data?.mealPlanFileURL ?? null,
+            mealPlanImageURLs: data?.mealPlanImageURLs ?? null,
+            adminNotes: data?.adminNotes ?? null,
+            role: data?.role ?? null,
+            referralCredits: data?.referralCredits ?? 0,
+          };
+        })
+        .filter(Boolean) as UserCard[];
 
-        setUsers(records);
-      } finally {
-        setLoading(false);
-      }
-    };
+      setUsers(records);
+      setLoading(false);
+    });
 
-    void loadUsers();
+    return () => unsubscribe();
   }, []);
 
   const filteredUsers = useMemo(() => {
@@ -90,136 +85,135 @@ export default function AdminUsersPage() {
     });
   }, [users, filter, search]);
 
-  const daysSince = useCallback((createdAt?: Date | null) => {
-    if (!createdAt) return "—";
-    const diffMs = Date.now() - createdAt.getTime();
-    if (diffMs < 0) return "0";
-    return Math.floor(diffMs / (1000 * 60 * 60 * 24)).toString();
-  }, []);
+  const handleViewClient = (user: UserCard) => {
+    setSelectedClient(user);
+    setSlideoverOpen(true);
+  };
 
-  const { isOpen, isMobile } = useSidebar();
+  const handleRefresh = () => {
+    setUsers([...users]);
+  };
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
-      <AdminSidebar />
-
-      <div className={`relative isolate flex-1 transition-all duration-300 ${!isMobile && isOpen ? "lg:ml-64" : ""}`}>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.1 }}
-          className="pointer-events-none absolute inset-0"
-        >
-          <div className="absolute -top-36 left-1/2 h-[680px] w-[680px] -translate-x-1/2 rounded-full bg-accent/30 blur-3xl" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#161616_0%,rgba(0,0,0,0.92)_55%,#000000_95%)]" />
-        </motion.div>
-
-        <div className="relative flex min-h-screen flex-col gap-8 px-6 py-10 text-foreground sm:py-14 lg:px-10">
-      <motion.header
-        initial="hidden"
-        animate="visible"
-        variants={variants}
-        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-        className="flex flex-col gap-4 rounded-3xl border border-border/70 bg-muted/60 px-6 py-6 shadow-[0_0_70px_-35px_rgba(215,38,61,0.6)] backdrop-blur sm:flex-row sm:items-center sm:justify-between"
-      >
-        <div>
-          <h1 className="font-bold text-2xl uppercase tracking-[0.32em] text-foreground sm:text-3xl">
-            Athlete Directory
-          </h1>
-          <p className="mt-2 text-[0.7rem] font-medium uppercase tracking-[0.3em] text-foreground/60">
-            Browse and manage users currently enrolled in MacroMinded programs.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <div className="flex items-center gap-2 rounded-full border border-border/70 bg-background/40 px-3 py-2">
-            <input
-              value={search}
-              onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                setSearch(event.target.value)
-              }
-              placeholder="Search by name or email…"
-              className="w-48 bg-transparent text-[0.7rem] font-medium uppercase tracking-[0.28em] text-foreground placeholder:text-foreground/40 focus:outline-none"
-            />
-          </div>
-          <div className="flex gap-2 rounded-full border border-border/70 bg-background/40 px-3 py-2">
-            {packageFilters.map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => setFilter(item)}
-                className={`rounded-full px-3 py-1 text-[0.65rem] font-medium uppercase tracking-[0.28em] transition ${
-                  filter === item
-                    ? "border border-accent bg-accent text-background"
-                    : "text-foreground/60 hover:text-accent"
-                }`}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-        </div>
-      </motion.header>
-
-      {loading ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <div
-              key={index}
-              className="h-40 animate-pulse rounded-3xl border border-border/80 bg-muted/40"
-            />
-          ))}
-        </div>
-      ) : filteredUsers.length === 0 ? (
-        <div className="rounded-3xl border border-border/70 bg-muted/60 px-6 py-10 text-center text-xs font-medium uppercase tracking-[0.3em] text-foreground/50">
-          No users found matching the current filters.
-        </div>
-      ) : (
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={variants}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
-        >
-          {filteredUsers.map((user) => (
-            <motion.div
-              key={user.id}
-              whileHover={{ scale: 1.02 }}
-              variants={variants}
-              className="flex flex-col gap-3 rounded-3xl border border-border/70 bg-muted/60 px-6 py-6 shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] backdrop-blur"
-            >
-              <div>
-                <h3 className="font-bold uppercase tracking-[0.34em] text-foreground">
-                  {user.name}
-                </h3>
-                <p className="mt-1 text-[0.65rem] font-medium uppercase tracking-[0.28em] text-foreground/60">
-                  {user.email}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-border/60 bg-background/20 px-4 py-3 text-[0.6rem] font-medium uppercase tracking-[0.3em] text-foreground/70">
-                Package Tier: {user.packageTier ?? "Not assigned"}
-              </div>
-              <div className="rounded-2xl border border-border/60 bg-background/20 px-4 py-3 text-[0.6rem] font-medium uppercase tracking-[0.3em] text-foreground/70">
-                Meal Plan Status: {user.mealPlanStatus}
-              </div>
-              <div className="rounded-2xl border border-border/60 bg-background/20 px-4 py-3 text-[0.6rem] font-medium uppercase tracking-[0.3em] text-foreground/70">
-                Days Since Signup: {daysSince(user.createdAt)}
-              </div>
-              <div className="mt-auto flex justify-end">
-                <Link
-                  href={`/admin/users/${user.id}`}
-                  className="rounded-full border border-border/70 px-4 py-2 text-[0.6rem] font-medium uppercase tracking-[0.3em] text-foreground/70 transition hover:border-accent hover:text-accent"
+    <AdminLayout>
+      <div className="space-y-6">
+        {/* Filters */}
+        <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex-1">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by name or email..."
+                className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white placeholder:text-neutral-500 focus:border-[#D7263D] focus:outline-none"
+              />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(["All", "Basic", "Pro", "Elite"] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                    filter === f
+                      ? "bg-[#D7263D] text-white"
+                      : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+                  }`}
                 >
-                  View Profile
-                </Link>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
-      )}
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
+
+        {/* Table */}
+        {loading ? (
+          <SkeletonTable rows={8} />
+        ) : (
+          <div className="rounded-2xl border border-neutral-800 bg-neutral-900 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-neutral-800/50 sticky top-0">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                      Name
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                      Email
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                      Package
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                      Status
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-800">
+                  {filteredUsers.map((user, index) => (
+                    <motion.tr
+                      key={user.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className={`hover:bg-neutral-800/30 transition ${
+                        index % 2 === 0 ? "bg-neutral-900/50" : "bg-neutral-900"
+                      }`}
+                    >
+                      <td className="px-6 py-4 text-sm font-semibold text-white">{user.name}</td>
+                      <td className="px-6 py-4">
+                        <span className="text-sm text-neutral-300">{user.email}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-sm text-neutral-300">
+                          {user.packageTier ?? "—"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${
+                            user.mealPlanStatus === "Delivered"
+                              ? "bg-green-500/20 text-green-500 border-green-500/50"
+                              : user.mealPlanStatus === "In Progress"
+                              ? "bg-amber-500/20 text-amber-500 border-amber-500/50"
+                              : "bg-neutral-600/20 text-neutral-400 border-neutral-600/50"
+                          }`}
+                        >
+                          {user.mealPlanStatus}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <button
+                          onClick={() => handleViewClient(user)}
+                          className="rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-xs font-semibold text-neutral-300 transition hover:bg-neutral-700 flex items-center gap-2"
+                        >
+                          <EyeIcon className="h-4 w-4" />
+                          View
+                        </button>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+
+      {/* Client Detail Slideover */}
+      <ClientDetailSlideover
+        client={selectedClient as any}
+        isOpen={slideoverOpen}
+        onClose={() => {
+          setSlideoverOpen(false);
+          setSelectedClient(null);
+        }}
+        onUpdate={handleRefresh}
+      />
+    </AdminLayout>
   );
 }
-

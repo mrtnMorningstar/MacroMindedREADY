@@ -60,6 +60,7 @@ export default function AdminSalesPage() {
     let totalRevenue = 0;
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
     let revenueLast30Days = 0;
+    let activeUsers = new Set<string>();
 
     purchases.forEach((purchase) => {
       totalRevenue += purchase.amount;
@@ -68,30 +69,30 @@ export default function AdminSalesPage() {
 
       if (purchase.createdAt && purchase.createdAt.getTime() >= thirtyDaysAgo) {
         revenueLast30Days += purchase.amount;
+        activeUsers.add(purchase.id);
       }
     });
+
+    const avgPurchaseValue =
+      purchases.length > 0 ? totalRevenue / purchases.length : 0;
 
     return {
       totalRevenue,
       revenueLast30Days,
       tierMetrics,
       totalPurchases: purchases.length,
+      avgPurchaseValue,
+      activeUsers: activeUsers.size,
     };
   }, [purchases]);
 
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-xl font-semibold text-white mb-2">Sales & Revenue</h1>
-          <p className="text-sm text-neutral-400">Track revenue and purchase analytics</p>
-        </div>
-
-        {/* Revenue Cards */}
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {/* KPI Cards */}
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
           {loading ? (
-            Array.from({ length: 4 }).map((_, i) => (
+            Array.from({ length: 5 }).map((_, i) => (
               <SkeletonCard key={i} className="h-32" />
             ))
           ) : (
@@ -101,7 +102,7 @@ export default function AdminSalesPage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6"
               >
-                <p className="text-xs uppercase tracking-wide text-neutral-400 mb-2">
+                <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">
                   Total Revenue
                 </p>
                 <p className="text-3xl font-bold text-white">
@@ -114,7 +115,7 @@ export default function AdminSalesPage() {
                 transition={{ delay: 0.1 }}
                 className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6"
               >
-                <p className="text-xs uppercase tracking-wide text-neutral-400 mb-2">
+                <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">
                   Last 30 Days
                 </p>
                 <p className="text-3xl font-bold text-[#D7263D]">
@@ -127,7 +128,7 @@ export default function AdminSalesPage() {
                 transition={{ delay: 0.2 }}
                 className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6"
               >
-                <p className="text-xs uppercase tracking-wide text-neutral-400 mb-2">
+                <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">
                   Total Purchases
                 </p>
                 <p className="text-3xl font-bold text-white">{metrics.totalPurchases}</p>
@@ -138,15 +139,23 @@ export default function AdminSalesPage() {
                 transition={{ delay: 0.3 }}
                 className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6"
               >
-                <p className="text-xs uppercase tracking-wide text-neutral-400 mb-2">
-                  Avg. Purchase
+                <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">
+                  Avg Purchase
                 </p>
                 <p className="text-3xl font-bold text-white">
-                  $
-                  {metrics.totalPurchases > 0
-                    ? (metrics.totalRevenue / metrics.totalPurchases).toFixed(0)
-                    : "0"}
+                  ${metrics.avgPurchaseValue.toFixed(0)}
                 </p>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6"
+              >
+                <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">
+                  Active Users
+                </p>
+                <p className="text-3xl font-bold text-white">{metrics.activeUsers}</p>
               </motion.div>
             </>
           )}
@@ -154,7 +163,7 @@ export default function AdminSalesPage() {
 
         {/* Tier Breakdown */}
         <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
-          <h2 className="text-xl font-semibold text-white mb-6">Plan Breakdown</h2>
+          <h2 className="text-2xl font-bold text-white mb-6">Plan Breakdown</h2>
           <div className="grid gap-6 sm:grid-cols-3">
             {(["Basic", "Pro", "Elite"] as const).map((tier) => (
               <motion.div
@@ -163,7 +172,7 @@ export default function AdminSalesPage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="rounded-xl border border-neutral-800 bg-neutral-800/50 p-6"
               >
-                <p className="text-sm uppercase tracking-wide text-neutral-400 mb-4">{tier} Plan</p>
+                <p className="text-sm uppercase tracking-wide text-neutral-500 mb-4">{tier} Plan</p>
                 <div className="space-y-3">
                   <div>
                     <p className="text-xs text-neutral-500 mb-1">Purchases</p>

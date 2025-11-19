@@ -16,6 +16,7 @@ import {
   PencilIcon,
   TrashIcon,
   ArrowUpTrayIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
 import type { ChangeEvent, FormEvent } from "react";
 
@@ -24,6 +25,7 @@ import type { RecipeDocument } from "@/types/recipe";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { SkeletonCard } from "@/components/common/Skeleton";
 import { useToast } from "@/components/ui/Toast";
+import AppModal from "@/components/ui/AppModal";
 
 type RecipeFormState = {
   title: string;
@@ -61,6 +63,7 @@ export default function AdminRecipesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingAsset, setUploadingAsset] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const toast = useToast();
 
   useEffect(() => {
@@ -77,21 +80,24 @@ export default function AdminRecipesPage() {
     return () => unsubscribe();
   }, []);
 
-  const handleImageChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (!file.type.startsWith("image/")) {
-        toast.error("Please select an image file");
-        return;
+  const handleImageChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        if (!file.type.startsWith("image/")) {
+          toast.error("Please select an image file");
+          return;
+        }
+        setImageFile(file);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImagePreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
       }
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  }, [toast]);
+    },
+    [toast]
+  );
 
   const handleUploadImage = useCallback(async (): Promise<string | null> => {
     if (!imageFile) return formState.imageURL || null;
@@ -174,10 +180,10 @@ export default function AdminRecipesPage() {
 
   const handleDelete = useCallback(
     async (recipeId: string) => {
-      if (!confirm("Are you sure you want to delete this recipe?")) return;
       try {
         await deleteDoc(doc(db, "recipes", recipeId));
         toast.success("Recipe deleted successfully");
+        setShowDeleteConfirm(null);
       } catch (error) {
         console.error("Failed to delete recipe:", error);
         toast.error("Failed to delete recipe");
@@ -192,8 +198,9 @@ export default function AdminRecipesPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold text-white mb-2">Recipe Manager</h1>
-            <p className="text-sm text-neutral-400">Create and manage recipe library</p>
+            <p className="text-sm text-neutral-400">
+              {recipes.length} recipe{recipes.length !== 1 ? "s" : ""} total
+            </p>
           </div>
           <button
             onClick={() => {
@@ -210,152 +217,28 @@ export default function AdminRecipesPage() {
           </button>
         </div>
 
-        {/* Recipe Form Modal */}
-        {showForm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-neutral-800 bg-neutral-900 p-6"
-            >
-              <h2 className="text-xl font-semibold text-white mb-6">
-                {selectedRecipeId ? "Edit Recipe" : "Create New Recipe"}
-              </h2>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-neutral-300 mb-2">
-                    Title
-                  </label>
-                  <input
-                    type="text"
-                    value={formState.title}
-                    onChange={(e) => setFormState({ ...formState, title: e.target.value })}
-                    required
-                    className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white focus:border-[#D7263D] focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-neutral-300 mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    value={formState.description}
-                    onChange={(e) => setFormState({ ...formState, description: e.target.value })}
-                    required
-                    rows={3}
-                    className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-3 text-sm text-white focus:border-[#D7263D] focus:outline-none"
-                  />
-                </div>
-                <div className="grid grid-cols-4 gap-4">
-                  {(["calories", "protein", "carbs", "fats"] as const).map((field) => (
-                    <div key={field}>
-                      <label className="block text-sm font-semibold text-neutral-300 mb-2 capitalize">
-                        {field}
-                      </label>
-                      <input
-                        type="number"
-                        value={formState[field]}
-                        onChange={(e) => setFormState({ ...formState, [field]: e.target.value })}
-                        required
-                        className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white focus:border-[#D7263D] focus:outline-none"
-                      />
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-neutral-300 mb-2">
-                    Ingredients (one per line)
-                  </label>
-                  <textarea
-                    value={formState.ingredients}
-                    onChange={(e) => setFormState({ ...formState, ingredients: e.target.value })}
-                    required
-                    rows={5}
-                    className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-3 text-sm text-white focus:border-[#D7263D] focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-neutral-300 mb-2">
-                    Steps (one per line)
-                  </label>
-                  <textarea
-                    value={formState.steps}
-                    onChange={(e) => setFormState({ ...formState, steps: e.target.value })}
-                    required
-                    rows={5}
-                    className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-3 text-sm text-white focus:border-[#D7263D] focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-neutral-300 mb-2">
-                    Tags (comma-separated)
-                  </label>
-                  <input
-                    type="text"
-                    value={formState.tags}
-                    onChange={(e) => setFormState({ ...formState, tags: e.target.value })}
-                    className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white focus:border-[#D7263D] focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-neutral-300 mb-2">
-                    Image
-                  </label>
-                  <div className="space-y-3">
-                    {imagePreview && (
-                      <img
-                        src={imagePreview}
-                        alt="Preview"
-                        className="h-32 w-32 rounded-lg object-cover border border-neutral-800"
-                      />
-                    )}
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        className="hidden"
-                      />
-                      <div className="flex items-center gap-2 rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700">
-                        <ArrowUpTrayIcon className="h-5 w-5" />
-                        {imageFile ? "Change Image" : "Upload Image"}
-                      </div>
-                    </label>
-                  </div>
-                </div>
-                <div className="flex gap-3 justify-end">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowForm(false);
-                      setFormState(initialFormState);
-                      setImageFile(null);
-                      setImagePreview(null);
-                      setSelectedRecipeId(null);
-                    }}
-                    className="rounded-lg border border-neutral-700 bg-neutral-800 px-6 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting || uploadingAsset}
-                    className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-6 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50"
-                  >
-                    {isSubmitting ? "Saving..." : selectedRecipeId ? "Update" : "Create"}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-
         {/* Recipe Grid */}
         {loading ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <SkeletonCard key={i} className="h-64" />
             ))}
+          </div>
+        ) : recipes.length === 0 ? (
+          <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-12 text-center">
+            <div className="max-w-md mx-auto">
+              <SparklesIcon className="h-16 w-16 text-neutral-600 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-white mb-2">No recipes yet</h3>
+              <p className="text-sm text-neutral-400 mb-6">
+                Create your first recipe to get started building your recipe library.
+              </p>
+              <button
+                onClick={() => setShowForm(true)}
+                className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
+              >
+                Create Recipe
+              </button>
+            </div>
           </div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -380,14 +263,15 @@ export default function AdminRecipesPage() {
                     {recipe.description}
                   </p>
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {recipe.tags.slice(0, 3).map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs text-neutral-300"
-                      >
-                        {tag}
-                      </span>
-                    ))}
+                    <span className="rounded-full border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs text-neutral-300">
+                      {recipe.protein}g P
+                    </span>
+                    <span className="rounded-full border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs text-neutral-300">
+                      {recipe.carbs}g C
+                    </span>
+                    <span className="rounded-full border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs text-neutral-300">
+                      {recipe.fats}g F
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -398,7 +282,7 @@ export default function AdminRecipesPage() {
                       Edit
                     </button>
                     <button
-                      onClick={() => handleDelete(recipe.id)}
+                      onClick={() => setShowDeleteConfirm(recipe.id)}
                       className="flex items-center justify-center gap-2 rounded-lg border border-red-500/50 bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-500/30"
                     >
                       <TrashIcon className="h-4 w-4" />
@@ -410,11 +294,169 @@ export default function AdminRecipesPage() {
           </div>
         )}
 
-        {recipes.length === 0 && !loading && (
-          <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-12 text-center">
-            <p className="text-sm text-neutral-400">No recipes found. Create your first recipe!</p>
+        {/* Create/Edit Recipe Modal */}
+        <AppModal
+          isOpen={showForm}
+          onClose={() => {
+            setShowForm(false);
+            setFormState(initialFormState);
+            setImageFile(null);
+            setImagePreview(null);
+            setSelectedRecipeId(null);
+          }}
+          title={selectedRecipeId ? "Edit Recipe" : "Create New Recipe"}
+          size="lg"
+        >
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-neutral-300 mb-2">Title</label>
+              <input
+                type="text"
+                value={formState.title}
+                onChange={(e) => setFormState({ ...formState, title: e.target.value })}
+                required
+                className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white focus:border-[#D7263D] focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-neutral-300 mb-2">
+                Description
+              </label>
+              <textarea
+                value={formState.description}
+                onChange={(e) => setFormState({ ...formState, description: e.target.value })}
+                required
+                rows={3}
+                className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-3 text-sm text-white focus:border-[#D7263D] focus:outline-none"
+              />
+            </div>
+            <div className="grid grid-cols-4 gap-4">
+              {(["calories", "protein", "carbs", "fats"] as const).map((field) => (
+                <div key={field}>
+                  <label className="block text-sm font-semibold text-neutral-300 mb-2 capitalize">
+                    {field}
+                  </label>
+                  <input
+                    type="number"
+                    value={formState[field]}
+                    onChange={(e) => setFormState({ ...formState, [field]: e.target.value })}
+                    required
+                    className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white focus:border-[#D7263D] focus:outline-none"
+                  />
+                </div>
+              ))}
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-neutral-300 mb-2">
+                Ingredients (one per line)
+              </label>
+              <textarea
+                value={formState.ingredients}
+                onChange={(e) => setFormState({ ...formState, ingredients: e.target.value })}
+                required
+                rows={5}
+                className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-3 text-sm text-white focus:border-[#D7263D] focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-neutral-300 mb-2">
+                Steps (one per line)
+              </label>
+              <textarea
+                value={formState.steps}
+                onChange={(e) => setFormState({ ...formState, steps: e.target.value })}
+                required
+                rows={5}
+                className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-3 text-sm text-white focus:border-[#D7263D] focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-neutral-300 mb-2">
+                Tags (comma-separated)
+              </label>
+              <input
+                type="text"
+                value={formState.tags}
+                onChange={(e) => setFormState({ ...formState, tags: e.target.value })}
+                className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white focus:border-[#D7263D] focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-neutral-300 mb-2">Image</label>
+              <div className="space-y-3">
+                {imagePreview && (
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="h-32 w-32 rounded-lg object-cover border border-neutral-800"
+                  />
+                )}
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                  <div className="flex items-center gap-2 rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700">
+                    <ArrowUpTrayIcon className="h-5 w-5" />
+                    {imageFile ? "Change Image" : "Upload Image"}
+                  </div>
+                </label>
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end pt-4 border-t border-neutral-800">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForm(false);
+                  setFormState(initialFormState);
+                  setImageFile(null);
+                  setImagePreview(null);
+                  setSelectedRecipeId(null);
+                }}
+                className="rounded-lg border border-neutral-700 bg-neutral-800 px-6 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting || uploadingAsset}
+                className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-6 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50"
+              >
+                {isSubmitting ? "Saving..." : selectedRecipeId ? "Update" : "Create"}
+              </button>
+            </div>
+          </form>
+        </AppModal>
+
+        {/* Delete Confirmation Modal */}
+        <AppModal
+          isOpen={!!showDeleteConfirm}
+          onClose={() => setShowDeleteConfirm(null)}
+          title="Delete Recipe"
+          size="sm"
+        >
+          <div className="space-y-4">
+            <p className="text-neutral-300">
+              Are you sure you want to delete this recipe? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                className="rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => showDeleteConfirm && handleDelete(showDeleteConfirm)}
+                className="rounded-lg border border-red-500/50 bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-500/30"
+              >
+                Delete Recipe
+              </button>
+            </div>
           </div>
-        )}
+        </AppModal>
       </div>
     </AdminLayout>
   );

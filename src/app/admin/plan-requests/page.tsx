@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   collection,
@@ -10,6 +10,7 @@ import {
   updateDoc,
   doc,
   getDoc,
+  writeBatch,
 } from "firebase/firestore";
 import { ChevronDownIcon, ChevronUpIcon, CheckIcon } from "@heroicons/react/24/outline";
 import { db } from "@/lib/firebase";
@@ -27,10 +28,13 @@ type PlanRequest = {
   userEmail?: string;
 };
 
+type FilterType = "all" | "unhandled" | "handled";
+
 export default function PlanRequestsPage() {
   const [requests, setRequests] = useState<PlanRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<FilterType>("all");
   const toast = useToast();
 
   useEffect(() => {
@@ -81,30 +85,100 @@ export default function PlanRequestsPage() {
     return () => unsubscribe();
   }, []);
 
-  const handleMarkHandled = useCallback(async (requestId: string) => {
-    try {
-      await updateDoc(doc(db, "planUpdateRequests", requestId), {
-        handled: true,
-      });
-      toast.success("Request marked as handled");
-    } catch (error) {
-      console.error("Failed to mark as handled:", error);
-      toast.error("Failed to update request");
-    }
-  }, [toast]);
+  const handleMarkHandled = useCallback(
+    async (requestId: string) => {
+      try {
+        await updateDoc(doc(db, "planUpdateRequests", requestId), {
+          handled: true,
+        });
+        toast.success("Request marked as handled");
+      } catch (error) {
+        console.error("Failed to mark as handled:", error);
+        toast.error("Failed to update request");
+      }
+    },
+    [toast]
+  );
 
-  const unhandledRequests = requests.filter((r) => !r.handled);
-  const handledRequests = requests.filter((r) => r.handled);
+  const handleMarkAllHandled = useCallback(async () => {
+    const unhandledRequests = requests.filter((r) => !r.handled);
+    if (unhandledRequests.length === 0) {
+      toast.info("No unhandled requests");
+      return;
+    }
+
+    try {
+      const batch = writeBatch(db);
+      unhandledRequests.forEach((req) => {
+        const ref = doc(db, "planUpdateRequests", req.id);
+        batch.update(ref, { handled: true });
+      });
+      await batch.commit();
+      toast.success(`Marked ${unhandledRequests.length} requests as handled`);
+    } catch (error) {
+      console.error("Failed to mark all as handled:", error);
+      toast.error("Failed to update requests");
+    }
+  }, [requests, toast]);
+
+  const formatTimeAgo = (date: Date | null) => {
+    if (!date) return "Unknown";
+    const now = Date.now();
+    const diff = now - date.getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor(diff / (1000 * 60));
+
+    if (days > 0) return `${days} day${days !== 1 ? "s" : ""} ago`;
+    if (hours > 0) return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+    if (minutes > 0) return `${minutes} minute${minutes !== 1 ? "s" : ""} ago`;
+    return "Just now";
+  };
+
+  const filteredRequests = useMemo(() => {
+    if (filter === "unhandled") return requests.filter((r) => !r.handled);
+    if (filter === "handled") return requests.filter((r) => r.handled);
+    return requests;
+  }, [requests, filter]);
+
+  const unhandledRequests = filteredRequests.filter((r) => !r.handled);
+  const handledRequests = filteredRequests.filter((r) => r.handled);
 
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-xl font-semibold text-white mb-2">Plan Update Requests</h1>
-          <p className="text-sm text-neutral-400">
-            {unhandledRequests.length} unhandled request{unhandledRequests.length !== 1 ? "s" : ""}
-          </p>
+        {/* Header with Actions */}
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-neutral-400">
+              {unhandledRequests.length} unhandled request{unhandledRequests.length !== 1 ? "s" : ""}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex gap-2">
+              {(["all", "unhandled", "handled"] as FilterType[]).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                    filter === f
+                      ? "bg-[#D7263D] text-white"
+                      : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+                  }`}
+                >
+                  {f === "all" ? "All" : f === "unhandled" ? "Unhandled" : "Handled"}
+                </button>
+              ))}
+            </div>
+            {unhandledRequests.length > 0 && (
+              <button
+                onClick={handleMarkAllHandled}
+                className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
+              >
+                Mark All as Handled
+              </button>
+            )}
+          </div>
         </div>
 
         {loading ? (
@@ -135,7 +209,7 @@ export default function PlanRequestsPage() {
                             <p className="text-xs text-neutral-400">{request.userEmail}</p>
                             {request.date && (
                               <p className="text-xs text-neutral-500">
-                                {request.date.toLocaleDateString()}
+                                {formatTimeAgo(request.date)}
                               </p>
                             )}
                           </div>
@@ -204,7 +278,7 @@ export default function PlanRequestsPage() {
                             <p className="text-xs text-neutral-400">{request.userEmail}</p>
                             {request.date && (
                               <p className="text-xs text-neutral-500">
-                                {request.date.toLocaleDateString()}
+                                {formatTimeAgo(request.date)}
                               </p>
                             )}
                             <span className="inline-flex items-center rounded-full border border-green-500/50 bg-green-500/20 px-2 py-1 text-xs font-semibold text-green-500">
@@ -252,4 +326,3 @@ export default function PlanRequestsPage() {
     </AdminLayout>
   );
 }
-
