@@ -46,7 +46,7 @@ export default function AdminLayoutWrapper({ children }: AdminLayoutProps) {
     <div className="flex h-screen bg-black text-white">
 
       {/* SIDEBAR */}
-      <AdminSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
+      <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* MAIN CONTENT */}
       <div className="flex flex-col flex-1 overflow-hidden">
