@@ -91,10 +91,6 @@ export default function AdminPage() {
     setSlideoverOpen(true);
   }, []);
 
-  const handleRefresh = useCallback(() => {
-    setUsers([...users]);
-  }, [users]);
-
   const badgeStyles = (user: UserRecord) => {
     if (user.mealPlanStatus === "Delivered")
       return "text-green-500 bg-green-500/10 border-green-500/30";
@@ -107,7 +103,8 @@ export default function AdminPage() {
 
   return (
     <AdminLayout>
-      {/* Metrics */}
+
+      {/* Metrics (NO duplicate headers) */}
       <DashboardSummary />
 
       {/* Filters */}
@@ -135,7 +132,7 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* Table */}
+      {/* User Table */}
       {loadingUsers ? (
         <SkeletonTable rows={10} />
       ) : (
@@ -234,7 +231,7 @@ export default function AdminPage() {
           setSlideoverOpen(false);
           setSelectedClient(null);
         }}
-        onUpdate={handleRefresh}
+        onUpdate={() => setUsers([...users])}
       />
     </AdminLayout>
   );
