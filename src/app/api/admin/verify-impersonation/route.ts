@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { Timestamp } from "firebase-admin/firestore";
 import * as Sentry from "@sentry/nextjs";
 
@@ -9,8 +10,66 @@ export const dynamic = "force-dynamic";
 
 /**
  * API route to verify and consume impersonation tokens
- * Called by middleware to validate tokens
+ * Can be called via GET (from middleware) or POST (from client)
  */
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const token = searchParams.get("token");
+  const redirect = searchParams.get("redirect") || "/dashboard";
+
+  if (!token || typeof token !== "string") {
+    const redirectUrl = new URL(redirect, request.url);
+    redirectUrl.searchParams.set("error", "invalid_impersonation_token");
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  try {
+    const result = await verifyAndConsumeToken(token);
+    
+    if (!result.success) {
+      const redirectUrl = new URL(redirect, request.url);
+      redirectUrl.searchParams.set("error", result.error || "invalid_token");
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    // Create redirect URL without impersonate query param
+    const redirectUrl = new URL(redirect, request.url);
+    
+    // Create response with redirect
+    const response = NextResponse.redirect(redirectUrl);
+    
+    // Set secure cookie with impersonation context
+    response.cookies.set("impersonation", JSON.stringify({
+      targetUserId: result.targetUserId,
+      adminUserId: result.adminUserId,
+      targetUserName: result.targetUserName || null,
+      targetUserEmail: result.targetUserEmail || null,
+      impersonatedAt: new Date().toISOString(),
+    }), {
+      httpOnly: false, // Readable by client for banner display
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 3600, // 1 hour
+      path: "/",
+    });
+    
+    return response;
+  } catch (error) {
+    console.error("Error in verify-impersonation API:", error);
+    
+    Sentry.captureException(error, {
+      tags: {
+        route: "/api/admin/verify-impersonation",
+        type: "admin_error",
+      },
+    });
+    
+    const redirectUrl = new URL(redirect, request.url);
+    redirectUrl.searchParams.set("error", "impersonation_error");
+    return NextResponse.redirect(redirectUrl);
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -23,66 +82,25 @@ export async function POST(request: Request) {
       );
     }
 
-    const adminDb = getAdminDb();
-    const tokenDoc = await adminDb.collection("impersonationTokens").doc(token).get();
-
-    if (!tokenDoc.exists) {
-      return NextResponse.json(
-        { error: "Invalid token." },
-        { status: 401 }
-      );
-    }
-
-    const tokenData = tokenDoc.data();
+    const result = await verifyAndConsumeToken(token);
     
-    // Check if token has been used
-    if (tokenData?.used === true) {
+    if (!result.success) {
       return NextResponse.json(
-        { error: "Token has already been used." },
+        { error: result.error || "Invalid token." },
         { status: 401 }
       );
     }
-
-    // Check if token has expired
-    const expiresAt = tokenData?.expiresAt;
-    if (!expiresAt) {
-      return NextResponse.json(
-        { error: "Invalid token data." },
-        { status: 401 }
-      );
-    }
-
-    const expirationTime = expiresAt.toDate ? expiresAt.toDate() : new Date(expiresAt);
-    if (expirationTime < new Date()) {
-      // Clean up expired token
-      await adminDb.collection("impersonationTokens").doc(token).delete();
-      return NextResponse.json(
-        { error: "Token has expired." },
-        { status: 401 }
-      );
-    }
-
-    // Mark token as used (one-time use)
-    await adminDb.collection("impersonationTokens").doc(token).update({
-      used: true,
-      usedAt: Timestamp.now(),
-    });
-
-    // Get target user data for context
-    const targetUserDoc = await adminDb.collection("users").doc(tokenData.targetUserId).get();
-    const targetUserData = targetUserDoc.data();
 
     return NextResponse.json({
       success: true,
-      targetUserId: tokenData.targetUserId,
-      adminUserId: tokenData.adminUserId,
-      targetUserEmail: targetUserData?.email || null,
-      targetUserName: targetUserData?.displayName || null,
+      targetUserId: result.targetUserId,
+      adminUserId: result.adminUserId,
+      targetUserEmail: result.targetUserEmail || null,
+      targetUserName: result.targetUserName || null,
     });
   } catch (error) {
     console.error("Error in verify-impersonation API:", error);
     
-    // Capture error to Sentry
     Sentry.captureException(error, {
       tags: {
         route: "/api/admin/verify-impersonation",
@@ -98,6 +116,75 @@ export async function POST(request: Request) {
       },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * Shared function to verify and consume impersonation token
+ */
+async function verifyAndConsumeToken(token: string): Promise<{
+  success: boolean;
+  error?: string;
+  targetUserId?: string;
+  adminUserId?: string;
+  targetUserName?: string | null;
+  targetUserEmail?: string | null;
+}> {
+  try {
+
+    const adminDb = getAdminDb();
+    const tokenDoc = await adminDb.collection("impersonationTokens").doc(token).get();
+
+    if (!tokenDoc.exists) {
+      return { success: false, error: "Invalid token." };
+    }
+
+    const tokenData = tokenDoc.data();
+    
+    // Check if token has been used
+    if (tokenData?.used === true) {
+      return { success: false, error: "Token has already been used." };
+    }
+
+    // Check if token has expired
+    const expiresAt = tokenData?.expiresAt;
+    if (!expiresAt) {
+      return { success: false, error: "Invalid token data." };
+    }
+
+    const expirationTime = expiresAt.toDate ? expiresAt.toDate() : new Date(expiresAt);
+    if (expirationTime < new Date()) {
+      // Clean up expired token
+      await adminDb.collection("impersonationTokens").doc(token).delete();
+      return { success: false, error: "Token has expired." };
+    }
+
+    // Mark token as used (one-time use)
+    await adminDb.collection("impersonationTokens").doc(token).update({
+      used: true,
+      usedAt: Timestamp.now(),
+    });
+
+    // Get target user data for context
+    const targetUserDoc = await adminDb.collection("users").doc(tokenData.targetUserId).get();
+    const targetUserData = targetUserDoc.data();
+
+    return {
+      success: true,
+      targetUserId: tokenData.targetUserId,
+      adminUserId: tokenData.adminUserId,
+      targetUserEmail: targetUserData?.email || null,
+      targetUserName: targetUserData?.displayName || null,
+    };
+  } catch (error) {
+    console.error("Error verifying impersonation token:", error);
+    Sentry.captureException(error, {
+      tags: {
+        route: "/api/admin/verify-impersonation",
+        type: "admin_error",
+      },
+    });
+    return { success: false, error: "Internal server error." };
   }
 }
 
