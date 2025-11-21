@@ -22,6 +22,16 @@ export async function onRequestError(
   }
 ) {
   const { captureRequestError } = await import("@sentry/nextjs");
-  captureRequestError(err, request, context);
+  
+  // Convert Headers object to plain object for Sentry
+  const headersRecord: Record<string, string | string[] | undefined> = {};
+  request.headers.forEach((value, key) => {
+    headersRecord[key] = value;
+  });
+  
+  captureRequestError(err, {
+    ...request,
+    headers: headersRecord,
+  }, context);
 }
 
