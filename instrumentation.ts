@@ -29,9 +29,15 @@ export async function onRequestError(
     headersRecord[key] = value;
   });
   
+  // Ensure context has required routeType property
+  const errorContext = {
+    ...context,
+    routeType: context.routerKind === "pages" ? "pages" : "app",
+  };
+  
   captureRequestError(err, {
     ...request,
     headers: headersRecord,
-  }, context);
+  }, errorContext);
 }
 
