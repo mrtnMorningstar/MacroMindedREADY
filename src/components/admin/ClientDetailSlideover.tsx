@@ -14,6 +14,7 @@ import { db, storage } from "@/lib/firebase";
 import Slideover from "@/components/ui/Slideover";
 import AppModal from "@/components/ui/AppModal";
 import { useToast } from "@/components/ui/Toast";
+import { MealPlanStatus } from "@/types/status";
 
 type Client = {
   id: string;
@@ -57,7 +58,6 @@ export default function ClientDetailSlideover({
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showImpersonateBanner, setShowImpersonateBanner] = useState(false);
 
   useEffect(() => {
     if (client) {
@@ -66,7 +66,7 @@ export default function ClientDetailSlideover({
         email: (client.email || ""),
         packageTier: (client.packageTier || ""),
         referralCredits: (client.referralCredits ?? 0),
-        mealPlanStatus: (client.mealPlanStatus || "Not Started"),
+        mealPlanStatus: (client.mealPlanStatus || MealPlanStatus.NOT_STARTED),
         adminNotes: client.adminNotes || "",
         role: client.role || "",
       });
@@ -85,7 +85,45 @@ export default function ClientDetailSlideover({
         if (field === "referralCredits") updates.referralCredits = Number(formData.referralCredits);
         if (field === "mealPlanStatus") updates.mealPlanStatus = formData.mealPlanStatus;
         if (field === "adminNotes") updates.adminNotes = formData.adminNotes;
-        if (field === "role") updates.role = formData.role === "admin" ? "admin" : null;
+        
+        // Handle role changes via API route (which updates custom claims AND Firestore)
+        if (field === "role") {
+          const makeAdmin = formData.role === "admin";
+          
+          // Get the current user's ID token for authorization
+          const { auth } = await import("@/lib/firebase");
+          const { currentUser } = auth;
+          if (!currentUser) {
+            toast.error("You must be logged in to perform this action");
+            return;
+          }
+
+          const idToken = await currentUser.getIdToken();
+
+          // Use the API route which handles custom claims AND Firestore role field
+          const response = await fetch("/api/admin/setAdminRole", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${idToken}`,
+            },
+            body: JSON.stringify({
+              uid: client.id,
+              makeAdmin,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || "Failed to update admin role");
+          }
+
+          toast.success(`${field} updated successfully`);
+          setEditing(null);
+          onUpdate();
+          return;
+        }
 
         await updateDoc(doc(db, "users", client.id), updates);
         toast.success(`${field} updated successfully`);
@@ -146,10 +184,11 @@ export default function ClientDetailSlideover({
       setUploading(true);
 
       try {
+        const { uploadImageWithThumbnail } = await import("@/lib/image-utils");
         const uploadPromises = Array.from(files).map(async (file) => {
-          const storageRef = ref(storage, `mealPlans/${client.id}/images/${file.name}`);
-          await uploadBytesResumable(storageRef, file);
-          return getDownloadURL(storageRef);
+          const storagePath = `mealPlans/${client.id}/images/${file.name}`;
+          const { fullUrl } = await uploadImageWithThumbnail(file, storagePath);
+          return fullUrl; // Store only full URL, thumbnails are generated automatically
         });
 
         const urls = await Promise.all(uploadPromises);
@@ -173,7 +212,7 @@ export default function ClientDetailSlideover({
     if (!client) return;
     try {
       await updateDoc(doc(db, "users", client.id), {
-        mealPlanStatus: "Delivered",
+        mealPlanStatus: MealPlanStatus.DELIVERED,
         mealPlanDeliveredAt: serverTimestamp(),
       });
       toast.success("Meal plan marked as delivered");
@@ -202,41 +241,59 @@ export default function ClientDetailSlideover({
     }
   }, [client, toast, onClose, onUpdate]);
 
-  const handleImpersonate = useCallback(() => {
+  const handleImpersonate = useCallback(async () => {
     if (!client) return;
-    const clientName = (client.name || client.displayName || "User") as string;
-    localStorage.setItem("impersonateUserId", client.id);
-    localStorage.setItem("impersonateUserName", clientName);
-    setShowImpersonateBanner(true);
-    toast.info(`Impersonating ${clientName}`);
+    
+    try {
+      // Get current user's ID token for authorization
+      const { auth } = await import("@/lib/firebase");
+      const { currentUser } = auth;
+      
+      if (!currentUser) {
+        toast.error("You must be logged in to impersonate users");
+        return;
+      }
+
+      const idToken = await currentUser.getIdToken();
+
+      // Generate impersonation token via API
+      const response = await fetch("/api/admin/impersonate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          targetUserId: client.id,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to generate impersonation token");
+      }
+
+      // Redirect to dashboard with impersonation token
+      const dashboardUrl = new URL("/dashboard", window.location.origin);
+      dashboardUrl.searchParams.set("impersonate", data.token);
+      window.location.href = dashboardUrl.toString();
+    } catch (error) {
+      console.error("Failed to impersonate user:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to impersonate user");
+    }
   }, [client, toast]);
 
   const handleExitImpersonation = useCallback(() => {
-    localStorage.removeItem("impersonateUserId");
-    localStorage.removeItem("impersonateUserName");
-    setShowImpersonateBanner(false);
-    toast.info("Exited impersonation mode");
-  }, [toast]);
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set("exit-impersonation", "true");
+    window.location.href = currentUrl.toString();
+  }, []);
 
   if (!client) return null;
 
   return (
     <>
-      {/* Impersonation Banner */}
-      {showImpersonateBanner && (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-[#D7263D] text-white px-6 py-3 flex items-center justify-between">
-          <span className="font-semibold">
-            Impersonating {localStorage.getItem("impersonateUserName")} — Exit
-          </span>
-          <button
-            onClick={handleExitImpersonation}
-            className="rounded-lg bg-white/20 px-4 py-1 text-sm font-semibold hover:bg-white/30 transition"
-          >
-            Exit Impersonation
-          </button>
-        </div>
-      )}
-
       <Slideover
         isOpen={isOpen}
         onClose={onClose}
@@ -382,9 +439,9 @@ export default function ClientDetailSlideover({
                       onChange={(e) => setFormData({ ...formData, mealPlanStatus: e.target.value })}
                       className="flex-1 rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white focus:border-[#D7263D] focus:outline-none"
                     >
-                      <option value="Not Started">Not Started</option>
-                      <option value="In Progress">In Progress</option>
-                      <option value="Delivered">Delivered</option>
+                      <option value={MealPlanStatus.NOT_STARTED}>{MealPlanStatus.NOT_STARTED}</option>
+                      <option value={MealPlanStatus.IN_PROGRESS}>{MealPlanStatus.IN_PROGRESS}</option>
+                      <option value={MealPlanStatus.DELIVERED}>{MealPlanStatus.DELIVERED}</option>
                     </select>
                     <button
                       onClick={() => handleSave("mealPlanStatus")}
@@ -403,9 +460,9 @@ export default function ClientDetailSlideover({
                   <div className="flex items-center justify-between">
                     <span
                       className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${
-                        formData.mealPlanStatus === "Delivered"
+                        formData.mealPlanStatus === MealPlanStatus.DELIVERED
                           ? "bg-green-500/20 text-green-500 border-green-500/50"
-                          : formData.mealPlanStatus === "In Progress"
+                          : formData.mealPlanStatus === MealPlanStatus.IN_PROGRESS
                           ? "bg-amber-500/20 text-amber-500 border-amber-500/50"
                           : "bg-neutral-600/20 text-neutral-400 border-neutral-600/50"
                       }`}
@@ -543,7 +600,7 @@ export default function ClientDetailSlideover({
               </label>
               <button
                 onClick={handleMarkDelivered}
-                disabled={formData.mealPlanStatus === "Delivered"}
+                disabled={formData.mealPlanStatus === MealPlanStatus.DELIVERED}
                 className="flex items-center gap-2 rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50"
               >
                 <CheckIcon className="h-5 w-5" />

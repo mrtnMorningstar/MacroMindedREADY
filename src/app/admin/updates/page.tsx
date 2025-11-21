@@ -3,21 +3,18 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  collection,
   doc,
   getDoc,
-  onSnapshot,
-  orderBy,
-  query,
   serverTimestamp,
   updateDoc,
-  type DocumentData,
 } from "firebase/firestore";
 import { CheckIcon } from "@heroicons/react/24/outline";
 import { db } from "@/lib/firebase";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { SkeletonTable } from "@/components/common/Skeleton";
 import { useToast } from "@/components/ui/Toast";
+import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
+import { orderBy } from "firebase/firestore";
 
 type PlanUpdateRequest = {
   id: string;
@@ -31,22 +28,40 @@ type PlanUpdateRequest = {
 
 export default function AdminPlanUpdatesPage() {
   const [requests, setRequests] = useState<PlanUpdateRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [enriching, setEnriching] = useState(false);
   const [completingId, setCompletingId] = useState<string | null>(null);
   const toast = useToast();
 
+  // Use paginated query instead of real-time listener
+  // Note: Firestore doesn't support multiple orderBy fields easily in pagination
+  // So we'll order by date and filter handled status client-side
+  const {
+    data: rawRequests,
+    loading,
+    loadingMore,
+    hasMore,
+    loadMore,
+    refresh,
+  } = usePaginatedQuery<any>({
+    db,
+    collectionName: "planUpdateRequests",
+    pageSize: 25,
+    orderByField: "date",
+    orderByDirection: "desc",
+  });
+
+  // Enrich requests with user data asynchronously
   useEffect(() => {
-    setLoading(true);
-    const q = query(
-      collection(db, "planUpdateRequests"),
-      orderBy("handled", "asc"),
-      orderBy("date", "desc")
-    );
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const entries: PlanUpdateRequest[] = await Promise.all(
-        snapshot.docs.map(async (docSnapshot) => {
-          const data = docSnapshot.data() as DocumentData;
-          const userId = data?.userId ?? "";
+    if (rawRequests.length === 0) {
+      setRequests([]);
+      return;
+    }
+
+    setEnriching(true);
+    const enrichRequests = async () => {
+      const enriched = await Promise.all(
+        rawRequests.map(async (req: any) => {
+          const userId = req?.userId ?? "";
           let userName: string | null = null;
           let userEmail: string | null = null;
 
@@ -63,23 +78,31 @@ export default function AdminPlanUpdatesPage() {
           }
 
           return {
-            id: docSnapshot.id,
-            userId,
-            requestText: data?.requestText ?? "",
-            date: data?.date?.toDate ? data.date.toDate() : null,
-            handled: data?.handled ?? false,
+            ...req,
+            date: req.date?.toDate ? req.date.toDate() : null,
             userName,
             userEmail,
-          };
+          } as PlanUpdateRequest;
         })
       );
 
-      setRequests(entries);
-      setLoading(false);
-    });
+      // Sort: unhandled first, then by date descending
+      enriched.sort((a, b) => {
+        if (a.handled !== b.handled) {
+          return a.handled ? 1 : -1;
+        }
+        if (a.date && b.date) {
+          return b.date.getTime() - a.date.getTime();
+        }
+        return 0;
+      });
 
-    return () => unsubscribe();
-  }, []);
+      setRequests(enriched);
+      setEnriching(false);
+    };
+
+    enrichRequests();
+  }, [rawRequests]);
 
   const handleMarkHandled = useCallback(
     async (requestId: string) => {
@@ -90,6 +113,8 @@ export default function AdminPlanUpdatesPage() {
           handledAt: serverTimestamp(),
         });
         toast.success("Request marked as handled");
+        // Refresh to show updated state
+        await refresh();
       } catch (error) {
         console.error("Failed to mark as handled:", error);
         toast.error("Failed to update request");
@@ -97,7 +122,7 @@ export default function AdminPlanUpdatesPage() {
         setCompletingId(null);
       }
     },
-    [toast]
+    [toast, refresh]
   );
 
   const unhandledRequests = requests.filter((r) => !r.handled);
@@ -105,7 +130,7 @@ export default function AdminPlanUpdatesPage() {
 
   return (
     <AdminLayout>
-      {loading ? (
+      {loading || enriching ? (
         <SkeletonTable rows={5} />
       ) : (
         <div className="space-y-4">
@@ -199,6 +224,25 @@ export default function AdminPlanUpdatesPage() {
           {requests.length === 0 && (
             <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-12 text-center">
               <p className="text-sm text-neutral-400">No plan update requests found.</p>
+            </div>
+          )}
+
+          {/* Load More Button */}
+          {hasMore && (
+            <div className="mt-6">
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="w-full rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loadingMore ? "Loading..." : "Load More Updates"}
+              </button>
+            </div>
+          )}
+
+          {!hasMore && requests.length > 0 && (
+            <div className="mt-6 text-center">
+              <p className="text-sm text-neutral-400">All updates loaded</p>
             </div>
           )}
         </div>

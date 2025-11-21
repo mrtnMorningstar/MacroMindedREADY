@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState, useEffect } from "react";
-import { addDoc, collection, serverTimestamp, query, where, getDocs } from "firebase/firestore";
-import type { Timestamp } from "firebase/firestore";
+import { query, where, getDocs, collection } from "firebase/firestore";
 
 import LockedDashboard from "@/components/dashboard/LockedDashboard";
 import MealPlanStatusCard from "@/components/dashboard/MealPlanStatusCard";
@@ -11,21 +10,23 @@ import PlanTimelineCard from "@/components/dashboard/PlanTimelineCard";
 import MacrosOverviewCard from "@/components/dashboard/MacrosOverviewCard";
 import ReferralsCard from "@/components/dashboard/ReferralsCard";
 import RecipesPreviewCard from "@/components/dashboard/RecipesPreviewCard";
-import RequireWizard from "@/components/RequireWizard";
+import { RequireWizard } from "@/components/guards";
 import FullScreenLoader from "@/components/FullScreenLoader";
-import { useDashboard } from "@/context/dashboard-context";
+import { useAppContext } from "@/context/AppContext";
 import { db } from "@/lib/firebase";
-import { progressSteps, type MealPlanStatus } from "@/types/dashboard";
+import { parseFirestoreDate } from "@/lib/utils/date";
+import { progressSteps, type MealPlanStatusType } from "@/types/dashboard";
+import { MealPlanStatus } from "@/types/status";
 
 export default function DashboardOverviewPage() {
   const { user, data, loading, error, isUnlocked, signOutAndRedirect } =
-    useDashboard();
+    useAppContext();
 
-  const status: MealPlanStatus = useMemo(() => {
-    if (!data || !data.mealPlanStatus) return "Not Started";
-    return progressSteps.includes(data.mealPlanStatus)
-      ? data.mealPlanStatus
-      : "Not Started";
+  const status: MealPlanStatusType = useMemo(() => {
+    if (!data || !data.mealPlanStatus) return MealPlanStatus.NOT_STARTED;
+    return progressSteps.includes(data.mealPlanStatus as MealPlanStatusType)
+      ? (data.mealPlanStatus as MealPlanStatusType)
+      : MealPlanStatus.NOT_STARTED;
   }, [data]);
 
   const goal = data?.profile?.goal ?? null;
@@ -35,22 +36,6 @@ export default function DashboardOverviewPage() {
   const [requestError, setRequestError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [hasUpdateRequest, setHasUpdateRequest] = useState(false);
-
-  // Helper to parse Firestore timestamps to Date
-  const parseFirestoreDate = (
-    date?: Timestamp | { seconds: number; nanoseconds: number } | Date | null
-  ): Date | null => {
-    if (!date) return null;
-    if (date instanceof Date) return date;
-    if (typeof (date as Timestamp).toDate === "function") {
-      return (date as Timestamp).toDate();
-    }
-    if (typeof (date as { seconds: number }).seconds === "number") {
-      const value = date as { seconds: number; nanoseconds: number };
-      return new Date(value.seconds * 1000 + Math.floor(value.nanoseconds / 1_000_000));
-    }
-    return null;
-  };
 
   const accountCreatedAt = useMemo(() => {
     if (user?.metadata?.creationTime) {
@@ -121,19 +106,37 @@ export default function DashboardOverviewPage() {
     setRequestSubmitting(true);
     setRequestError(null);
     try {
-      await addDoc(collection(db, "planUpdateRequests"), {
-        userId: user.uid,
-        requestText: requestText.trim(),
-        date: serverTimestamp(),
-        handled: false,
+      // Get ID token for authentication
+      const idToken = await user.getIdToken();
+
+      // Call secure API route
+      const response = await fetch("/api/user/create-plan-update-request", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          requestText: requestText.trim(),
+        }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || errorData.message || "Failed to submit plan update request");
+      }
+
       setShowRequestModal(false);
       setRequestText("");
       setToastMessage("Thanks! Your coach has been notified.");
       window.setTimeout(() => setToastMessage(null), 4000);
     } catch (submitError) {
       console.error("Failed to submit plan update request:", submitError);
-      setRequestError("We couldn't send your request. Please try again.");
+      setRequestError(
+        submitError instanceof Error
+          ? submitError.message
+          : "We couldn't send your request. Please try again."
+      );
     } finally {
       setRequestSubmitting(false);
     }
@@ -194,7 +197,7 @@ export default function DashboardOverviewPage() {
         </section>
 
         {/* Plan Update Request Section (if delivered) */}
-        {status === "Delivered" && (
+        {status === MealPlanStatus.DELIVERED && (
           <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6 shadow-sm">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>

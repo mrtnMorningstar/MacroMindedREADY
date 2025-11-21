@@ -5,10 +5,10 @@ import {
   ReferralsCard,
 } from "@/components/dashboard/client-components";
 import { DashboardCardSkeleton } from "@/components/skeletons";
-import { useDashboard } from "@/context/dashboard-context";
+import { useAppContext } from "@/context/AppContext";
 
 export default function ReferralsPage() {
-  const { data, loading, error, isUnlocked } = useDashboard();
+  const { data, loading, error, isUnlocked } = useAppContext();
 
   if (loading) {
     return <DashboardCardSkeleton />;

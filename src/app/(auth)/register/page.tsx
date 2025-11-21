@@ -9,11 +9,10 @@ import {
   onAuthStateChanged,
   updateProfile,
 } from "firebase/auth";
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { FirebaseError } from "firebase/app";
 
 import { auth, db } from "@/lib/firebase";
-import { generateUniqueReferralCode } from "@/lib/referral";
 
 const heroEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
@@ -103,24 +102,26 @@ function RegisterForm() {
         displayName: trimmedName,
       });
 
-      // Generate unique referral code for the new user
-      const userReferralCode = await generateUniqueReferralCode(trimmedName);
+      // Get ID token for authentication
+      const idToken = await credential.user.getIdToken();
 
-      await setDoc(
-        doc(db, "users", credential.user.uid),
-        {
-          email,
-          displayName: trimmedName,
-          packageTier: null,
-          role: "member",
-          referralCode: userReferralCode,
-          referredBy: referredBy,
-          referralCredits: 0,
-          createdAt: serverTimestamp(),
-          macroWizardCompleted: false,
+      // Call secure API route to create user document
+      const response = await fetch("/api/user/create-user-document", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
         },
-        { merge: true }
-      );
+        body: JSON.stringify({
+          displayName: trimmedName,
+          referredBy: referredBy,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || errorData.message || "Failed to create user document");
+      }
 
       router.replace("/macro-wizard");
     } catch (err) {

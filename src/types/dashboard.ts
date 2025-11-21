@@ -1,9 +1,10 @@
 "use client";
 
 import type { Timestamp } from "firebase/firestore";
+import { MealPlanStatus, MEAL_PLAN_STATUSES } from "./status";
 
-export const progressSteps = ["Not Started", "In Progress", "Delivered"] as const;
-export type MealPlanStatus = (typeof progressSteps)[number];
+export const progressSteps = MEAL_PLAN_STATUSES;
+export type MealPlanStatusType = MealPlanStatus;
 
 export type Profile = {
   height?: string;
@@ -28,7 +29,7 @@ export type EstimatedMacros = {
 export type UserDashboardData = {
   displayName?: string | null;
   packageTier?: string | null;
-  mealPlanStatus?: MealPlanStatus | null;
+  mealPlanStatus?: MealPlanStatusType | null;
   profile?: Profile | null;
   mealPlanFileURL?: string | null;
   mealPlanImageURLs?: string[] | null;

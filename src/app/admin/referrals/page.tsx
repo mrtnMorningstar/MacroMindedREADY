@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { collection, onSnapshot, type QuerySnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { ReferralStats } from "@/components/admin/ReferralStats";
 import { SkeletonTable } from "@/components/common/Skeleton";
+import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
 
 type UserRecord = {
   id: string;
@@ -18,43 +18,27 @@ type UserRecord = {
 };
 
 export default function AdminReferralsPage() {
-  const [users, setUsers] = useState<UserRecord[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState(true);
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    setLoadingUsers(true);
-    const unsubscribe = onSnapshot(
-      collection(db, "users"),
-      (snapshot: QuerySnapshot) => {
-        const records: UserRecord[] = snapshot.docs
-          .map((docSnapshot) => {
-            const data = docSnapshot.data();
-            if (data?.role === "admin") {
-              return null;
-            }
-            return {
-              id: docSnapshot.id,
-              email: data?.email ?? null,
-              displayName: data?.displayName ?? null,
-              referralCode: data?.referralCode ?? null,
-              referralCredits: (data?.referralCredits ?? 0) as number,
-              referredBy: data?.referredBy ?? null,
-            } as UserRecord | null;
-          })
-          .filter((record): record is UserRecord => record !== null);
-
-        setUsers(records);
-        setLoadingUsers(false);
-      },
-      (error) => {
-        console.error("Failed to load users:", error);
-        setLoadingUsers(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, []);
+  // Use paginated query instead of full collection listener
+  const {
+    data: users,
+    loading: loadingUsers,
+    loadingMore,
+    hasMore,
+    loadMore,
+  } = usePaginatedQuery<UserRecord>({
+    db,
+    collectionName: "users",
+    pageSize: 25,
+    orderByField: "createdAt",
+    orderByDirection: "desc",
+    filterFn: (doc) => {
+      // Filter out admins for display purposes only (role field is display-only, NOT used for authorization)
+      if (doc.role === "admin") return false;
+      return true;
+    },
+  });
 
   const filteredUsers = useMemo(() => {
     if (!search.trim()) return users;
@@ -146,7 +130,27 @@ export default function AdminReferralsPage() {
               </tbody>
             </table>
           </div>
-          {filteredUsers.length === 0 && (
+
+          {/* Load More Button */}
+          {hasMore && (
+            <div className="border-t border-neutral-800 px-6 py-4">
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="w-full rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loadingMore ? "Loading..." : "Load More"}
+              </button>
+            </div>
+          )}
+
+          {!hasMore && filteredUsers.length > 0 && (
+            <div className="border-t border-neutral-800 px-6 py-4 text-center">
+              <p className="text-sm text-neutral-400">All users loaded</p>
+            </div>
+          )}
+
+          {filteredUsers.length === 0 && !loadingUsers && (
             <div className="px-6 py-12 text-center">
               <p className="text-sm text-neutral-400">No users found.</p>
             </div>

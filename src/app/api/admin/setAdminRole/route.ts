@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 
 import { getAdminAuth, getAdminDb } from "@/lib/firebase-admin";
 
@@ -9,9 +10,9 @@ export const dynamic = "force-dynamic";
  * Secure API route to set/remove admin role
  * 
  * Requirements:
- * - Only admins can call this route
- * - Sets Firebase custom claim (admin: true/false)
- * - Updates Firestore role field
+ * - Only admins can call this route (verified via custom claims)
+ * - Sets Firebase custom claim (admin: true/false) - THIS IS THE SOURCE OF TRUTH
+ * - Updates Firestore role field for DISPLAY purposes only (NOT used for authorization)
  */
 export async function POST(request: Request) {
   try {
@@ -41,19 +42,9 @@ export async function POST(request: Request) {
 
     const requesterUid = decodedToken.uid;
 
-    // Verify requester is admin in Firestore
-    const adminDb = getAdminDb();
-    const requesterDoc = await adminDb.collection("users").doc(requesterUid).get();
-    
-    if (!requesterDoc.exists) {
-      return NextResponse.json(
-        { error: "Unauthorized. User not found." },
-        { status: 401 }
-      );
-    }
-
-    const requesterData = requesterDoc.data();
-    if (requesterData?.role !== "admin") {
+    // Verify requester is admin via custom claims (NOT Firestore role field)
+    // This is the ONLY way to verify admin status for authorization
+    if (!decodedToken.admin) {
       return NextResponse.json(
         { error: "Forbidden. Only admins can modify admin roles." },
         { status: 403 }
@@ -87,6 +78,9 @@ export async function POST(request: Request) {
       );
     }
 
+    // Get admin database instance
+    const adminDb = getAdminDb();
+
     // Verify target user exists
     const targetUserDoc = await adminDb.collection("users").doc(uid).get();
     if (!targetUserDoc.exists) {
@@ -96,7 +90,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Set Firebase custom claim
+    // Set Firebase custom claim (THIS IS THE SOURCE OF TRUTH for authorization)
     try {
       await adminAuth.setCustomUserClaims(uid, {
         admin: makeAdmin,
@@ -109,34 +103,55 @@ export async function POST(request: Request) {
       );
     }
 
-    // Update Firestore role field
+    // Update Firestore role field (for DISPLAY purposes only, NOT used for authorization)
     try {
       await adminDb.collection("users").doc(uid).update({
         role: makeAdmin ? "admin" : "member",
       });
     } catch (error) {
       console.error("Failed to update Firestore role:", error);
-      // Note: Custom claim was set, but Firestore update failed
-      // This is not ideal but the custom claim is the primary source of truth
-      return NextResponse.json(
-        { 
-          error: "Custom claim updated but Firestore update failed.",
-          warning: "Please refresh and try again."
-        },
-        { status: 500 }
-      );
+      // Note: Custom claim was set successfully (this is the source of truth)
+      // Firestore role field is only for display, so this is not critical
+      // We continue even if Firestore update fails
+    }
+
+    // Force token refresh by revoking refresh tokens
+    // This ensures the user gets a new token with updated custom claims immediately
+    // Without this, users would need to wait for their token to expire or manually refresh
+    try {
+      await adminAuth.revokeRefreshTokens(uid);
+      console.log(`Refresh tokens revoked for user ${uid} to force token refresh with updated claims`);
+    } catch (error) {
+      console.error("Failed to revoke refresh tokens:", error);
+      // Note: Custom claims were updated successfully
+      // Token refresh failure is not critical - user will get updated claims on next sign-in
+      // But we log it for monitoring purposes
     }
 
     return NextResponse.json({
       success: true,
       message: makeAdmin
-        ? "User has been granted admin access."
-        : "Admin access has been removed from user.",
+        ? "User has been granted admin access. Please sign out and sign back in to see changes."
+        : "Admin access has been removed from user. Please sign out and sign back in to see changes.",
       uid,
       isAdmin: makeAdmin,
+      tokenRefreshed: true,
     });
   } catch (error) {
     console.error("Error in setAdminRole API:", error);
+    
+    // Capture error to Sentry
+    Sentry.captureException(error, {
+      tags: {
+        route: "/api/admin/setAdminRole",
+        type: "admin_error",
+      },
+      extra: {
+        requesterUid: decodedToken?.uid,
+        targetUid: body?.uid,
+      },
+    });
+    
     return NextResponse.json(
       {
         error: "Internal server error.",

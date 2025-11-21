@@ -1,12 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  collection,
-  onSnapshot,
-  query,
-  orderBy,
   updateDoc,
   doc,
   getDoc,
@@ -17,6 +13,7 @@ import { db } from "@/lib/firebase";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { SkeletonTable } from "@/components/common/Skeleton";
 import { useToast } from "@/components/ui/Toast";
+import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
 
 type PlanRequest = {
   id: string;
@@ -31,27 +28,45 @@ type PlanRequest = {
 type FilterType = "all" | "unhandled" | "handled";
 
 export default function PlanRequestsPage() {
-  const [requests, setRequests] = useState<PlanRequest[]>([]);
-  const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>("all");
   const toast = useToast();
 
-  useEffect(() => {
-    setLoading(true);
-    const q = query(collection(db, "planUpdateRequests"), orderBy("date", "desc"));
-    const unsubscribe = onSnapshot(
-      q,
-      async (snapshot) => {
-        const requestsData: PlanRequest[] = [];
+  // Use paginated query instead of real-time listener
+  const {
+    data: rawRequests,
+    loading,
+    loadingMore,
+    hasMore,
+    loadMore,
+    refresh,
+  } = usePaginatedQuery<any>({
+    db,
+    collectionName: "planUpdateRequests",
+    pageSize: 25,
+    orderByField: "date",
+    orderByDirection: "desc",
+  });
 
-        for (const docSnapshot of snapshot.docs) {
-          const data = docSnapshot.data();
+  const [requests, setRequests] = useState<PlanRequest[]>([]);
+  const [enriching, setEnriching] = useState(false);
+
+  // Enrich requests with user data asynchronously
+  useEffect(() => {
+    if (rawRequests.length === 0) {
+      setRequests([]);
+      return;
+    }
+
+    setEnriching(true);
+    const enrichRequests = async () => {
+      const enriched = await Promise.all(
+        rawRequests.map(async (req: any) => {
           let userName = "Unknown User";
           let userEmail = "No email";
 
           try {
-            const userDoc = await getDoc(doc(db, "users", data.userId));
+            const userDoc = await getDoc(doc(db, "users", req.userId));
             if (userDoc.exists()) {
               const userData = userDoc.data();
               userName = userData.displayName ?? "Unknown User";
@@ -61,28 +76,20 @@ export default function PlanRequestsPage() {
             console.error("Failed to fetch user:", error);
           }
 
-          requestsData.push({
-            id: docSnapshot.id,
-            userId: data.userId,
-            requestText: data.requestText ?? "",
-            date: data.date?.toDate ? data.date.toDate() : null,
-            handled: data.handled ?? false,
+          return {
+            ...req,
+            date: req.date?.toDate ? req.date.toDate() : null,
             userName,
             userEmail,
-          });
-        }
+          } as PlanRequest;
+        })
+      );
+      setRequests(enriched);
+      setEnriching(false);
+    };
 
-        setRequests(requestsData);
-        setLoading(false);
-      },
-      (error) => {
-        console.error("Failed to load requests:", error);
-        setLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, []);
+    enrichRequests();
+  }, [rawRequests]);
 
   const handleMarkHandled = useCallback(
     async (requestId: string) => {
@@ -91,12 +98,14 @@ export default function PlanRequestsPage() {
           handled: true,
         });
         toast.success("Request marked as handled");
+        // Refresh to show updated state
+        await refresh();
       } catch (error) {
         console.error("Failed to mark as handled:", error);
         toast.error("Failed to update request");
       }
     },
-    [toast]
+    [toast, refresh]
   );
 
   const handleMarkAllHandled = useCallback(async () => {
@@ -114,11 +123,13 @@ export default function PlanRequestsPage() {
       });
       await batch.commit();
       toast.success(`Marked ${unhandledRequests.length} requests as handled`);
+      // Refresh to show updated state
+      await refresh();
     } catch (error) {
       console.error("Failed to mark all as handled:", error);
       toast.error("Failed to update requests");
     }
-  }, [requests, toast]);
+  }, [requests, toast, refresh]);
 
   const formatTimeAgo = (date: Date | null) => {
     if (!date) return "Unknown";
@@ -178,7 +189,7 @@ export default function PlanRequestsPage() {
       </div>
 
       {/* Main Content */}
-      {loading ? (
+      {loading || enriching ? (
         <SkeletonTable rows={5} />
       ) : (
         <div className="space-y-4">
@@ -319,6 +330,25 @@ export default function PlanRequestsPage() {
           {requests.length === 0 && (
             <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-12 text-center">
               <p className="text-sm text-neutral-400">No plan update requests found.</p>
+            </div>
+          )}
+
+          {/* Load More Button */}
+          {hasMore && (
+            <div className="mt-6">
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="w-full rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loadingMore ? "Loading..." : "Load More Requests"}
+              </button>
+            </div>
+          )}
+
+          {!hasMore && requests.length > 0 && (
+            <div className="mt-6 text-center">
+              <p className="text-sm text-neutral-400">All requests loaded</p>
             </div>
           )}
         </div>

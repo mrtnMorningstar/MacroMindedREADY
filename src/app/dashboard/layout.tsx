@@ -1,30 +1,12 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import {
-  signOut,
-  type User as FirebaseUser,
-} from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
 
-import { auth, db } from "@/lib/firebase";
-import { DashboardProvider } from "@/context/dashboard-context";
-import type { DashboardContextValue } from "@/context/dashboard-context";
-import { generateUniqueReferralCode } from "@/lib/referral";
-import { getUserPurchase } from "@/lib/purchases";
-import type { UserDashboardData } from "@/types/dashboard";
-import { RequireAuth } from "@/components/auth";
-import { RequireProfileCompletion } from "@/components/guards";
-import { useAuth } from "@/context/AuthContext";
+import { RequireAuth, RequireProfileCompletion } from "@/components/guards";
+import { useAppContext } from "@/context/AppContext";
 import FullScreenLoader from "@/components/FullScreenLoader";
 
 const navItems = [
@@ -40,116 +22,13 @@ export default function DashboardLayout({
 }: {
   children: ReactNode;
 }) {
-  const router = useRouter();
   const pathname = usePathname();
-  const [checkingAuth, setCheckingAuth] = useState(true);
-  const [user, setUser] = useState<FirebaseUser | null>(null);
-  const [data, setData] = useState<UserDashboardData | null>(null);
-  const [purchase, setPurchase] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const loadDashboardData = useCallback(
-    async (uid: string) => {
-      setLoading(true);
-      setError(null);
-      try {
-        const userDocRef = doc(db, "users", uid);
-        const snapshot = await getDoc(userDocRef);
-        let nextData: UserDashboardData = {};
-        if (snapshot.exists()) {
-          nextData = (snapshot.data() as UserDashboardData) ?? {};
-
-          if (
-            !nextData.referralCode &&
-            nextData.displayName &&
-            typeof nextData.displayName === "string" &&
-            nextData.displayName.trim().length > 0
-          ) {
-            try {
-              const newReferralCode = await generateUniqueReferralCode(
-                nextData.displayName
-              );
-              if (newReferralCode && typeof newReferralCode === "string") {
-                await setDoc(
-                  userDocRef,
-                  {
-                    referralCode: newReferralCode,
-                    referralCredits: nextData.referralCredits ?? 0,
-                  },
-                  { merge: true }
-                );
-                nextData.referralCode = newReferralCode;
-                nextData.referralCredits = nextData.referralCredits ?? 0;
-              }
-            } catch (referralError) {
-              console.error("Failed to generate referral code:", referralError);
-            }
-          }
-        }
-        setData(nextData);
-
-        const userPurchase = await getUserPurchase(uid);
-        if (!userPurchase && nextData.packageTier) {
-          setPurchase({ planType: nextData.packageTier, status: "paid" });
-        } else {
-          setPurchase(userPurchase);
-        }
-      } catch (fetchError) {
-        console.error("Failed to load dashboard data:", fetchError);
-        setError("We couldn't load your dashboard. Please refresh.");
-        setData({});
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
-  );
-
-  const { user: authUser } = useAuth();
-
-  useEffect(() => {
-    if (!authUser) {
-      setUser(null);
-      setCheckingAuth(false);
-      return;
-    }
-
-    setUser(authUser);
-    setCheckingAuth(false);
-    void loadDashboardData(authUser.uid);
-  }, [authUser, loadDashboardData]);
-
-  const refresh = useCallback(async () => {
-    if (user) {
-      await loadDashboardData(user.uid);
-    }
-  }, [loadDashboardData, user]);
-
-  const signOutAndRedirect = useCallback(async () => {
-    await signOut(auth);
-    router.replace("/login");
-  }, [router]);
-
-  const contextValue: DashboardContextValue = useMemo(
-    () => ({
-      user,
-      data,
-      purchase,
-      loading,
-      error,
-      refresh,
-      signOutAndRedirect,
-      isUnlocked: !!(purchase || data?.packageTier),
-    }),
-    [data, error, loading, purchase, refresh, signOutAndRedirect, user]
-  );
+  const { user, loading } = useAppContext();
 
   return (
     <RequireAuth>
-      {checkingAuth || !user ? <FullScreenLoader /> : (
+      {loading || !user ? <FullScreenLoader /> : (
         <RequireProfileCompletion>
-          <DashboardProvider value={contextValue}>
               <div className="flex min-h-screen bg-background text-foreground">
         <motion.aside
           initial={{ x: -40, opacity: 0 }}
@@ -196,11 +75,9 @@ export default function DashboardLayout({
 
           <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-14">
             {children}
-              </div>
-            </div>
           </div>
-        </DashboardProvider>
-          </RequireProfileCompletion>
+        </div>
+        </RequireProfileCompletion>
         )}
     </RequireAuth>
   );

@@ -1,86 +1,184 @@
-import {
-  collection,
-  doc,
-  getDocs,
-  limit,
-  orderBy,
-  query,
-  updateDoc,
-  where,
-  serverTimestamp,
-} from "firebase/firestore";
+import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
+import { FieldValue } from "firebase-admin/firestore";
 
-import { db } from "@/lib/firebase";
+import { getAdminAuth, getAdminDb } from "@/lib/firebase-admin";
 import { sendEmail } from "@/lib/email";
+import { MealPlanDeliveredEmail } from "../../../../emails/meal-plan-delivered";
+import { MealPlanStatus } from "@/types/status";
+import type { DecodedIdToken, MarkPlanDeliveredRequest } from "@/types/api";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+/**
+ * Secure API route to mark a meal plan as delivered
+ * 
+ * Requirements:
+ * - Only admins can mark plans as delivered (verified via custom claims)
+ * - Uses Firebase Admin SDK for secure Firestore writes
+ * - Updates user document and purchase record
+ * - Sends delivery email notification
+ */
 export async function POST(request: Request) {
-  try {
-    const { userId, mealPlanUrl, name, email } = await request.json();
+  let decodedToken: DecodedIdToken | undefined;
+  let body: MarkPlanDeliveredRequest | undefined;
 
-    if (!userId || !email) {
-      return new Response("Missing required fields", { status: 400 });
+  try {
+    // Get the authorization header
+    const authHeader = request.headers.get("authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return NextResponse.json(
+        { error: "Unauthorized. Missing or invalid authorization header." },
+        { status: 401 }
+      );
     }
 
+    const idToken = authHeader.replace("Bearer ", "");
+
+    // Verify the token and get the user
+    const adminAuth = getAdminAuth();
+    try {
+      decodedToken = await adminAuth.verifyIdToken(idToken) as DecodedIdToken;
+    } catch (error) {
+      console.error("Token verification failed:", error);
+      return NextResponse.json(
+        { error: "Unauthorized. Invalid token." },
+        { status: 401 }
+      );
+    }
+
+    // Verify requester is admin via custom claims (NOT Firestore role field)
+    if (!decodedToken.admin) {
+      return NextResponse.json(
+        { error: "Forbidden. Only admins can mark plans as delivered." },
+        { status: 403 }
+      );
+    }
+
+    // Parse request body
+    body = await request.json() as MarkPlanDeliveredRequest;
+
+    // Validate input
+    const { userId, mealPlanUrl, name, email } = body;
+    
+    if (!userId || typeof userId !== "string" || !email || typeof email !== "string") {
+      return NextResponse.json(
+        { error: "Missing required fields: userId and email are required." },
+        { status: 400 }
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: "Invalid email format." },
+        { status: 400 }
+      );
+    }
+
+    // Get admin database instance
+    const adminDb = getAdminDb();
+
+    // Verify user exists
+    const userDocRef = adminDb.collection("users").doc(userId);
+    const userDoc = await userDocRef.get();
+    if (!userDoc.exists) {
+      return NextResponse.json(
+        { error: "User not found." },
+        { status: 404 }
+      );
+    }
+
+    // Prepare updates
     const updates: Record<string, unknown> = {
-      mealPlanStatus: "Delivered",
-      deliveredAt: serverTimestamp(),
+      mealPlanStatus: MealPlanStatus.DELIVERED,
+      deliveredAt: FieldValue.serverTimestamp(),
+      mealPlanDeliveredAt: FieldValue.serverTimestamp(),
     };
-    if (mealPlanUrl) {
+    if (mealPlanUrl && typeof mealPlanUrl === "string") {
       updates.mealPlanUrl = mealPlanUrl;
       updates.mealPlanFileURL = mealPlanUrl;
     }
-    updates.mealPlanDeliveredAt = serverTimestamp();
 
-    await updateDoc(doc(db, "users", userId), updates);
+    // Update user document via Admin SDK
+    await userDocRef.update(updates);
 
+    // Update purchase record
     try {
-      const purchaseQuery = query(
-        collection(db, "purchases"),
-        where("userId", "==", userId),
-        where("status", "==", "paid"),
-        orderBy("createdAt", "desc"),
-        limit(1)
-      );
-      const snapshot = await getDocs(purchaseQuery);
-      const latestPurchase = snapshot.docs[0];
+      const purchaseQuery = adminDb
+        .collection("purchases")
+        .where("userId", "==", userId)
+        .where("status", "==", "paid")
+        .orderBy("createdAt", "desc")
+        .limit(1);
+      
+      const purchaseSnapshot = await purchaseQuery.get();
+      const latestPurchase = purchaseSnapshot.docs[0];
 
       if (latestPurchase) {
-        await updateDoc(latestPurchase.ref, {
+        await latestPurchase.ref.update({
           status: "delivered",
           mealPlanUrl: mealPlanUrl ?? null,
-          deliveredAt: serverTimestamp(),
+          deliveredAt: FieldValue.serverTimestamp(),
         });
       } else {
         console.warn(`No pending purchase found for user ${userId}`);
       }
     } catch (purchaseError) {
       console.error("Failed to update purchase record:", purchaseError);
+      // Log to Sentry but don't fail the request
+      Sentry.captureException(purchaseError, {
+        tags: {
+          route: "/api/mark-plan-delivered",
+          type: "purchase_update_warning",
+        },
+        extra: {
+          userId,
+        },
+      });
     }
 
-    const greeting = name ? `<p>Hi ${name},</p>` : "";
-    const planLink = mealPlanUrl
-      ? `<p><a href="${mealPlanUrl}" style="color:#D7263D; font-weight:bold;">View Your Meal Plan</a></p>`
-      : "<p>Log into your MacroMinded dashboard to download your meal plan.</p>";
-
+    // Send delivery email
     await sendEmail({
       to: email,
       subject: "Your Custom Meal Plan is Ready",
-      html: `
-        <h2 style="font-weight:600; color:#111;">Your Plan Is Ready</h2>
-        ${greeting}
-        <p>Your personalized meal plan has been completed based on your metrics and goals.</p>
-        <p>You can access it here:</p>
-        ${planLink}
-        <p>Follow the guidance consistently. Progress will follow.</p>
-        <br>
-        <p>Respectfully,<br><strong>MacroMinded</strong></p>
-      `,
+      react: MealPlanDeliveredEmail({
+        name: name || undefined,
+        mealPlanUrl: mealPlanUrl || undefined,
+        dashboardUrl: process.env.NEXT_PUBLIC_APP_URL
+          ? `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
+          : undefined,
+      }),
     });
 
-    return new Response("OK");
+    return NextResponse.json({
+      success: true,
+      message: "Plan marked as delivered successfully.",
+    });
   } catch (error) {
     console.error("Failed to mark plan as delivered:", error);
-    return new Response("Failed to mark plan as delivered", { status: 500 });
+    
+    // Capture error to Sentry
+    Sentry.captureException(error, {
+      tags: {
+        route: "/api/mark-plan-delivered",
+        type: "delivery_error",
+      },
+      extra: {
+        userId: body?.userId,
+        requesterUid: decodedToken?.uid,
+      },
+    });
+    
+    return NextResponse.json(
+      {
+        error: "Internal server error.",
+        message: error instanceof Error ? error.message : "Unknown error occurred.",
+      },
+      { status: 500 }
+    );
   }
 }
 

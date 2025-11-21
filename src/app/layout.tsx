@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Anton } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/context/AuthContext";
+import { AppProvider } from "@/context/AppContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PageTransition from "@/components/ui/PageTransition";
 import { ToastProvider } from "@/components/ui/Toast";
+import ImpersonationBanner from "@/components/admin/ImpersonationBanner";
+import { ErrorBoundaryWrapper } from "@/components/ErrorBoundaryWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,17 +41,20 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${anton.variable} bg-background text-foreground antialiased`}
       >
-        <AuthProvider>
-          <ToastProvider>
-            <div className="flex min-h-screen flex-col bg-background">
-              <Navbar />
-              <main className="flex-1">
-                <PageTransition>{children}</PageTransition>
-              </main>
-              <Footer />
-            </div>
-          </ToastProvider>
-        </AuthProvider>
+        <ErrorBoundaryWrapper>
+          <AppProvider>
+            <ToastProvider>
+              <div className="flex min-h-screen flex-col bg-background">
+                <ImpersonationBanner />
+                <Navbar />
+                <main className="flex-1">
+                  <PageTransition>{children}</PageTransition>
+                </main>
+                <Footer />
+              </div>
+            </ToastProvider>
+          </AppProvider>
+        </ErrorBoundaryWrapper>
       </body>
     </html>
   );

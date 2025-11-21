@@ -24,6 +24,7 @@ import { db, storage } from "@/lib/firebase";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { SkeletonCard } from "@/components/common/Skeleton";
 import { useToast } from "@/components/ui/Toast";
+import { MealPlanStatus } from "@/types/status";
 
 export default function ClientDetailPage() {
   const params = useParams<{ userId: string }>();
@@ -83,7 +84,7 @@ export default function ClientDetailPage() {
     if (!userId) return;
     try {
       await updateDoc(doc(db, "users", userId), {
-        mealPlanStatus: "Delivered",
+        mealPlanStatus: MealPlanStatus.DELIVERED,
         mealPlanDeliveredAt: serverTimestamp(),
       });
       toast.success("Meal plan marked as delivered");
@@ -145,10 +146,11 @@ export default function ClientDetailPage() {
     setUploading(true);
 
     try {
+      const { uploadImageWithThumbnail } = await import("@/lib/image-utils");
       const uploadPromises = Array.from(files).map(async (file) => {
-        const storageRef = ref(storage, `mealPlans/${userId}/images/${file.name}`);
-        await uploadBytesResumable(storageRef, file);
-        return getDownloadURL(storageRef);
+        const storagePath = `mealPlans/${userId}/images/${file.name}`;
+        const { fullUrl } = await uploadImageWithThumbnail(file, storagePath);
+        return fullUrl; // Store only full URL, thumbnails are generated automatically
       });
 
       const urls = await Promise.all(uploadPromises);
@@ -250,14 +252,14 @@ export default function ClientDetailPage() {
             <p className="text-xs uppercase tracking-wide text-neutral-400 mb-2">Plan Status</p>
             <span
               className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${
-                userData.mealPlanStatus === "Delivered"
+                userData.mealPlanStatus === MealPlanStatus.DELIVERED
                   ? "bg-green-500/20 text-green-500 border-green-500/50"
-                  : userData.mealPlanStatus === "In Progress"
+                  : userData.mealPlanStatus === MealPlanStatus.IN_PROGRESS
                   ? "bg-amber-500/20 text-amber-500 border-amber-500/50"
                   : "bg-neutral-600/20 text-neutral-400 border-neutral-600/50"
               }`}
             >
-              {userData.mealPlanStatus ?? "Not Started"}
+              {userData.mealPlanStatus ?? MealPlanStatus.NOT_STARTED}
             </span>
           </div>
           <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
@@ -303,7 +305,7 @@ export default function ClientDetailPage() {
             </label>
             <button
               onClick={handleMarkDelivered}
-              disabled={userData.mealPlanStatus === "Delivered"}
+              disabled={userData.mealPlanStatus === MealPlanStatus.DELIVERED}
               className="flex items-center gap-2 rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <CheckIcon className="h-5 w-5" />

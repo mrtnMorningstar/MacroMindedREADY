@@ -1,10 +1,53 @@
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { sendEmail } from "@/lib/email";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { getAdminAuth } from "@/lib/firebase-admin";
+import { ReminderEmail } from "../../../../../emails/reminder-email";
+import { MealPlanStatus } from "@/types/status";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+/**
+ * Admin-only API route to send reminder emails
+ * Authorization is verified via Firebase custom claims (NOT Firestore role field)
+ */
 export async function POST(request: Request) {
   try {
+    // Get the authorization header
+    const authHeader = request.headers.get("authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return NextResponse.json(
+        { error: "Unauthorized. Missing or invalid authorization header." },
+        { status: 401 }
+      );
+    }
+
+    const idToken = authHeader.replace("Bearer ", "");
+
+    // Verify the token and check admin status via custom claims
+    const adminAuth = getAdminAuth();
+    let decodedToken;
+    try {
+      decodedToken = await adminAuth.verifyIdToken(idToken);
+    } catch (error) {
+      console.error("Token verification failed:", error);
+      return NextResponse.json(
+        { error: "Unauthorized. Invalid token." },
+        { status: 401 }
+      );
+    }
+
+    // Verify requester is admin via custom claims (NOT Firestore role field)
+    if (!decodedToken.admin) {
+      return NextResponse.json(
+        { error: "Forbidden. Only admins can send reminder emails." },
+        { status: 403 }
+      );
+    }
+
     const { userId, email, name } = await request.json();
 
     if (!email || !userId) {
@@ -18,40 +61,36 @@ export async function POST(request: Request) {
     const userDoc = await getDoc(doc(db, "users", userId));
     const userData = userDoc.data();
     const packageTier = userData?.packageTier ?? "your plan";
-    const mealPlanStatus = userData?.mealPlanStatus ?? "Not Started";
-
-    const greeting = name ? `Hi ${name},` : "Hi there,";
-
-    let statusMessage = "";
-    if (mealPlanStatus === "Not Started") {
-      statusMessage = "We're working on your personalized meal plan and will have it ready soon.";
-    } else if (mealPlanStatus === "In Progress") {
-      statusMessage = "Your meal plan is currently being prepared by our team.";
-    } else if (mealPlanStatus === "Delivered") {
-      statusMessage = "Your meal plan has been delivered! Don't forget to check your dashboard for updates.";
-    } else {
-      statusMessage = "We wanted to remind you about your MacroMinded meal plan.";
-    }
+    const mealPlanStatus = userData?.mealPlanStatus ?? MealPlanStatus.NOT_STARTED;
 
     await sendEmail({
       to: email,
       subject: "Reminder: Your MacroMinded Meal Plan",
-      html: `
-        <h2 style="font-weight:600; color:#111;">Meal Plan Reminder</h2>
-        <p>${greeting}</p>
-        <p>${statusMessage}</p>
-        <p>Your ${packageTier} plan is an important part of your fitness journey. Stay consistent and follow the guidance provided.</p>
-        <p>You can access your dashboard at any time to view your plan, track progress, and request updates.</p>
-        <br>
-        <p>If you have any questions, feel free to reach out to our support team.</p>
-        <br>
-        <p>Respectfully,<br><strong>MacroMinded Team</strong></p>
-      `,
+      react: ReminderEmail({
+        name: name || undefined,
+        packageTier: packageTier || undefined,
+        mealPlanStatus: mealPlanStatus || undefined,
+        dashboardUrl: process.env.NEXT_PUBLIC_APP_URL
+          ? `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
+          : undefined,
+      }),
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Failed to send reminder email:", error);
+    
+    // Capture error to Sentry
+    Sentry.captureException(error, {
+      tags: {
+        route: "/api/admin/send-reminder-email",
+        type: "email_error",
+      },
+      extra: {
+        userId: body?.userId,
+      },
+    });
+    
     return NextResponse.json(
       { error: "Failed to send reminder email" },
       { status: 500 }

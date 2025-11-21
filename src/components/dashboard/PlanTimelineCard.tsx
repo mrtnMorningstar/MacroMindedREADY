@@ -8,12 +8,13 @@ import {
   ShoppingCartIcon,
   DocumentTextIcon,
 } from "@heroicons/react/24/solid";
-import type { MealPlanStatus } from "@/types/dashboard";
+import type { MealPlanStatusType } from "@/types/dashboard";
+import { MealPlanStatus } from "@/types/status";
 
 type PlanTimelineCardProps = {
   accountCreatedAt: Date | null;
   purchaseDate: Date | null;
-  mealPlanStatus: MealPlanStatus | string | null;
+  mealPlanStatus: MealPlanStatusType | string | null;
   mealPlanDeliveredAt: Date | null;
 };
 
@@ -50,14 +51,14 @@ export default function PlanTimelineCard({
       id: "progress",
       label: "Plan In Progress",
       icon: ClockIcon,
-      completed: mealPlanStatus === "In Progress" || mealPlanStatus === "Delivered",
+      completed: mealPlanStatus === MealPlanStatus.IN_PROGRESS || mealPlanStatus === MealPlanStatus.DELIVERED,
       date: null,
     },
     {
       id: "delivered",
       label: "Plan Delivered",
       icon: DocumentTextIcon,
-      completed: mealPlanStatus === "Delivered",
+      completed: mealPlanStatus === MealPlanStatus.DELIVERED,
       date: mealPlanDeliveredAt,
     },
   ];

@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { SkeletonCard } from "@/components/common/Skeleton";
+import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
+import { Timestamp, where } from "firebase/firestore";
 
 type PurchaseRecord = {
   id: string;
@@ -20,35 +21,46 @@ type TierMetrics = {
 };
 
 export default function AdminSalesPage() {
-  const [purchases, setPurchases] = useState<PurchaseRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Limit to purchases from the last year for metrics calculation
+  // This reduces database reads while still providing accurate metrics
+  const oneYearAgo = Timestamp.fromDate(new Date(Date.now() - 365 * 24 * 60 * 60 * 1000));
 
-  useEffect(() => {
-    setLoading(true);
-    const unsubscribe = onSnapshot(collection(db, "purchases"), (snapshot) => {
-      const records: PurchaseRecord[] = snapshot.docs.map((docSnapshot) => {
-        const data = docSnapshot.data();
-        const amount = Number(data?.amount ?? 0);
-        const tier = (data?.planType ?? data?.tier ?? "Basic") as PurchaseRecord["tier"];
-        const created = data?.createdAt?.toDate
-          ? data.createdAt.toDate()
-          : data?.createdAt instanceof Date
-          ? data.createdAt
-          : null;
+  const {
+    data: rawPurchases,
+    loading,
+    loadingMore,
+    hasMore,
+    loadMore,
+  } = usePaginatedQuery<any>({
+    db,
+    collectionName: "purchases",
+    pageSize: 100, // Larger page size for metrics
+    orderByField: "createdAt",
+    orderByDirection: "desc",
+    additionalConstraints: [
+      where("createdAt", ">=", oneYearAgo),
+    ],
+  });
 
-        return {
-          id: docSnapshot.id,
-          amount: isFinite(amount) ? amount : 0,
-          tier: ["Basic", "Pro", "Elite"].includes(tier) ? tier : "Basic",
-          createdAt: created,
-        };
-      });
-      setPurchases(records);
-      setLoading(false);
+  // Transform purchases
+  const purchases = useMemo(() => {
+    return rawPurchases.map((p: any) => {
+      const amount = Number(p?.amount ?? 0);
+      const tier = (p?.planType ?? p?.tier ?? "Basic") as PurchaseRecord["tier"];
+      const created = p?.createdAt?.toDate
+        ? p.createdAt.toDate()
+        : p?.createdAt instanceof Date
+        ? p.createdAt
+        : null;
+
+      return {
+        id: p.id,
+        amount: isFinite(amount) ? amount : 0,
+        tier: ["Basic", "Pro", "Elite"].includes(tier) ? tier : "Basic",
+        createdAt: created,
+      };
     });
-
-    return () => unsubscribe();
-  }, []);
+  }, [rawPurchases]);
 
   const metrics = useMemo(() => {
     const tierMetrics: Record<PurchaseRecord["tier"], TierMetrics> = {
@@ -190,6 +202,19 @@ export default function AdminSalesPage() {
           ))}
         </div>
       </div>
+
+      {/* Load More Button (if needed for detailed view) */}
+      {hasMore && (
+        <div className="mt-6">
+          <button
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="w-full rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loadingMore ? "Loading..." : "Load More Purchases (Last Year)"}
+          </button>
+        </div>
+      )}
     </AdminLayout>
   );
 }

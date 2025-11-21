@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { collection, onSnapshot, doc, getDoc, type DocumentData } from "firebase/firestore";
 import { EyeIcon } from "@heroicons/react/24/outline";
 import { db } from "@/lib/firebase";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { SkeletonTable } from "@/components/common/Skeleton";
 import ClientDetailSlideover from "@/components/admin/ClientDetailSlideover";
+import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
+import { MealPlanStatus } from "@/types/status";
 
 type PendingUser = {
   id: string;
@@ -24,63 +25,66 @@ type PendingUser = {
 };
 
 export default function AdminRequestsPage() {
-  const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState<PendingUser[]>([]);
   const [selectedClient, setSelectedClient] = useState<PendingUser | null>(null);
   const [slideoverOpen, setSlideoverOpen] = useState(false);
 
-  useEffect(() => {
-    setLoading(true);
-    const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
-      const pending: PendingUser[] = snapshot.docs
-        .map((docSnapshot) => {
-          const data = docSnapshot.data() as DocumentData;
-          const status = data?.mealPlanStatus ?? "Not Started";
-          if (data?.role === "admin") return null;
-          if (!status || status === "Delivered") return null;
+  // Use paginated query instead of full collection listener
+  const {
+    data: rawUsers,
+    loading,
+    loadingMore,
+    hasMore,
+    loadMore,
+    refresh,
+  } = usePaginatedQuery<any>({
+    db,
+    collectionName: "users",
+    pageSize: 25,
+    orderByField: "createdAt",
+    orderByDirection: "desc",
+    filterFn: (doc) => {
+      const status = doc.mealPlanStatus ?? MealPlanStatus.NOT_STARTED;
+      // Filter out admins for display purposes only (role field is display-only, NOT used for authorization)
+      if (doc.role === "admin") return false;
+      // Only show pending requests (not delivered)
+      if (!status || status === MealPlanStatus.DELIVERED) return false;
+      return true;
+    },
+  });
 
-          const createdAt = data?.createdAt?.toDate
-            ? data.createdAt.toDate()
-            : data?.createdAt instanceof Date
-            ? data.createdAt
-            : null;
+  // Transform data with proper date handling
+  const users = useMemo(() => {
+    return rawUsers.map((user: any) => {
+      const createdAt = user.createdAt;
+      let createdAtDate: Date | null = null;
+      if (createdAt?.toDate) {
+        createdAtDate = createdAt.toDate();
+      } else if (createdAt instanceof Date) {
+        createdAtDate = createdAt;
+      }
 
-          return {
-            id: docSnapshot.id,
-            name: data?.displayName ?? "Unnamed User",
-            email: data?.email ?? "No email",
-            packageTier: data?.packageTier ?? null,
-            mealPlanStatus: status,
-            createdAt,
-            mealPlanFileURL: data?.mealPlanFileURL ?? null,
-            mealPlanImageURLs: data?.mealPlanImageURLs ?? null,
-            adminNotes: data?.adminNotes ?? null,
-            role: data?.role ?? null,
-            referralCredits: data?.referralCredits ?? 0,
-          };
-        })
-        .filter(Boolean) as PendingUser[];
-
-      setUsers(pending);
-      setLoading(false);
+      return {
+        ...user,
+        name: user.displayName ?? "Unnamed User",
+        createdAt: createdAtDate,
+      } as PendingUser;
     });
-
-    return () => unsubscribe();
-  }, []);
+  }, [rawUsers]);
 
   const handleViewClient = (user: PendingUser) => {
     setSelectedClient(user);
     setSlideoverOpen(true);
   };
 
-  const handleRefresh = () => {
-    setUsers([...users]);
-  };
 
   return (
     <AdminLayout>
       {loading ? (
         <SkeletonTable rows={8} />
+      ) : users.length === 0 ? (
+        <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-12 text-center">
+          <p className="text-sm text-neutral-400">No pending requests found.</p>
+        </div>
       ) : (
         <div className="rounded-2xl border border-neutral-800 bg-neutral-900 overflow-hidden">
           <div className="overflow-x-auto">
@@ -128,7 +132,7 @@ export default function AdminRequestsPage() {
                     <td className="px-6 py-4">
                       <span
                         className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${
-                          user.mealPlanStatus === "In Progress"
+                          user.mealPlanStatus === MealPlanStatus.IN_PROGRESS
                             ? "bg-amber-500/20 text-amber-500 border-amber-500/50"
                             : "bg-neutral-600/20 text-neutral-400 border-neutral-600/50"
                         }`}
@@ -150,9 +154,23 @@ export default function AdminRequestsPage() {
               </tbody>
             </table>
           </div>
-          {users.length === 0 && (
-            <div className="px-6 py-12 text-center">
-              <p className="text-sm text-neutral-400">No pending requests found.</p>
+
+          {/* Load More Button */}
+          {hasMore && (
+            <div className="border-t border-neutral-800 px-6 py-4">
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="w-full rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loadingMore ? "Loading..." : "Load More"}
+              </button>
+            </div>
+          )}
+
+          {!hasMore && users.length > 0 && (
+            <div className="border-t border-neutral-800 px-6 py-4 text-center">
+              <p className="text-sm text-neutral-400">All requests loaded</p>
             </div>
           )}
         </div>
@@ -166,7 +184,7 @@ export default function AdminRequestsPage() {
           setSlideoverOpen(false);
           setSelectedClient(null);
         }}
-        onUpdate={handleRefresh}
+        onUpdate={refresh}
       />
     </AdminLayout>
   );

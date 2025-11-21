@@ -1,14 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { useAuth } from "@/context/AuthContext";
-import { auth, db } from "@/lib/firebase";
-import { getUserPurchase } from "@/lib/purchases";
+import { useAppContext } from "@/context/AppContext";
+import { auth } from "@/lib/firebase";
 import SessionExpiredModal from "./modals/SessionExpiredModal";
 
 const publicNavLinks = [
@@ -19,43 +17,12 @@ const publicNavLinks = [
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, loadingAuth, sessionExpired, setSessionExpired } = useAuth();
+  const { user, isAdmin, isUnlocked, loadingAuth, sessionExpired, setSessionExpired } = useAppContext();
 
   // Hide navbar on admin routes
   if (pathname?.startsWith("/admin")) {
     return null;
   }
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [hasPackage, setHasPackage] = useState(false);
-  const [checkingRole, setCheckingRole] = useState(false);
-
-  // Check if user is admin and has package
-  useEffect(() => {
-    if (!user || loadingAuth) {
-      setIsAdmin(false);
-      setHasPackage(false);
-      return;
-    }
-
-    const checkUserData = async () => {
-      setCheckingRole(true);
-      try {
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        const role = userDoc.data()?.role;
-        setIsAdmin(role === "admin");
-
-        const purchase = await getUserPurchase(user.uid);
-        const packageTier = userDoc.data()?.packageTier;
-        setHasPackage(!!(purchase || packageTier));
-      } catch (error) {
-        console.error("Failed to check user data:", error);
-      } finally {
-        setCheckingRole(false);
-      }
-    };
-
-    checkUserData();
-  }, [user, loadingAuth]);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -79,7 +46,7 @@ export default function Navbar() {
     // If user is logged in, show Dashboard
     return [
       ...publicNavLinks,
-      ...(hasPackage ? [{ href: "/dashboard", label: "Dashboard" }] : []),
+      ...(isUnlocked ? [{ href: "/dashboard", label: "Dashboard" }] : []),
     ];
   };
 
@@ -148,7 +115,7 @@ export default function Navbar() {
           </nav>
 
           <div className="flex items-center">
-            {loadingAuth || checkingRole ? (
+            {loadingAuth ? (
               <span className="h-8 w-24 animate-pulse rounded-full bg-muted/60" />
             ) : user ? (
               <button

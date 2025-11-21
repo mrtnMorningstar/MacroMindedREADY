@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { useDashboard } from "@/context/dashboard-context";
+import { useAppContext } from "@/context/AppContext";
 import {
   LockedDashboardScreen,
 } from "@/components/dashboard/client-components";
@@ -10,7 +10,7 @@ import { DashboardCardSkeleton } from "@/components/skeletons";
 import { CTA_BUTTON_CLASSES } from "@/lib/ui";
 
 export default function SupportPage() {
-  const { loading, error, isUnlocked } = useDashboard();
+  const { loading, error, isUnlocked } = useAppContext();
 
   if (loading) {
     return <DashboardCardSkeleton />;

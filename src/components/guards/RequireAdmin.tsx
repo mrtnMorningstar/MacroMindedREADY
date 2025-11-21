@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useAppContext } from "@/context/AppContext";
 import FullScreenLoader from "../FullScreenLoader";
 
 type RequireAdminProps = {
@@ -12,46 +12,39 @@ type RequireAdminProps = {
 
 /**
  * Protected route wrapper that ensures user is an admin.
- * - Waits for Firebase Auth and Firestore userDoc to finish loading
- * - Checks userDoc.role === "admin"
+ * - Waits for Firebase Auth to finish loading
+ * - Checks admin status via Firebase custom claims (request.auth.token.admin === true)
  * - Redirects to /dashboard if not admin
  * - NEVER returns null - always shows FullScreenLoader during transitions
+ * 
+ * IMPORTANT: Uses custom claims for authorization, NOT Firestore role field.
  */
 export function RequireAdmin({ children, redirectTo = "/dashboard" }: RequireAdminProps) {
-  const { user, userDoc, loadingAuth, loadingUserDoc } = useAuth();
+  const { user, isAdmin: isUserAdmin, loadingAuth, loadingAdmin } = useAppContext();
   const router = useRouter();
 
   useEffect(() => {
-    // Only redirect after loading is complete
-    if (loadingAuth || loadingUserDoc) return;
+    if (loadingAuth || loadingAdmin) {
+      return;
+    }
 
     if (!user) {
       router.replace("/login");
       return;
     }
 
-    if (userDoc && userDoc.role !== "admin") {
+    if (!isUserAdmin) {
       router.replace(redirectTo);
     }
-  }, [user, userDoc, loadingAuth, loadingUserDoc, router, redirectTo]);
+  }, [user, isUserAdmin, loadingAuth, loadingAdmin, router, redirectTo]);
 
-  // Show loader while auth or userDoc is loading
-  if (loadingAuth || loadingUserDoc) {
+  // Show loader while auth or admin status is loading
+  if (loadingAuth || loadingAdmin) {
     return <FullScreenLoader />;
   }
 
   // Show loader during redirect (never return null)
-  if (!user) {
-    return <FullScreenLoader />;
-  }
-
-  // Show loader if not admin (during redirect)
-  if (userDoc && userDoc.role !== "admin") {
-    return <FullScreenLoader />;
-  }
-
-  // If userDoc is null but user exists, wait a bit more (document might be loading)
-  if (!userDoc && user) {
+  if (!user || !isUserAdmin) {
     return <FullScreenLoader />;
   }
 

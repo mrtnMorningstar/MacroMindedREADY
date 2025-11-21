@@ -1,13 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { collection, onSnapshot } from "firebase/firestore";
 import { EyeIcon } from "@heroicons/react/24/outline";
 import { db } from "@/lib/firebase";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { SkeletonTable } from "@/components/common/Skeleton";
 import ClientDetailSlideover from "@/components/admin/ClientDetailSlideover";
+import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
+import { MealPlanStatus } from "@/types/status";
 
 type Client = {
   id: string;
@@ -27,81 +28,69 @@ type Client = {
 type FilterType = "all" | "needs-plan" | "delivered" | "in-progress";
 
 export default function AdminClientsPage() {
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterType>("all");
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [slideoverOpen, setSlideoverOpen] = useState(false);
 
-  useEffect(() => {
-    setLoading(true);
-    const unsubscribe = onSnapshot(
-      collection(db, "users"),
-      async (snapshot) => {
-        const records: Client[] = [];
+  // Use paginated query instead of full collection listener
+  const {
+    data: rawClients,
+    loading,
+    loadingMore,
+    hasMore,
+    loadMore,
+    refresh,
+  } = usePaginatedQuery<any>({
+    db,
+    collectionName: "users",
+    pageSize: 25,
+    orderByField: "createdAt",
+    orderByDirection: "desc",
+    filterFn: (doc) => doc.role !== "admin", // Filter out admins for display purposes only
+  });
 
-        for (const docSnapshot of snapshot.docs) {
-          const data = docSnapshot.data();
-          if (data?.role === "admin") continue;
+  // Transform data to calculate purchase dates
+  const clients = useMemo(() => {
+    return rawClients.map((client: any) => {
+      let purchaseDate: Date | null = null;
+      let daysSincePurchase = 0;
 
-          let purchaseDate: Date | null = null;
-          let daysSincePurchase = 0;
-
-          if (data?.purchaseDate) {
-            if (data.purchaseDate.toDate) {
-              purchaseDate = data.purchaseDate.toDate();
-            } else if (data.purchaseDate instanceof Date) {
-              purchaseDate = data.purchaseDate;
-            } else if (data.purchaseDate.seconds) {
-              purchaseDate = new Date(data.purchaseDate.seconds * 1000);
-            }
-
-            if (purchaseDate) {
-              daysSincePurchase = Math.floor(
-                (Date.now() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24)
-              );
-            }
-          }
-
-          records.push({
-            id: docSnapshot.id,
-            name: data?.displayName ?? "Unnamed User",
-            email: data?.email ?? "No email",
-            packageTier: data?.packageTier ?? null,
-            mealPlanStatus: data?.mealPlanStatus ?? "Not Started",
-            referralCredits: data?.referralCredits ?? 0,
-            purchaseDate,
-            daysSincePurchase,
-            mealPlanFileURL: data?.mealPlanFileURL ?? null,
-            mealPlanImageURLs: data?.mealPlanImageURLs ?? null,
-            adminNotes: data?.adminNotes ?? null,
-            role: data?.role ?? null,
-          });
+      if (client.purchaseDate) {
+        if (client.purchaseDate.toDate) {
+          purchaseDate = client.purchaseDate.toDate();
+        } else if (client.purchaseDate instanceof Date) {
+          purchaseDate = client.purchaseDate;
+        } else if (client.purchaseDate.seconds) {
+          purchaseDate = new Date(client.purchaseDate.seconds * 1000);
         }
 
-        setClients(records);
-        setLoading(false);
-      },
-      (error) => {
-        console.error("Failed to load clients:", error);
-        setLoading(false);
+        if (purchaseDate) {
+          daysSincePurchase = Math.floor(
+            (Date.now() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24)
+          );
+        }
       }
-    );
 
-    return () => unsubscribe();
-  }, []);
+      return {
+        ...client,
+        name: client.displayName ?? "Unnamed User",
+        purchaseDate,
+        daysSincePurchase,
+      } as Client;
+    });
+  }, [rawClients]);
 
   const filteredClients = useMemo(() => {
     let filtered = clients;
 
     if (filter === "needs-plan") {
       filtered = filtered.filter(
-        (c) => !c.packageTier || c.mealPlanStatus === "Not Started"
+        (c) => !c.packageTier || c.mealPlanStatus === MealPlanStatus.NOT_STARTED
       );
     } else if (filter === "delivered") {
-      filtered = filtered.filter((c) => c.mealPlanStatus === "Delivered");
+      filtered = filtered.filter((c) => c.mealPlanStatus === MealPlanStatus.DELIVERED);
     } else if (filter === "in-progress") {
-      filtered = filtered.filter((c) => c.mealPlanStatus === "In Progress");
+      filtered = filtered.filter((c) => c.mealPlanStatus === MealPlanStatus.IN_PROGRESS);
     }
 
     return filtered;
@@ -112,15 +101,12 @@ export default function AdminClientsPage() {
     setSlideoverOpen(true);
   }, []);
 
-  const handleRefresh = useCallback(() => {
-    setClients([...clients]);
-  }, [clients]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "Delivered":
+      case MealPlanStatus.DELIVERED:
         return "bg-green-500/20 text-green-500 border-green-500/50";
-      case "In Progress":
+      case MealPlanStatus.IN_PROGRESS:
         return "bg-amber-500/20 text-amber-500 border-amber-500/50";
       default:
         return "bg-neutral-600/20 text-neutral-400 border-neutral-600/50";
@@ -244,11 +230,30 @@ export default function AdminClientsPage() {
             </table>
           </div>
 
-          {filteredClients.length === 0 && (
+          {filteredClients.length === 0 && !loading && (
             <div className="px-6 py-12 text-center">
               <p className="text-sm text-neutral-400">
                 No clients found matching your filters.
               </p>
+            </div>
+          )}
+
+          {/* Load More Button */}
+          {hasMore && (
+            <div className="border-t border-neutral-800 px-6 py-4">
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="w-full rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loadingMore ? "Loading..." : "Load More"}
+              </button>
+            </div>
+          )}
+
+          {!hasMore && filteredClients.length > 0 && (
+            <div className="border-t border-neutral-800 px-6 py-4 text-center">
+              <p className="text-sm text-neutral-400">All clients loaded</p>
             </div>
           )}
         </div>
@@ -262,7 +267,7 @@ export default function AdminClientsPage() {
           setSlideoverOpen(false);
           setSelectedClient(null);
         }}
-        onUpdate={handleRefresh}
+        onUpdate={refresh}
       />
     </AdminLayout>
   );

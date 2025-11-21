@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useAppContext } from "@/context/AppContext";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import ProfileIncompleteBanner from "../banners/ProfileIncompleteBanner";
@@ -23,7 +23,7 @@ export function RequireProfileCompletion({
   showBanner = true,
   requiredFields = DEFAULT_REQUIRED_FIELDS,
 }: RequireProfileCompletionProps) {
-  const { user, loadingAuth, loadingUserDoc } = useAuth();
+  const { user, userDoc, loadingAuth, loadingUserDoc } = useAppContext();
   const router = useRouter();
   const [checkingProfile, setCheckingProfile] = useState(true);
   const [profile, setProfile] = useState<Record<string, any> | null>(null);
@@ -37,10 +37,23 @@ export function RequireProfileCompletion({
   useEffect(() => {
     if (loadingAuth || loadingUserDoc || !user) return;
 
+    // Use userDoc from context if available, otherwise fetch
+    if (userDoc?.profile) {
+      const userProfile = userDoc.profile || {};
+      setProfile(userProfile);
+      const hasAllFields = requiredFields.every(
+        (field) => userProfile[field] && String(userProfile[field]).trim() !== ""
+      );
+      setIsComplete(hasAllFields);
+      setCheckingProfile(false);
+      return;
+    }
+
+    // Fallback: fetch profile if not in context
     const checkProfile = async () => {
       try {
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        const userData = userDoc.data();
+        const userDocSnapshot = await getDoc(doc(db, "users", user.uid));
+        const userData = userDocSnapshot.data();
         const userProfile = userData?.profile || {};
 
         setProfile(userProfile);
@@ -58,8 +71,8 @@ export function RequireProfileCompletion({
       }
     };
 
-    checkProfile();
-  }, [user, loadingAuth, loadingUserDoc, requiredFields]);
+    void checkProfile();
+  }, [user, userDoc, loadingAuth, loadingUserDoc, requiredFields]);
 
   if (loadingAuth || loadingUserDoc || checkingProfile) {
     return <FullScreenLoader />;

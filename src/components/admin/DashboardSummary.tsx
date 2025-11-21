@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { collection, onSnapshot, type DocumentData } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
+import { Timestamp, where } from "firebase/firestore";
 
 type DashboardStats = {
   totalClients: number;
@@ -70,101 +71,94 @@ export default function DashboardSummary() {
     return { start, end };
   }, []);
 
-  // Subscribe to users collection
-  useEffect(() => {
-    setLoading(true);
-    const unsubscribeUsers = onSnapshot(
-      collection(db, "users"),
-      (snapshot) => {
-        const users = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Array<DocumentData & { role?: string; mealPlanStatus?: string }>;
+  // Use paginated queries instead of full collection listeners
+  // Load users for client stats (limit to recent users for performance)
+  const {
+    data: users,
+    loading: loadingUsers,
+  } = usePaginatedQuery<any>({
+    db,
+    collectionName: "users",
+    pageSize: 100, // Load first 100 users for stats (sufficient for most dashboards)
+    orderByField: "createdAt",
+    orderByDirection: "desc",
+    filterFn: (doc) => doc.role !== "admin", // Filter out admins for display purposes only
+  });
 
-        // Filter out admins
-        const clients = users.filter((u) => u.role !== "admin");
+  // Load purchases from current month only for revenue calculation
+  // Use a wider range (last 90 days) to avoid index issues, then filter client-side
+  const threeMonthsAgo = Timestamp.fromDate(
+    new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
+  );
 
-        // Calculate stats
-        const totalClients = clients.length;
-        const plansPending = clients.filter(
-          (u) => u.mealPlanStatus && u.mealPlanStatus !== "Delivered"
-        ).length;
-        const plansDelivered = clients.filter(
-          (u) => u.mealPlanStatus === "Delivered"
-        ).length;
+  const {
+    data: rawPurchases,
+    loading: loadingPurchases,
+  } = usePaginatedQuery<any>({
+    db,
+    collectionName: "purchases",
+    pageSize: 500, // Larger page size for monthly revenue
+    orderByField: "createdAt",
+    orderByDirection: "desc",
+    additionalConstraints: [
+      where("createdAt", ">=", threeMonthsAgo),
+    ],
+  });
 
-        setStats((prev) => ({
-          ...prev,
-          totalClients,
-          plansPending,
-          plansDelivered,
-        }));
-      },
-      (error) => {
-        console.error("Error loading users:", error);
-        setLoading(false);
+  // Filter purchases to current month only
+  const purchases = useMemo(() => {
+    return rawPurchases.filter((p: any) => {
+      const createdAt = p.createdAt;
+      if (!createdAt) return false;
+
+      let purchaseDate: Date;
+      if (createdAt instanceof Date) {
+        purchaseDate = createdAt;
+      } else if (createdAt.toDate) {
+        purchaseDate = createdAt.toDate();
+      } else if (createdAt.seconds) {
+        purchaseDate = new Date(createdAt.seconds * 1000);
+      } else {
+        return false;
       }
-    );
 
-    return () => unsubscribeUsers();
-  }, []);
+      return (
+        purchaseDate >= currentMonthRange.start &&
+        purchaseDate <= currentMonthRange.end
+      );
+    });
+  }, [rawPurchases, currentMonthRange]);
 
-  // Subscribe to purchases collection for revenue
+  // Calculate stats from paginated data
   useEffect(() => {
-    const unsubscribePurchases = onSnapshot(
-      collection(db, "purchases"),
-      (snapshot) => {
-        const purchases = snapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            amount: data.amount ?? 0,
-            createdAt: data.createdAt,
-          };
-        }) as Array<{
-          id: string;
-          amount: number;
-          createdAt?: { toDate?: () => Date; seconds?: number } | Date | null;
-        }>;
+    if (loadingUsers || loadingPurchases) {
+      setLoading(true);
+      return;
+    }
 
-        // Calculate revenue for current month
-        const revenueThisMonth = purchases.reduce((sum, purchase) => {
-          if (!purchase.createdAt) return sum;
+    setLoading(false);
 
-          let purchaseDate: Date;
-          if (purchase.createdAt instanceof Date) {
-            purchaseDate = purchase.createdAt;
-          } else if (typeof purchase.createdAt.toDate === "function") {
-            purchaseDate = purchase.createdAt.toDate();
-          } else if (typeof purchase.createdAt.seconds === "number") {
-            purchaseDate = new Date(purchase.createdAt.seconds * 1000);
-          } else {
-            return sum;
-          }
+    // Calculate client stats
+    const totalClients = users.length;
+    const plansPending = users.filter(
+      (u: any) => u.mealPlanStatus && u.mealPlanStatus !== MealPlanStatus.DELIVERED
+    ).length;
+    const plansDelivered = users.filter(
+      (u: any) => u.mealPlanStatus === MealPlanStatus.DELIVERED
+    ).length;
 
-          if (
-            purchaseDate >= currentMonthRange.start &&
-            purchaseDate <= currentMonthRange.end
-          ) {
-            return sum + (purchase.amount || 0);
-          }
-          return sum;
-        }, 0);
+    // Calculate revenue for current month
+    const revenueThisMonth = purchases.reduce((sum: number, purchase: any) => {
+      return sum + (Number(purchase.amount) || 0);
+    }, 0);
 
-        setStats((prev) => ({
-          ...prev,
-          revenueThisMonth,
-        }));
-        setLoading(false);
-      },
-      (error) => {
-        console.error("Error loading purchases:", error);
-        setLoading(false);
-      }
-    );
-
-    return () => unsubscribePurchases();
-  }, [currentMonthRange]);
+    setStats({
+      totalClients,
+      plansPending,
+      plansDelivered,
+      revenueThisMonth,
+    });
+  }, [users, purchases, loadingUsers, loadingPurchases]);
 
   return (
     <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">

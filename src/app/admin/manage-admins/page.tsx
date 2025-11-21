@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { collection, doc, onSnapshot, updateDoc } from "firebase/firestore";
+import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { SkeletonTable } from "@/components/common/Skeleton";
 import { useToast } from "@/components/ui/Toast";
+import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
 
 type UserRecord = {
   id: string;
@@ -16,52 +17,32 @@ type UserRecord = {
   role?: string | null;
 };
 
-const USERS_PER_PAGE = 20;
-
 export default function ManageAdminsPage() {
-  const [users, setUsers] = useState<UserRecord[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
   const [updatingUids, setUpdatingUids] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [filterRole, setFilterRole] = useState<"all" | "admin" | "user">("all");
   const toast = useToast();
 
-  useEffect(() => {
-    setLoadingUsers(true);
-    const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
-      const records: UserRecord[] = snapshot.docs.map((docSnapshot) => {
-        const data = docSnapshot.data();
-        return {
-          id: docSnapshot.id,
-          email: data?.email ?? null,
-          displayName: data?.displayName ?? null,
-          packageTier: data?.packageTier ?? null,
-          role: data?.role ?? null,
-        } as UserRecord;
-      });
-
-      records.sort((a, b) => {
-        const aIsAdmin = a.role === "admin";
-        const bIsAdmin = b.role === "admin";
-        if (aIsAdmin !== bIsAdmin) {
-          return aIsAdmin ? -1 : 1;
-        }
-        const aName = a.displayName ?? a.email ?? "";
-        const bName = b.displayName ?? b.email ?? "";
-        return aName.localeCompare(bName);
-      });
-
-      setUsers(records);
-      setLoadingUsers(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
+  // Use paginated query instead of full collection listener
+  const {
+    data: users,
+    loading: loadingUsers,
+    loadingMore,
+    hasMore,
+    loadMore,
+    refresh,
+  } = usePaginatedQuery<UserRecord>({
+    db,
+    collectionName: "users",
+    pageSize: 25,
+    orderByField: "displayName",
+    orderByDirection: "asc",
+  });
 
   const filteredUsers = useMemo(() => {
     let filtered = users;
 
+    // Filter by role for display purposes only (role field is display-only, NOT used for authorization)
     if (filterRole === "admin") {
       filtered = filtered.filter((u) => u.role === "admin");
     } else if (filterRole === "user") {
@@ -77,28 +58,60 @@ export default function ManageAdminsPage() {
       });
     }
 
+    // Sort by admin status (admins first)
+    filtered.sort((a, b) => {
+      const aIsAdmin = a.role === "admin";
+      const bIsAdmin = b.role === "admin";
+      if (aIsAdmin !== bIsAdmin) {
+        return aIsAdmin ? -1 : 1;
+      }
+      const aName = a.displayName ?? a.email ?? "";
+      const bName = b.displayName ?? b.email ?? "";
+      return aName.localeCompare(bName);
+    });
+
     return filtered;
   }, [users, searchQuery, filterRole]);
-
-  const paginatedUsers = useMemo(() => {
-    const start = (currentPage - 1) * USERS_PER_PAGE;
-    return filteredUsers.slice(start, start + USERS_PER_PAGE);
-  }, [filteredUsers, currentPage]);
-
-  const totalPages = Math.ceil(filteredUsers.length / USERS_PER_PAGE);
 
   const handleToggleAdmin = useCallback(
     async (userId: string, currentRole: string | null | undefined) => {
       setUpdatingUids((prev) => new Set(prev).add(userId));
       try {
-        const newRole = currentRole === "admin" ? null : "admin";
-        await updateDoc(doc(db, "users", userId), {
-          role: newRole,
+        const makeAdmin = currentRole !== "admin";
+        
+        // Get the current user's ID token for authorization
+        const { auth } = await import("@/lib/firebase");
+        const { currentUser } = auth;
+        if (!currentUser) {
+          toast.error("You must be logged in to perform this action");
+          return;
+        }
+
+        const idToken = await currentUser.getIdToken();
+
+        // Use the API route which handles custom claims AND Firestore role field
+        const response = await fetch("/api/admin/setAdminRole", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            uid: userId,
+            makeAdmin,
+          }),
         });
-        toast.success(newRole === "admin" ? "User promoted to admin" : "Admin role removed");
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to update admin role");
+        }
+
+        toast.success(makeAdmin ? "User promoted to admin" : "Admin role removed");
       } catch (error) {
         console.error("Failed to update admin role:", error);
-        toast.error("Failed to update admin role");
+        toast.error(error instanceof Error ? error.message : "Failed to update admin role");
       } finally {
         setUpdatingUids((prev) => {
           const next = new Set(prev);
@@ -157,7 +170,7 @@ export default function ManageAdminsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-800">
-                {paginatedUsers.map((user, index) => (
+                {filteredUsers.map((user, index) => (
                   <motion.tr
                     key={user.id}
                     initial={{ opacity: 0, y: 20 }}
@@ -214,31 +227,24 @@ export default function ManageAdminsPage() {
             </table>
           </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between border-t border-neutral-800 px-6 py-4">
+          {/* Load More Button */}
+          {hasMore && (
+            <div className="border-t border-neutral-800 px-6 py-4">
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="w-full rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loadingMore ? "Loading..." : "Load More"}
+              </button>
+            </div>
+          )}
+
+          {!hasMore && filteredUsers.length > 0 && (
+            <div className="border-t border-neutral-800 px-6 py-4 text-center">
               <p className="text-sm text-neutral-400">
-                Showing {paginatedUsers.length} of {filteredUsers.length} users
+                Showing {filteredUsers.length} user{filteredUsers.length !== 1 ? "s" : ""}
               </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700 disabled:opacity-50"
-                >
-                  Previous
-                </button>
-                <span className="flex items-center px-4 py-2 text-sm text-neutral-300">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <button
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className="rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700 disabled:opacity-50"
-                >
-                  Next
-                </button>
-              </div>
             </div>
           )}
         </div>

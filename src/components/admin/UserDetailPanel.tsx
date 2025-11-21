@@ -2,9 +2,12 @@
 
 import { motion } from "framer-motion";
 import { useMemo, useState, useEffect, useRef, type ChangeEvent } from "react";
+import Image from "next/image";
 import { CardUpload } from "./CardUpload";
 import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { getThumbnailUrl } from "@/lib/image-utils";
+import { MealPlanStatus } from "@/types/status";
 
 type UserRecord = {
   id: string;
@@ -137,7 +140,7 @@ export function UserDetailPanel({
   };
 
   const handleMarkAsDelivered = async () => {
-    if (markingDelivered || user.mealPlanStatus === "Delivered") return;
+    if (markingDelivered || user.mealPlanStatus === MealPlanStatus.DELIVERED) return;
 
     if (!confirm("Mark this meal plan as delivered? This will update the status and send a notification to the client.")) {
       return;
@@ -147,7 +150,7 @@ export function UserDetailPanel({
     try {
       const userDocRef = doc(db, "users", user.id);
       await updateDoc(userDocRef, {
-        mealPlanStatus: "Delivered",
+        mealPlanStatus: MealPlanStatus.DELIVERED,
         mealPlanDeliveredAt: serverTimestamp(),
       });
 
@@ -264,7 +267,7 @@ export function UserDetailPanel({
           </h3>
           <p className="mt-1 text-[0.7rem] font-medium uppercase tracking-[0.3em] text-foreground/60">
             Tier: {user.packageTier ?? "Not assigned"} · Status:{" "}
-            {user.mealPlanStatus ?? "Not Started"}
+            {user.mealPlanStatus ?? MealPlanStatus.NOT_STARTED}
           </p>
         </div>
       </header>
@@ -279,7 +282,7 @@ export function UserDetailPanel({
           label="Days Since Purchase"
           value={daysSincePurchase !== null ? `${daysSincePurchase} days` : "—"}
         />
-        <InfoField icon="📋" label="Meal Plan Status" value={user.mealPlanStatus ?? "Not Started"} />
+        <InfoField icon="📋" label="Meal Plan Status" value={user.mealPlanStatus ?? MealPlanStatus.NOT_STARTED} />
         {daysSinceDelivery !== null && (
           <InfoField
             icon="✅"
@@ -307,9 +310,9 @@ export function UserDetailPanel({
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <button
             onClick={handleMarkAsDelivered}
-            disabled={markingDelivered || user.mealPlanStatus === "Delivered" || !user.packageTier}
+            disabled={markingDelivered || user.mealPlanStatus === MealPlanStatus.DELIVERED || !user.packageTier}
             className={`flex items-center justify-center gap-2 rounded-full border px-4 py-3 text-xs font-semibold uppercase tracking-[0.3em] transition ${
-              markingDelivered || user.mealPlanStatus === "Delivered" || !user.packageTier
+              markingDelivered || user.mealPlanStatus === MealPlanStatus.DELIVERED || !user.packageTier
                 ? "cursor-not-allowed border-border/40 bg-background/20 text-foreground/40"
                 : "border-accent bg-accent text-background hover:bg-transparent hover:text-accent"
             }`}
@@ -515,16 +518,20 @@ export function UserDetailPanel({
                 key={url}
                 className="group relative overflow-hidden rounded-2xl border border-border/70 bg-background/5"
               >
-                <a
+                  <a
                   href={url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block"
+                  className="block relative h-32 w-full overflow-hidden"
                 >
-                  <img
-                    src={url}
+                  <Image
+                    src={getThumbnailUrl(url)}
                     alt="Meal plan"
-                    className="h-32 w-full object-cover transition-opacity group-hover:opacity-80"
+                    fill
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    className="object-cover transition-opacity group-hover:opacity-80"
+                    loading="lazy"
+                    unoptimized
                   />
                 </a>
                 {onDeleteImage && (

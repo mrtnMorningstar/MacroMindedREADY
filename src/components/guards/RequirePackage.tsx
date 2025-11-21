@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useAppContext } from "@/context/AppContext";
 import { getUserPurchase } from "@/lib/purchases";
 import FullScreenLoader from "../FullScreenLoader";
 import PackageRequiredModal from "../modals/PackageRequiredModal";
@@ -10,69 +10,96 @@ import PackageRequiredModal from "../modals/PackageRequiredModal";
 type RequirePackageProps = {
   children: React.ReactNode;
   redirectTo?: string;
+  showModal?: boolean;
 };
 
-export function RequirePackage({ children, redirectTo = "/packages" }: RequirePackageProps) {
-  const { user, userDoc, loadingAuth, loadingUserDoc } = useAuth();
+/**
+ * Protected route wrapper that ensures user has purchased a package.
+ * - Waits for Firebase Auth and Firestore userDoc to finish loading
+ * - Checks userDoc.packageTier and purchases collection
+ * - Redirects to /packages if no package found
+ * - NEVER returns null - always shows FullScreenLoader during transitions
+ */
+export function RequirePackage({ 
+  children, 
+  redirectTo = "/packages",
+  showModal = true 
+}: RequirePackageProps) {
+  const { user, packageTier, purchase, isUnlocked, loadingAuth, loadingUserDoc, loadingPurchase } = useAppContext();
   const router = useRouter();
   const [checkingPurchase, setCheckingPurchase] = useState(false);
-  const [hasPackage, setHasPackage] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+  const [showPackageModal, setShowPackageModal] = useState(false);
 
   useEffect(() => {
-    if (loadingAuth || loadingUserDoc) return;
+    // Wait for auth and userDoc to load
+    if (loadingAuth || loadingUserDoc || loadingPurchase) return;
 
     if (!user) {
       router.replace("/login");
       return;
     }
 
-    // Check userDoc first
-    const packageTier = userDoc?.packageTier;
-    if (packageTier) {
-      setHasPackage(true);
+    // Check if user has package from AppContext
+    if (isUnlocked || packageTier || purchase) {
       return;
     }
 
-    // Fallback: check purchases
+    // Fallback: check purchases collection (though this should already be in context)
     setCheckingPurchase(true);
     const checkPurchase = async () => {
       try {
-        const purchase = await getUserPurchase(user.uid);
-        if (purchase) {
-          setHasPackage(true);
-        } else {
-          setShowModal(true);
-          setTimeout(() => {
-            router.replace(`${redirectTo}?redirect=dashboard`);
-          }, 2000);
+        const userPurchase = await getUserPurchase(user.uid);
+        if (!userPurchase) {
+          if (showModal) {
+            setShowPackageModal(true);
+            setTimeout(() => {
+              router.replace(`${redirectTo}?redirect=dashboard`);
+            }, 2000);
+          } else {
+            router.replace(redirectTo);
+          }
         }
       } catch (error) {
         console.error("Failed to check purchase:", error);
-        setShowModal(true);
-        setTimeout(() => {
+        if (showModal) {
+          setShowPackageModal(true);
+          setTimeout(() => {
+            router.replace(redirectTo);
+          }, 2000);
+        } else {
           router.replace(redirectTo);
-        }, 2000);
+        }
       } finally {
         setCheckingPurchase(false);
       }
     };
 
     void checkPurchase();
-  }, [user, userDoc, loadingAuth, loadingUserDoc, router, redirectTo]);
+  }, [user, packageTier, purchase, isUnlocked, loadingAuth, loadingUserDoc, loadingPurchase, router, redirectTo, showModal]);
 
-  if (loadingAuth || loadingUserDoc || checkingPurchase) {
+  // Show loader while loading auth, userDoc, purchase, or checking purchase
+  if (loadingAuth || loadingUserDoc || loadingPurchase || checkingPurchase) {
     return <FullScreenLoader />;
   }
 
+  // Show loader during redirect (never return null)
   if (!user) {
     return <FullScreenLoader />;
   }
 
-  if (!hasPackage) {
+  // Show modal and loader if no package
+  if (!isUnlocked && !packageTier && !purchase) {
     return (
       <>
-        <PackageRequiredModal isOpen={showModal} onClose={() => setShowModal(false)} />
+        {showModal && (
+          <PackageRequiredModal 
+            isOpen={showPackageModal} 
+            onClose={() => {
+              setShowPackageModal(false);
+              router.replace(redirectTo);
+            }} 
+          />
+        )}
         <FullScreenLoader />
       </>
     );

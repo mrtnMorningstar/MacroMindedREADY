@@ -1,16 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  collection,
   deleteDoc,
   doc,
-  onSnapshot,
   setDoc,
   updateDoc,
 } from "firebase/firestore";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import {
   PlusIcon,
   PencilIcon,
@@ -20,12 +17,14 @@ import {
 } from "@heroicons/react/24/outline";
 import type { ChangeEvent, FormEvent } from "react";
 
-import { db, storage } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import type { RecipeDocument } from "@/types/recipe";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { SkeletonCard } from "@/components/common/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import AppModal from "@/components/ui/AppModal";
+import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
+import Image from "next/image";
 
 type RecipeFormState = {
   title: string;
@@ -54,8 +53,6 @@ const initialFormState: RecipeFormState = {
 };
 
 export default function AdminRecipesPage() {
-  const [recipes, setRecipes] = useState<RecipeDocument[]>([]);
-  const [loading, setLoading] = useState(true);
   const [formState, setFormState] = useState<RecipeFormState>(initialFormState);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -66,19 +63,21 @@ export default function AdminRecipesPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const toast = useToast();
 
-  useEffect(() => {
-    setLoading(true);
-    const unsubscribe = onSnapshot(collection(db, "recipes"), (snapshot) => {
-      const recipesData: RecipeDocument[] = snapshot.docs.map((docSnapshot) => ({
-        id: docSnapshot.id,
-        ...docSnapshot.data(),
-      })) as RecipeDocument[];
-      setRecipes(recipesData);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
+  // Use paginated query instead of full collection listener
+  const {
+    data: recipes,
+    loading,
+    loadingMore,
+    hasMore,
+    loadMore,
+    refresh,
+  } = usePaginatedQuery<RecipeDocument>({
+    db,
+    collectionName: "recipes",
+    pageSize: 20,
+    orderByField: "title",
+    orderByDirection: "asc",
+  });
 
   const handleImageChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
@@ -104,11 +103,10 @@ export default function AdminRecipesPage() {
 
     setUploadingAsset(true);
     try {
-      const storageRef = ref(storage, `recipes/${Date.now()}_${imageFile.name}`);
-      await uploadBytes(storageRef, imageFile);
-      const downloadURL = await getDownloadURL(storageRef);
+      const { uploadRecipeImageWithThumbnail } = await import("@/lib/image-utils");
+      const { fullUrl } = await uploadRecipeImageWithThumbnail(imageFile);
       setUploadingAsset(false);
-      return downloadURL;
+      return fullUrl; // Store only full URL, thumbnails are generated automatically
     } catch (error) {
       console.error("Failed to upload image:", error);
       toast.error("Failed to upload image");
@@ -141,6 +139,7 @@ export default function AdminRecipesPage() {
           await updateDoc(doc(db, "recipes", selectedRecipeId), recipeData);
           toast.success("Recipe updated successfully");
         } else {
+          const { collection } = await import("firebase/firestore");
           await setDoc(doc(collection(db, "recipes")), recipeData);
           toast.success("Recipe created successfully");
         }
@@ -150,6 +149,9 @@ export default function AdminRecipesPage() {
         setImagePreview(null);
         setSelectedRecipeId(null);
         setShowForm(false);
+        
+        // Refresh the list to show new/updated recipe
+        await refresh();
       } catch (error) {
         console.error("Failed to save recipe:", error);
         toast.error("Failed to save recipe");
@@ -184,12 +186,14 @@ export default function AdminRecipesPage() {
         await deleteDoc(doc(db, "recipes", recipeId));
         toast.success("Recipe deleted successfully");
         setShowDeleteConfirm(null);
+        // Refresh the list to remove deleted recipe
+        await refresh();
       } catch (error) {
         console.error("Failed to delete recipe:", error);
         toast.error("Failed to delete recipe");
       }
     },
-    [toast]
+    [toast, refresh]
   );
 
   return (
@@ -248,11 +252,17 @@ export default function AdminRecipesPage() {
               className="rounded-2xl border border-neutral-800 bg-neutral-900 overflow-hidden"
             >
               {recipe.imageURL && (
-                <img
-                  src={recipe.imageURL}
-                  alt={recipe.title}
-                  className="h-48 w-full object-cover"
-                />
+                <div className="relative h-48 w-full overflow-hidden">
+                  <Image
+                    src={recipe.imageURL}
+                    alt={recipe.title}
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-cover"
+                    loading="lazy"
+                    unoptimized
+                  />
+                </div>
               )}
               <div className="p-6">
                 <h3 className="text-lg font-semibold text-white mb-2">{recipe.title}</h3>
@@ -288,6 +298,25 @@ export default function AdminRecipesPage() {
               </div>
             </motion.div>
           ))}
+        </div>
+      )}
+
+      {/* Load More Button */}
+      {hasMore && (
+        <div className="mt-6">
+          <button
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="w-full rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loadingMore ? "Loading..." : "Load More Recipes"}
+          </button>
+        </div>
+      )}
+
+      {!hasMore && recipes.length > 0 && (
+        <div className="mt-6 text-center">
+          <p className="text-sm text-neutral-400">All recipes loaded</p>
         </div>
       )}
 
@@ -382,11 +411,16 @@ export default function AdminRecipesPage() {
             <label className="block text-sm font-semibold text-neutral-300 mb-2">Image</label>
             <div className="space-y-3">
               {imagePreview && (
-                <img
-                  src={imagePreview}
-                  alt="Preview"
-                  className="h-32 w-32 rounded-lg object-cover border border-neutral-800"
-                />
+                <div className="relative h-32 w-32 overflow-hidden rounded-lg border border-neutral-800">
+                  <Image
+                    src={imagePreview}
+                    alt="Preview"
+                    fill
+                    sizes="128px"
+                    className="object-cover"
+                    unoptimized
+                  />
+                </div>
               )}
               <label className="flex items-center gap-2 cursor-pointer">
                 <input

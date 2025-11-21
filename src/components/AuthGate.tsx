@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
-import { useAuth } from "@/context/AuthContext";
-import { db } from "@/lib/firebase";
-import { getUserPurchase } from "@/lib/purchases";
+import { useAppContext } from "@/context/AppContext";
 import FullScreenLoader from "./FullScreenLoader";
 
 type AuthGateProps = {
@@ -21,11 +19,9 @@ export default function AuthGate({
   requireAdmin = false,
   requirePurchase = false,
 }: AuthGateProps) {
-  const { user, userDoc, loadingAuth, loadingUserDoc } = useAuth();
+  const { user, isAdmin: isUserAdmin, isUnlocked, loadingAuth, loadingUserDoc, loadingAdmin, loadingPurchase } = useAppContext();
   const router = useRouter();
   const pathname = usePathname();
-  const [checkingPermissions, setCheckingPermissions] = useState(false);
-  const [hasPermission, setHasPermission] = useState(false);
 
   useEffect(() => {
     if (loadingAuth || loadingUserDoc) return;
@@ -38,64 +34,38 @@ export default function AuthGate({
 
     // If no requirements, allow access
     if (!requireAuth && !requireAdmin && !requirePurchase) {
-      setHasPermission(true);
       return;
     }
 
-    // Check admin permission using userDoc
+    // Check admin permission
     if (requireAdmin) {
       if (!user) {
         router.replace("/login");
         return;
       }
 
-      if (userDoc && userDoc.role === "admin") {
-        setHasPermission(true);
-      } else if (userDoc && userDoc.role !== "admin") {
+      if (!loadingAdmin && !isUserAdmin) {
         router.replace("/dashboard");
       }
       return;
     }
 
-    // Check purchase permission using userDoc
+    // Check purchase permission
     if (requirePurchase) {
       if (!user) {
         router.replace("/login");
         return;
       }
 
-      if (userDoc?.packageTier) {
-        setHasPermission(true);
-      } else {
-        setCheckingPermissions(true);
-        const checkPurchase = async () => {
-          try {
-            const purchase = await getUserPurchase(user.uid);
-            if (purchase) {
-              setHasPermission(true);
-            } else {
-              router.replace("/packages");
-            }
-          } catch (error) {
-            console.error("Failed to check purchase:", error);
-            router.replace("/packages");
-          } finally {
-            setCheckingPermissions(false);
-          }
-        };
-        void checkPurchase();
+      if (!loadingPurchase && !isUnlocked) {
+        router.replace("/packages");
       }
       return;
     }
-
-    // If only auth is required and user exists, allow access
-    if (requireAuth && user) {
-      setHasPermission(true);
-    }
-  }, [user, userDoc, loadingAuth, loadingUserDoc, requireAuth, requireAdmin, requirePurchase, router]);
+  }, [user, isUserAdmin, isUnlocked, loadingAuth, loadingUserDoc, loadingAdmin, loadingPurchase, requireAuth, requireAdmin, requirePurchase, router]);
 
   // Show loader while checking auth or permissions
-  if (loadingAuth || loadingUserDoc || checkingPermissions) {
+  if (loadingAuth || loadingUserDoc || (requireAdmin && loadingAdmin) || (requirePurchase && loadingPurchase)) {
     return <FullScreenLoader />;
   }
 
@@ -105,7 +75,7 @@ export default function AuthGate({
   }
 
   // If permissions check failed, show loader during redirect
-  if ((requireAdmin || requirePurchase) && !hasPermission) {
+  if ((requireAdmin && !isUserAdmin) || (requirePurchase && !isUnlocked)) {
     return <FullScreenLoader />;
   }
 

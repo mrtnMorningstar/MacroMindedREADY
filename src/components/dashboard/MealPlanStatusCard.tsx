@@ -2,10 +2,11 @@
 
 import { motion } from "framer-motion";
 import { ArrowDownTrayIcon } from "@heroicons/react/24/outline";
-import type { MealPlanStatus } from "@/types/dashboard";
+import type { MealPlanStatusType } from "@/types/dashboard";
+import { MealPlanStatus } from "@/types/status";
 
 type MealPlanStatusCardProps = {
-  mealPlanStatus: MealPlanStatus | string | null;
+  mealPlanStatus: MealPlanStatusType | string | null;
   mealPlanDeliveredAt: Date | null;
   packageTier?: string | null;
   fileUrl?: string | null;
@@ -21,19 +22,19 @@ export default function MealPlanStatusCard({
 }: MealPlanStatusCardProps) {
   const getStatusInfo = () => {
     switch (mealPlanStatus) {
-      case "Delivered":
+      case MealPlanStatus.DELIVERED:
         return {
           badge: "Ready to Download",
           badgeColor: "bg-[#D7263D]/20 border-[#D7263D]/50 text-[#D7263D]",
           message: "Your meal plan is ready!",
         };
-      case "In Progress":
+      case MealPlanStatus.IN_PROGRESS:
         return {
           badge: "Being Prepared",
           badgeColor: "bg-amber-500/20 border-amber-500/50 text-amber-500",
           message: "Your coach is preparing your custom meal plan.",
         };
-      case "Not Started":
+      case MealPlanStatus.NOT_STARTED:
       default:
         return {
           badge: "Awaiting Coach",
@@ -79,7 +80,7 @@ export default function MealPlanStatusCard({
             </span>
           </div>
 
-          {mealPlanStatus === "Delivered" && daysSinceDelivery !== null ? (
+          {mealPlanStatus === MealPlanStatus.DELIVERED && daysSinceDelivery !== null ? (
             <div className="space-y-3">
               <p className="text-sm text-neutral-200">
                 Delivered {daysSinceDelivery} {daysSinceDelivery === 1 ? "day" : "days"} ago

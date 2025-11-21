@@ -1,10 +1,11 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { MealPlanStatus } from "@/types/dashboard";
+import type { MealPlanStatusType } from "@/types/dashboard";
+import { MealPlanStatus } from "@/types/status";
 
 type MealPlanStatusCardProps = {
-  status: MealPlanStatus | string | null;
+  status: MealPlanStatusType | string | null;
   packageTier?: string | null;
   showDownload?: boolean;
   fileUrl?: string | null;
@@ -18,7 +19,7 @@ export default function MealPlanStatusCard({
 }: MealPlanStatusCardProps) {
   const getStatusInfo = () => {
     switch (status) {
-      case "Delivered":
+      case MealPlanStatus.DELIVERED:
         return {
           badge: "🟢 Delivered",
           message: "Your meal plan is ready!",
@@ -26,7 +27,7 @@ export default function MealPlanStatusCard({
           bgColor: "bg-green-500/10",
           borderColor: "border-green-500/30",
         };
-      case "In Progress":
+      case MealPlanStatus.IN_PROGRESS:
         return {
           badge: "🟠 Being Prepared",
           message: "Your meal plan is being prepared. Estimated delivery: 1–5 business days depending on your package.",
@@ -34,7 +35,7 @@ export default function MealPlanStatusCard({
           bgColor: "bg-yellow-500/10",
           borderColor: "border-yellow-500/30",
         };
-      case "Not Started":
+      case MealPlanStatus.NOT_STARTED:
       default:
         return {
           badge: "🟡 In Queue",
@@ -65,12 +66,12 @@ export default function MealPlanStatusCard({
             </span>
           </div>
           <p className="text-sm font-medium uppercase tracking-[0.25em] text-foreground/80">
-            {status === "Delivered"
+            {status === MealPlanStatus.DELIVERED
               ? statusInfo.message
               : `Your meal plan is being prepared. Estimated delivery: ${estimatedDays} business days depending on your package.`}
           </p>
         </div>
-        {showDownload && status === "Delivered" && fileUrl && (
+        {showDownload && status === MealPlanStatus.DELIVERED && fileUrl && (
           <a
             href={fileUrl}
             target="_blank"

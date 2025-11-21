@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { collection, onSnapshot } from "firebase/firestore";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { db } from "@/lib/firebase";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { SkeletonCard } from "@/components/common/Skeleton";
+import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
+import { Timestamp, where } from "firebase/firestore";
 
 type PurchaseRecord = {
   id: string;
@@ -32,28 +33,37 @@ const parseFirestoreDate = (date?: { toDate?: () => Date; seconds?: number } | D
 };
 
 export default function AdminAnalyticsPage() {
-  const [purchases, setPurchases] = useState<PurchaseRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Limit to purchases from the last year for analytics
+  // This reduces database reads while still providing accurate charts
+  const oneYearAgo = Timestamp.fromDate(new Date(Date.now() - 365 * 24 * 60 * 60 * 1000));
 
-  useEffect(() => {
-    setLoading(true);
-    const unsubscribe = onSnapshot(collection(db, "purchases"), (snapshot) => {
-      const records: PurchaseRecord[] = snapshot.docs.map((docSnapshot) => {
-        const data = docSnapshot.data();
-        return {
-          id: docSnapshot.id,
-          amount: Number(data?.amount ?? 0),
-          planType: data?.planType ?? "Basic",
-          createdAt: parseFirestoreDate(data?.createdAt),
-          userId: data?.userId ?? "",
-        };
-      });
-      setPurchases(records);
-      setLoading(false);
-    });
+  const {
+    data: rawPurchases,
+    loading,
+    loadingMore,
+    hasMore,
+    loadMore,
+  } = usePaginatedQuery<any>({
+    db,
+    collectionName: "purchases",
+    pageSize: 100, // Larger page size for analytics
+    orderByField: "createdAt",
+    orderByDirection: "desc",
+    additionalConstraints: [
+      where("createdAt", ">=", oneYearAgo),
+    ],
+  });
 
-    return () => unsubscribe();
-  }, []);
+  // Transform purchases
+  const purchases = useMemo(() => {
+    return rawPurchases.map((p: any) => ({
+      id: p.id,
+      amount: Number(p?.amount ?? 0),
+      planType: p?.planType ?? "Basic",
+      createdAt: parseFirestoreDate(p?.createdAt),
+      userId: p?.userId ?? "",
+    }));
+  }, [rawPurchases]);
 
   const revenueData = useMemo(() => {
     const today = new Date();
@@ -158,6 +168,19 @@ export default function AdminAnalyticsPage() {
           </ResponsiveContainer>
         )}
       </div>
+
+      {/* Load More Button (if needed) */}
+      {hasMore && (
+        <div className="mt-6">
+          <button
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="w-full rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loadingMore ? "Loading..." : "Load More Purchase Data (Last Year)"}
+          </button>
+        </div>
+      )}
     </AdminLayout>
   );
 }

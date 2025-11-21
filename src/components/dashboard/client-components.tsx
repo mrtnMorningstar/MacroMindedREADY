@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import type { Timestamp } from "firebase/firestore";
 
 import MealPlanGallery from "@/components/MealPlanGallery";
-import { progressSteps, type MealPlanStatus, type Profile } from "@/types/dashboard";
+import { progressSteps, type MealPlanStatusType, type Profile } from "@/types/dashboard";
+import { MealPlanStatus } from "@/types/status";
 
 const heroEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
 const containerVariants = {
@@ -229,7 +230,7 @@ export function MealPlanSection({
   groceryListUrl?: string | null;
   packageTier?: string | null;
 }) {
-  const isDelivered = status === "Delivered";
+  const isDelivered = status === MealPlanStatus.DELIVERED;
   const images = imageUrls ?? [];
 
   const deliveryLabel =
@@ -258,7 +259,7 @@ export function MealPlanSection({
             <div className="rounded-2xl border border-yellow-500/30 bg-yellow-500/10 px-6 py-6">
               <div className="mb-3 flex items-center gap-3">
                 <span className="inline-flex items-center rounded-full border border-yellow-500/30 bg-yellow-500/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-yellow-500">
-                  {status === "In Progress" ? "🟠 Being Prepared" : "🟡 In Queue"}
+                  {status === MealPlanStatus.IN_PROGRESS ? "🟠 Being Prepared" : "🟡 In Queue"}
                 </span>
               </div>
               <p className="text-sm font-medium uppercase tracking-[0.25em] text-foreground/80">
@@ -662,13 +663,13 @@ export function CustomerJourneyTimeline({
     },
     {
       label: "Meal Plan Processing",
-      completed: mealPlanStatus === "In Progress" || mealPlanStatus === "Delivered",
-      date: purchaseDate && mealPlanStatus !== "Not Started" ? purchaseDate : null,
+      completed: mealPlanStatus === MealPlanStatus.IN_PROGRESS || mealPlanStatus === MealPlanStatus.DELIVERED,
+      date: purchaseDate && mealPlanStatus !== MealPlanStatus.NOT_STARTED ? purchaseDate : null,
       icon: "🔄",
     },
     {
       label: "Meal Plan Delivered",
-      completed: mealPlanStatus === "Delivered",
+      completed: mealPlanStatus === MealPlanStatus.DELIVERED,
       date: mealPlanDeliveredAt,
       icon: "📦",
     },
@@ -793,21 +794,21 @@ export function MealPlanStatusCard({
   purchaseDate?: Date | null;
 }) {
   const getStatusBadge = () => {
-    if (status === "Delivered") {
+    if (status === MealPlanStatus.DELIVERED) {
       return {
         emoji: "🟢",
-        label: "Delivered",
+        label: MealPlanStatus.DELIVERED,
         color: "text-accent border-accent/60 bg-accent/10",
       };
     }
-    if (status === "In Progress") {
+    if (status === MealPlanStatus.IN_PROGRESS) {
       return {
         emoji: "🟠",
         label: "Being Prepared",
         color: "text-orange-500 border-orange-500/60 bg-orange-500/10",
       };
     }
-    if (status === "Not Started" && purchaseDate) {
+    if (status === MealPlanStatus.NOT_STARTED && purchaseDate) {
       return {
         emoji: "🟡",
         label: "In Queue",
@@ -816,7 +817,7 @@ export function MealPlanStatusCard({
     }
     return {
       emoji: "⚪",
-      label: "Not Started",
+      label: MealPlanStatus.NOT_STARTED,
       color: "text-foreground/40 border-border/60 bg-background/20",
     };
   };
@@ -825,8 +826,8 @@ export function MealPlanStatusCard({
 
   // Calculate ETA
   const getETA = () => {
-    if (status === "Delivered") return null;
-    if (status === "In Progress") {
+    if (status === MealPlanStatus.DELIVERED) return null;
+    if (status === MealPlanStatus.IN_PROGRESS) {
       return "2-3 business days";
     }
     if (purchaseDate) {
@@ -867,7 +868,7 @@ export function MealPlanStatusCard({
               {eta}
             </p>
           )}
-          {status === "Delivered" && mealPlanDeliveredAt && (
+          {status === MealPlanStatus.DELIVERED && mealPlanDeliveredAt && (
             <p className="mt-2 text-[0.65rem] font-medium uppercase tracking-[0.25em] text-foreground/60">
               Delivered on{" "}
               {mealPlanDeliveredAt.toLocaleDateString("en-US", {
@@ -879,7 +880,7 @@ export function MealPlanStatusCard({
           )}
         </div>
 
-        {status === "Delivered" && fileUrl && (
+        {status === MealPlanStatus.DELIVERED && fileUrl && (
           <a
             href={fileUrl}
             target="_blank"

@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { doc, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { useAuth } from "@/context/AuthContext";
+import { auth } from "@/lib/firebase";
+import { useAppContext } from "@/context/AppContext";
 import { useFriendlyError } from "@/hooks/useFriendlyError";
 import { useToast } from "@/components/ui/Toast";
 import { useRouter } from "next/navigation";
@@ -35,7 +34,7 @@ type Macros = {
 };
 
 export default function MacroWizard() {
-  const { user } = useAuth();
+  const { user, refresh } = useAppContext();
   const router = useRouter();
   const handleError = useFriendlyError();
   const toast = useToast();
@@ -110,28 +109,45 @@ export default function MacroWizard() {
 
     try {
       setIsSaving(true);
-      const ref = doc(db, "users", user.uid);
 
-      await updateDoc(ref, {
-        profile: {
-          age: form.age,
-          height: form.height,
-          weight: form.weight,
-          gender: form.gender,
-          activityLevel: form.activityLevel,
-          goal: form.goal,
-          allergies: form.allergies,
-          preferences: form.likes,
-          dietaryRestrictions: form.dislikes
+      // Get ID token for authentication
+      const idToken = await user.getIdToken();
+
+      // Call secure API route
+      const response = await fetch("/api/user/submit-macro-wizard", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
         },
-        estimatedMacros: macros ? {
-          calories: macros.calories,
-          protein: macros.protein,
-          carbs: macros.carbs,
-          fats: macros.fats
-        } : null,
-        macroWizardCompleted: true
+        body: JSON.stringify({
+          profile: {
+            age: form.age,
+            height: form.height,
+            weight: form.weight,
+            gender: form.gender,
+            activityLevel: form.activityLevel,
+            goal: form.goal,
+            allergies: form.allergies,
+            preferences: form.likes,
+            dietaryRestrictions: form.dislikes,
+          },
+          estimatedMacros: macros ? {
+            calories: macros.calories,
+            protein: macros.protein,
+            carbs: macros.carbs,
+            fats: macros.fats,
+          } : null,
+        }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || errorData.message || "Failed to save wizard data");
+      }
+
+      // Refresh context to update userDoc
+      await refresh();
 
       // Show success message
       toast.success("Profile saved successfully! Redirecting to dashboard...");

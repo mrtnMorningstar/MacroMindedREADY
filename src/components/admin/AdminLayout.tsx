@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useAppContext } from "@/context/AppContext";
 import AdminSidebar from "./AdminSidebar";
 
 // Icons
@@ -34,7 +34,7 @@ const pageTitles: Record<string, string> = {
 
 export default function AdminLayoutWrapper({ children }: AdminLayoutProps) {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user } = useAppContext();
 
   // We only need ONE search and ONE quick actions for all admin pages
   const [searchQuery, setSearchQuery] = useState("");

@@ -84,8 +84,10 @@ export default function AdminUserDetailPage() {
       }
 
       try {
-        const adminDoc = await getDoc(doc(db, "users", currentUser.uid));
-        if (adminDoc.exists() && adminDoc.data()?.role === "admin") {
+        // Check admin status via custom claims (NOT Firestore role field)
+        const { isAdmin: checkIsAdmin } = await import("@/lib/admin");
+        const adminStatus = await checkIsAdmin(currentUser);
+        if (adminStatus) {
           setIsAdmin(true);
         } else {
           router.replace("/dashboard");
@@ -128,7 +130,7 @@ export default function AdminUserDetailPage() {
           displayName: data?.displayName ?? null,
           email: data?.email ?? null,
           packageTier: data?.packageTier ?? null,
-          mealPlanStatus: data?.mealPlanStatus ?? "Not Started",
+          mealPlanStatus: data?.mealPlanStatus ?? MealPlanStatus.NOT_STARTED,
           mealPlanFileURL: data?.mealPlanFileURL ?? null,
           mealPlanImageURLs: (data?.mealPlanImageURLs as string[] | null) ?? null,
           groceryListURL: data?.groceryListURL ?? null,
@@ -288,7 +290,7 @@ export default function AdminUserDetailPage() {
 
     try {
       const updates: Record<string, unknown> = {
-        mealPlanStatus: "Delivered",
+        mealPlanStatus: MealPlanStatus.DELIVERED,
         mealPlanDeliveredAt: serverTimestamp(),
       };
       let mealPlanUrl: string | null = null;
@@ -314,38 +316,27 @@ export default function AdminUserDetailPage() {
       mealPlanUrl = await getDownloadURL(pdfSnapshot.ref);
       updates.mealPlanFileURL = mealPlanUrl;
 
-      // Upload images
+      // Upload images with thumbnails
       const imageUrls: string[] = [];
       if (imageFiles && imageFiles.length > 0) {
+        const { uploadImageWithThumbnail } = await import("@/lib/image-utils");
         let completed = 0;
         for (const file of Array.from(imageFiles)) {
-          const imageRef = ref(storage, `mealPlans/${userId}/images/${file.name}`);
-          const imageTask = uploadBytesResumable(imageRef, file, {
-            contentType: file.type,
-          });
-          await new Promise<void>((resolve, reject) => {
-            imageTask.on(
-              "state_changed",
-              (snap) => {
-                const base = 30;
-                const weight = 40;
-                const progressValue =
-                  base +
-                  Math.round(
-                    ((completed + snap.bytesTransferred / snap.totalBytes) / imageFiles.length) *
-                      weight
-                  );
-                setProgress(progressValue);
-              },
-              reject,
-              async () => {
-                const downloadURL = await getDownloadURL(imageTask.snapshot.ref);
-                imageUrls.push(downloadURL);
-                completed += 1;
-                resolve();
-              }
-            );
-          });
+          const storagePath = `mealPlans/${userId}/images/${file.name}`;
+          try {
+            const { fullUrl } = await uploadImageWithThumbnail(file, storagePath);
+            imageUrls.push(fullUrl); // Store only full URL, thumbnails are generated automatically
+            
+            // Update progress
+            completed += 1;
+            const base = 30;
+            const weight = 40;
+            const progressValue = base + Math.round((completed / imageFiles.length) * weight);
+            setProgress(progressValue);
+          } catch (error) {
+            console.error("Failed to upload image:", error);
+            throw error;
+          }
         }
       }
       if (imageUrls.length > 0) {
@@ -416,7 +407,7 @@ export default function AdminUserDetailPage() {
           mealPlanFileURL: data?.mealPlanFileURL ?? null,
           mealPlanImageURLs: (data?.mealPlanImageURLs as string[] | null) ?? null,
           groceryListURL: data?.groceryListURL ?? null,
-          mealPlanStatus: data?.mealPlanStatus ?? "Delivered",
+          mealPlanStatus: data?.mealPlanStatus ?? MealPlanStatus.DELIVERED,
           mealPlanDeliveredAt: data?.mealPlanDeliveredAt?.toDate
             ? data.mealPlanDeliveredAt.toDate()
             : data?.mealPlanDeliveredAt instanceof Date
@@ -515,7 +506,7 @@ export default function AdminUserDetailPage() {
           />
           <OverviewItem
             label="Meal Plan Status"
-            value={userData.mealPlanStatus ?? "Not Started"}
+            value={userData.mealPlanStatus ?? MealPlanStatus.NOT_STARTED}
           />
           <OverviewItem
             label="Days Since Signup"

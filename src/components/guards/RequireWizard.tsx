@@ -3,21 +3,28 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
-import { useAuth } from "@/context/AuthContext";
+import { useAppContext } from "@/context/AppContext";
 import { db } from "@/lib/firebase";
-import FullScreenLoader from "./FullScreenLoader";
+import FullScreenLoader from "../FullScreenLoader";
 
 type RequireWizardProps = {
   children: ReactNode;
   redirectTo?: string;
 };
 
-export default function RequireWizard({
+/**
+ * Protected route wrapper that ensures user has completed the macro wizard.
+ * - Waits for Firebase Auth and Firestore userDoc to finish loading
+ * - Checks userDoc.macroWizardCompleted
+ * - Redirects to /macro-wizard if not completed
+ * - NEVER returns null - always shows FullScreenLoader during transitions
+ */
+export function RequireWizard({
   children,
   redirectTo = "/macro-wizard",
 }: RequireWizardProps) {
   const router = useRouter();
-  const { user, userDoc, loadingAuth, loadingUserDoc } = useAuth();
+  const { user, userDoc, loadingAuth, loadingUserDoc } = useAppContext();
   const [checkingWizard, setCheckingWizard] = useState(true);
 
   useEffect(() => {

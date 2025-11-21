@@ -8,16 +8,17 @@ import {
 } from "@/components/dashboard/client-components";
 import { MealPlanSkeleton } from "@/components/skeletons";
 import MealPlanStatusCard from "@/components/status/MealPlanStatusCard";
-import { useDashboard } from "@/context/dashboard-context";
-import { progressSteps, type MealPlanStatus } from "@/types/dashboard";
+import { useAppContext } from "@/context/AppContext";
+import { progressSteps, type MealPlanStatusType } from "@/types/dashboard";
+import { MealPlanStatus } from "@/types/status";
 
 export default function PlanPage() {
-  const { data, loading, error, isUnlocked } = useDashboard();
+  const { data, loading, error, isUnlocked } = useAppContext();
 
-  const status: MealPlanStatus =
+  const status: MealPlanStatusType =
     data?.mealPlanStatus && progressSteps.includes(data.mealPlanStatus)
-      ? data.mealPlanStatus
-      : "Not Started";
+      ? (data.mealPlanStatus as MealPlanStatusType)
+      : MealPlanStatus.NOT_STARTED;
 
   const statusIndex = progressSteps.indexOf(status);
   const { daysSinceDelivery } = useDeliveryMeta(data?.mealPlanDeliveredAt ?? null);
@@ -55,7 +56,7 @@ export default function PlanPage() {
         <MealPlanStatusCard
           status={status}
           packageTier={data?.packageTier ?? null}
-          showDownload={status === "Delivered"}
+          showDownload={status === MealPlanStatus.DELIVERED}
           fileUrl={data?.mealPlanFileURL}
         />
 

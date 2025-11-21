@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { collection, onSnapshot, doc, updateDoc } from "firebase/firestore";
+import { useState } from "react";
+import { doc, updateDoc } from "firebase/firestore";
 import { motion } from "framer-motion";
 import { db } from "@/lib/firebase";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { SkeletonTable } from "@/components/common/Skeleton";
 import { useToast } from "@/components/ui/Toast";
+import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
 
 type UserWizardData = {
   id: string;
@@ -31,30 +32,26 @@ type UserWizardData = {
 };
 
 export default function AdminWizardPage() {
-  const [users, setUsers] = useState<UserWizardData[]>([]);
-  const [loading, setLoading] = useState(true);
   const toast = useToast();
 
-  useEffect(() => {
-    setLoading(true);
-    const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
-      const records: UserWizardData[] = snapshot.docs
-        .map((docSnapshot) => {
-          const data = docSnapshot.data();
-          if (data?.role === "admin") return null;
-          return {
-            id: docSnapshot.id,
-            ...data,
-          } as UserWizardData;
-        })
-        .filter(Boolean) as UserWizardData[];
-
-      setUsers(records);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
+  // Use paginated query instead of full collection listener
+  const {
+    data: users,
+    loading,
+    loadingMore,
+    hasMore,
+    loadMore,
+  } = usePaginatedQuery<UserWizardData>({
+    db,
+    collectionName: "users",
+    pageSize: 25,
+    orderByField: "createdAt",
+    orderByDirection: "desc",
+    filterFn: (doc) => {
+      // Filter out admins for display purposes only (role field is display-only, NOT used for authorization)
+      return doc.role !== "admin";
+    },
+  });
 
   const handleVerify = async (userId: string) => {
     try {
@@ -162,6 +159,25 @@ export default function AdminWizardPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Load More Button */}
+          {hasMore && (
+            <div className="border-t border-neutral-800 px-6 py-4">
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="w-full rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loadingMore ? "Loading..." : "Load More"}
+              </button>
+            </div>
+          )}
+
+          {!hasMore && users.length > 0 && (
+            <div className="border-t border-neutral-800 px-6 py-4 text-center">
+              <p className="text-sm text-neutral-400">All users loaded</p>
+            </div>
+          )}
         </div>
       )}
     </AdminLayout>

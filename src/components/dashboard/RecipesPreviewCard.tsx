@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRightIcon } from "@heroicons/react/24/outline";
 import { listRecipes } from "@/lib/recipes";
+import { getThumbnailUrl } from "@/lib/image-utils";
 import type { RecipeDocument } from "@/types/recipe";
 
 export default function RecipesPreviewCard() {
@@ -61,11 +63,17 @@ export default function RecipesPreviewCard() {
               className="flex items-center gap-3 rounded-lg border border-neutral-800 bg-neutral-800/50 p-3 transition hover:bg-neutral-800"
             >
               {recipe.imageURL ? (
-                <img
-                  src={recipe.imageURL}
-                  alt={recipe.title}
-                  className="h-12 w-12 flex-shrink-0 rounded-lg object-cover"
-                />
+                <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg">
+                  <Image
+                    src={getThumbnailUrl(recipe.imageURL)}
+                    alt={recipe.title}
+                    fill
+                    sizes="48px"
+                    className="object-cover"
+                    loading="lazy"
+                    unoptimized
+                  />
+                </div>
               ) : (
                 <div className="h-12 w-12 flex-shrink-0 rounded-lg bg-neutral-700" />
               )}

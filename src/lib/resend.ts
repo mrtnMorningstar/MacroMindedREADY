@@ -1,45 +1,30 @@
-import { Resend } from "resend";
+import { sendEmail } from "./email";
+import { MealPlanDeliveredEmail } from "../../emails/meal-plan-delivered";
 
 type SendMealPlanPayload = {
   to: string;
   downloadLink: string;
+  name?: string;
 };
 
-const resendApiKey = process.env.RESEND_API_KEY ?? null;
-const emailFrom = process.env.EMAIL_FROM ?? null;
-
-let resendClient: Resend | null = null;
-
-function getClient(): Resend {
-  if (!resendClient) {
-    if (!resendApiKey) {
-      throw new Error("RESEND_API_KEY is not configured.");
-    }
-    resendClient = new Resend(resendApiKey);
-  }
-  return resendClient;
-}
-
+/**
+ * Send meal plan delivery email using React Email template
+ * @deprecated Use sendEmail with MealPlanDeliveredEmail directly instead
+ */
 export async function sendMealPlanEmail({
   to,
   downloadLink,
+  name,
 }: SendMealPlanPayload) {
-  if (!emailFrom) {
-    throw new Error("EMAIL_FROM is not configured.");
-  }
-  const client = getClient();
-
-  await client.emails.send({
-    from: emailFrom,
+  await sendEmail({
     to,
     subject: "Your Custom Meal Plan is Ready ✅",
-    html: `
-      <h2>Your Meal Plan is Ready!</h2>
-      <p>Thank you for trusting MacroMinded.</p>
-      <p>Your personalized meal plan is now available in your dashboard and can be downloaded here:</p>
-      <a href="${downloadLink}">Download Meal Plan</a>
-      <br /><br />
-      <p>Stay consistent — you’ve got this.</p>
-    `,
+    react: MealPlanDeliveredEmail({
+      name: name || undefined,
+      mealPlanUrl: downloadLink,
+      dashboardUrl: process.env.NEXT_PUBLIC_APP_URL
+        ? `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
+        : undefined,
+    }),
   });
 }

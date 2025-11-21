@@ -120,8 +120,10 @@ export default function RecipeDetailsPage() {
                     src={recipe.imageURL}
                     alt={recipe.title}
                     fill
+                    sizes="(max-width: 1024px) 100vw, 80vw"
                     className="object-cover"
                     priority
+                    unoptimized
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center text-xs font-semibold uppercase tracking-[0.3em] text-foreground/60">

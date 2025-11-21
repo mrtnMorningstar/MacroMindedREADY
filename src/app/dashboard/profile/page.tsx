@@ -6,12 +6,12 @@ import {
   LockedDashboardScreen,
   ProfileSummary,
 } from "@/components/dashboard/client-components";
-import { useDashboard } from "@/context/dashboard-context";
+import { useAppContext } from "@/context/AppContext";
 import { CTA_BUTTON_CLASSES } from "@/lib/ui";
 import ProfileSkeleton from "@/components/skeletons/ProfileSkeleton";
 
 export default function ProfilePage() {
-  const { data, loading, error, isUnlocked } = useDashboard();
+  const { data, loading, error, isUnlocked } = useAppContext();
 
   if (loading) {
     return <ProfileSkeleton />;

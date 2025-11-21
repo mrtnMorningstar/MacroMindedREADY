@@ -1,14 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { collection, onSnapshot } from "firebase/firestore";
 import { EyeIcon } from "@heroicons/react/24/outline";
 import { db } from "@/lib/firebase";
 import AdminLayout from "@/components/admin/AdminLayout";
 import DashboardSummary from "@/components/admin/DashboardSummary";
 import { SkeletonTable } from "@/components/common/Skeleton";
 import ClientDetailSlideover from "@/components/admin/ClientDetailSlideover";
+import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
+import { MealPlanStatus } from "@/types/status";
 
 type UserRecord = {
   id: string;
@@ -26,51 +27,48 @@ type UserRecord = {
 type FilterStatus = "all" | "needs-plan" | "delivered" | "overdue" | "inactive";
 
 export default function AdminPage() {
-  const [users, setUsers] = useState<UserRecord[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState(true);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
   const [selectedClient, setSelectedClient] = useState<UserRecord | null>(null);
   const [slideoverOpen, setSlideoverOpen] = useState(false);
 
-  useEffect(() => {
-    setLoadingUsers(true);
-    const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
-      const records: UserRecord[] = snapshot.docs
-        .map((docSnapshot) => {
-          const data = docSnapshot.data();
-          if (data?.role === "admin") return null;
-          return { id: docSnapshot.id, ...data } as UserRecord;
-        })
-        .filter(Boolean) as UserRecord[];
-
-      setUsers(records);
-      setLoadingUsers(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
+  // Use paginated query instead of full collection listener
+  const {
+    data: users,
+    loading: loadingUsers,
+    loadingMore,
+    hasMore,
+    loadMore,
+    refresh,
+  } = usePaginatedQuery<UserRecord>({
+    db,
+    collectionName: "users",
+    pageSize: 25,
+    orderByField: "createdAt",
+    orderByDirection: "desc",
+    filterFn: (doc) => doc.role !== "admin", // Filter out admins for display purposes only
+  });
 
   const filteredUsers = useMemo(() => {
     let filtered = users;
 
     if (filterStatus === "delivered") {
-      filtered = filtered.filter((u) => u.mealPlanStatus === "Delivered");
+      filtered = filtered.filter((u) => u.mealPlanStatus === MealPlanStatus.DELIVERED);
     } else if (filterStatus === "needs-plan") {
       filtered = filtered.filter((u) => {
         const hasPackage = !!u.packageTier;
         const needsPlan =
           !u.mealPlanStatus ||
-          u.mealPlanStatus === "Not Started" ||
-          u.mealPlanStatus === "In Progress";
+          u.mealPlanStatus === MealPlanStatus.NOT_STARTED ||
+          u.mealPlanStatus === MealPlanStatus.IN_PROGRESS;
         return hasPackage && needsPlan;
       });
     } else if (filterStatus === "overdue") {
-      filtered = filtered.filter((u) => u.mealPlanStatus === "Delivered");
+      filtered = filtered.filter((u) => u.mealPlanStatus === MealPlanStatus.DELIVERED);
     } else if (filterStatus === "inactive") {
       filtered = filtered.filter(
         (u) =>
           !u.packageTier ||
-          (!u.mealPlanStatus || u.mealPlanStatus === "Not Started")
+          (!u.mealPlanStatus || u.mealPlanStatus === MealPlanStatus.NOT_STARTED)
       );
     }
 
@@ -83,7 +81,7 @@ export default function AdminPage() {
       name: user.displayName ?? "Unnamed User",
       email: user.email ?? "No email",
       packageTier: user.packageTier ?? null,
-      mealPlanStatus: user.mealPlanStatus ?? "Not Started",
+      mealPlanStatus: user.mealPlanStatus ?? MealPlanStatus.NOT_STARTED,
       referralCredits: user.referralCredits ?? 0,
       purchaseDate: null,
       daysSincePurchase: 0,
@@ -92,9 +90,9 @@ export default function AdminPage() {
   }, []);
 
   const badgeStyles = (user: UserRecord) => {
-    if (user.mealPlanStatus === "Delivered")
+    if (user.mealPlanStatus === MealPlanStatus.DELIVERED)
       return "text-green-500 bg-green-500/10 border-green-500/30";
-    if (user.mealPlanStatus === "In Progress")
+    if (user.mealPlanStatus === MealPlanStatus.IN_PROGRESS)
       return "text-amber-500 bg-amber-500/10 border-amber-500/30";
     if (!user.packageTier || !user.mealPlanStatus)
       return "text-neutral-400 bg-neutral-600/10 border-neutral-600/30";
@@ -221,6 +219,25 @@ export default function AdminPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Load More Button */}
+          {hasMore && (
+            <div className="border-t border-neutral-800 px-6 py-4">
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="w-full rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loadingMore ? "Loading..." : "Load More"}
+              </button>
+            </div>
+          )}
+
+          {!hasMore && filteredUsers.length > 0 && (
+            <div className="border-t border-neutral-800 px-6 py-4 text-center">
+              <p className="text-sm text-neutral-400">All users loaded</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -231,7 +248,7 @@ export default function AdminPage() {
           setSlideoverOpen(false);
           setSelectedClient(null);
         }}
-        onUpdate={() => setUsers([...users])}
+        onUpdate={refresh}
       />
     </AdminLayout>
   );

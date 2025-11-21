@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 
 import { getStripe } from "@/lib/stripe";
 import { PRICE_IDS } from "@/lib/prices";
+import { getAdminAuth } from "@/lib/firebase-admin";
+import type { DecodedIdToken } from "@/types/api";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 type PlanTier = "Basic" | "Pro" | "Elite";
 
@@ -11,19 +17,66 @@ function getBaseUrl(request: Request) {
   return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 }
 
+/**
+ * Secure API route to create a Stripe checkout session
+ * 
+ * Requirements:
+ * - Only authenticated users can create checkout sessions
+ * - Validates plan tier and user information
+ * - Creates Stripe checkout session with proper metadata
+ */
 export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const { plan, userId, email } = body as {
-      plan?: PlanTier;
-      userId?: string;
-      email?: string;
-    };
+  let decodedToken: DecodedIdToken | undefined;
+  let body: { plan?: PlanTier; userId?: string; email?: string } | undefined;
 
-    if (!plan || !(plan in PRICE_IDS) || !userId) {
+  try {
+    // Get the authorization header
+    const authHeader = request.headers.get("authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json(
-        { error: "Invalid or missing plan tier or user information." },
+        { error: "Unauthorized. Missing or invalid authorization header." },
+        { status: 401 }
+      );
+    }
+
+    const idToken = authHeader.replace("Bearer ", "");
+
+    // Verify the token and get the user
+    const adminAuth = getAdminAuth();
+    try {
+      decodedToken = await adminAuth.verifyIdToken(idToken) as DecodedIdToken;
+    } catch (error) {
+      console.error("Token verification failed:", error);
+      return NextResponse.json(
+        { error: "Unauthorized. Invalid token." },
+        { status: 401 }
+      );
+    }
+
+    // Parse request body
+    body = await request.json() as { plan?: PlanTier; userId?: string; email?: string };
+    const { plan, userId, email } = body;
+
+    // Validate input
+    if (!plan || typeof plan !== "string" || !(plan in PRICE_IDS)) {
+      return NextResponse.json(
+        { error: "Invalid or missing plan tier." },
         { status: 400 }
+      );
+    }
+
+    if (!userId || typeof userId !== "string") {
+      return NextResponse.json(
+        { error: "Missing user information." },
+        { status: 400 }
+      );
+    }
+
+    // Verify userId matches the authenticated user
+    if (userId !== decodedToken.uid) {
+      return NextResponse.json(
+        { error: "Forbidden. Cannot create checkout session for another user." },
+        { status: 403 }
       );
     }
 
@@ -72,6 +125,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ url: session.url });
   } catch (error) {
     console.error("Failed to create checkout session:", error);
+    
+    // Capture error to Sentry
+    Sentry.captureException(error, {
+      tags: {
+        route: "/api/checkout",
+        type: "checkout_error",
+      },
+      extra: {
+        plan: body?.plan,
+        userId: body?.userId,
+        requesterUid: decodedToken?.uid,
+      },
+    });
+    
     const message =
       error instanceof Error
         ? error.message
