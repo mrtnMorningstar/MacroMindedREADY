@@ -9,7 +9,6 @@ import {
 import { useDashboard } from "@/context/dashboard-context";
 import { CTA_BUTTON_CLASSES } from "@/lib/ui";
 import ProfileSkeleton from "@/components/skeletons/ProfileSkeleton";
-import RequirePackage from "@/components/RequirePackage";
 
 export default function ProfilePage() {
   const { data, loading, error, isUnlocked } = useDashboard();
@@ -31,8 +30,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <RequirePackage>
-      <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-foreground/60">
             Profile
@@ -59,7 +57,6 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
-    </RequirePackage>
   );
 }
 

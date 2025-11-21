@@ -10,7 +10,6 @@ import { MealPlanSkeleton } from "@/components/skeletons";
 import MealPlanStatusCard from "@/components/status/MealPlanStatusCard";
 import { useDashboard } from "@/context/dashboard-context";
 import { progressSteps, type MealPlanStatus } from "@/types/dashboard";
-import RequirePackage from "@/components/RequirePackage";
 
 export default function PlanPage() {
   const { data, loading, error, isUnlocked } = useDashboard();
@@ -40,8 +39,7 @@ export default function PlanPage() {
   }
 
   return (
-    <RequirePackage>
-      <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-foreground/60">
             Meal Plan
@@ -73,7 +71,6 @@ export default function PlanPage() {
           <ProgressTracker statusIndex={statusIndex} />
         </div>
       </div>
-    </RequirePackage>
   );
 }
 

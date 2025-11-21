@@ -8,7 +8,6 @@ import {
 } from "@/components/dashboard/client-components";
 import { DashboardCardSkeleton } from "@/components/skeletons";
 import { CTA_BUTTON_CLASSES } from "@/lib/ui";
-import RequirePackage from "@/components/RequirePackage";
 
 export default function SupportPage() {
   const { loading, error, isUnlocked } = useDashboard();
@@ -30,8 +29,7 @@ export default function SupportPage() {
   }
 
   return (
-    <RequirePackage>
-      <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-foreground/60">
             Support
@@ -79,7 +77,6 @@ export default function SupportPage() {
           </ul>
         </div>
       </div>
-    </RequirePackage>
   );
 }
 

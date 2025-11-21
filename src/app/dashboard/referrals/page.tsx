@@ -6,7 +6,6 @@ import {
 } from "@/components/dashboard/client-components";
 import { DashboardCardSkeleton } from "@/components/skeletons";
 import { useDashboard } from "@/context/dashboard-context";
-import RequirePackage from "@/components/RequirePackage";
 
 export default function ReferralsPage() {
   const { data, loading, error, isUnlocked } = useDashboard();
@@ -28,8 +27,7 @@ export default function ReferralsPage() {
   }
 
   return (
-    <RequirePackage>
-      <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-foreground/60">
             Referrals
@@ -44,10 +42,9 @@ export default function ReferralsPage() {
 
         <ReferralsCard
           referralCode={data?.referralCode ?? null}
-          referralCredits={data?.referralCredits ?? 0}
-        />
-      </div>
-    </RequirePackage>
+        referralCredits={data?.referralCredits ?? 0}
+      />
+    </div>
   );
 }
 
