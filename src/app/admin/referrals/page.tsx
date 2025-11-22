@@ -20,6 +20,16 @@ type UserRecord = {
 export default function AdminReferralsPage() {
   const [search, setSearch] = useState("");
 
+  // Memoize filter function to prevent re-renders
+  const filterNonAdmins = useMemo(
+    () => (doc: any) => {
+      // Filter out admins for display purposes only (role field is display-only, NOT used for authorization)
+      if (doc.role === "admin") return false;
+      return true;
+    },
+    []
+  );
+
   // Use paginated query instead of full collection listener
   const {
     data: users,
@@ -33,11 +43,7 @@ export default function AdminReferralsPage() {
     pageSize: 25,
     orderByField: "createdAt",
     orderByDirection: "desc",
-    filterFn: (doc) => {
-      // Filter out admins for display purposes only (role field is display-only, NOT used for authorization)
-      if (doc.role === "admin") return false;
-      return true;
-    },
+    filterFn: filterNonAdmins,
   });
 
   const filteredUsers = useMemo(() => {

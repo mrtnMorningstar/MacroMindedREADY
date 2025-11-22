@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAppContext } from "@/context/AppContext";
@@ -40,7 +40,10 @@ export default function AdminLayoutWrapper({ children }: AdminLayoutProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const pageTitle = pageTitles[pathname] || "Admin Panel";
+  const pageTitle = useMemo(() => pageTitles[pathname] || "Admin Panel", [pathname]);
+  
+  // Memoize user initial to prevent re-renders
+  const userInitial = useMemo(() => user?.displayName?.[0] || "M", [user?.displayName]);
 
   return (
     <div className="flex h-screen bg-black text-white">
@@ -83,7 +86,7 @@ export default function AdminLayoutWrapper({ children }: AdminLayoutProps) {
 
             {/* USER AVATAR */}
             <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-sm font-bold uppercase">
-              {user?.displayName?.[0] || "M"}
+              {userInitial}
             </div>
           </div>
         </header>

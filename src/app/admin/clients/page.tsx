@@ -32,6 +32,12 @@ export default function AdminClientsPage() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [slideoverOpen, setSlideoverOpen] = useState(false);
 
+  // Memoize filter function to prevent re-renders
+  const filterNonAdmins = useMemo(
+    () => (doc: any) => doc.role !== "admin",
+    []
+  );
+
   // Use paginated query instead of full collection listener
   const {
     data: rawClients,
@@ -46,7 +52,7 @@ export default function AdminClientsPage() {
     pageSize: 25,
     orderByField: "createdAt",
     orderByDirection: "desc",
-    filterFn: (doc) => doc.role !== "admin", // Filter out admins for display purposes only
+    filterFn: filterNonAdmins, // Filter out admins for display purposes only
   });
 
   // Transform data to calculate purchase dates

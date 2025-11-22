@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { db } from "@/lib/firebase";
 import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
@@ -72,6 +72,24 @@ export default function DashboardSummary() {
     return { start, end };
   }, []);
 
+  // Memoize filter function to prevent re-renders
+  const filterNonAdmins = useMemo(
+    () => (doc: any) => doc.role !== "admin",
+    []
+  );
+
+  // Memoize timestamp to prevent re-creating on every render
+  const threeMonthsAgo = useMemo(
+    () => Timestamp.fromDate(new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)),
+    []
+  );
+
+  // Memoize constraints to prevent re-creating on every render
+  const purchaseConstraints = useMemo(
+    () => [where("createdAt", ">=", threeMonthsAgo)],
+    [threeMonthsAgo]
+  );
+
   // Use paginated queries instead of full collection listeners
   // Load users for client stats (limit to recent users for performance)
   const {
@@ -83,15 +101,11 @@ export default function DashboardSummary() {
     pageSize: 100, // Load first 100 users for stats (sufficient for most dashboards)
     orderByField: "createdAt",
     orderByDirection: "desc",
-    filterFn: (doc) => doc.role !== "admin", // Filter out admins for display purposes only
+    filterFn: filterNonAdmins, // Filter out admins for display purposes only
   });
 
   // Load purchases from current month only for revenue calculation
   // Use a wider range (last 90 days) to avoid index issues, then filter client-side
-  const threeMonthsAgo = Timestamp.fromDate(
-    new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
-  );
-
   const {
     data: rawPurchases,
     loading: loadingPurchases,
@@ -101,9 +115,7 @@ export default function DashboardSummary() {
     pageSize: 500, // Larger page size for monthly revenue
     orderByField: "createdAt",
     orderByDirection: "desc",
-    additionalConstraints: [
-      where("createdAt", ">=", threeMonthsAgo),
-    ],
+    additionalConstraints: purchaseConstraints,
   });
 
   // Filter purchases to current month only

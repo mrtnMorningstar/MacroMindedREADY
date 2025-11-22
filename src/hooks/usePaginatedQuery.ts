@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   collection,
   query,
@@ -41,6 +41,7 @@ type UsePaginatedQueryReturn<T> = {
  * - Provides "Load More" functionality
  * - No real-time listeners (reduces database reads)
  * - Manual refresh capability
+ * - Stable references to prevent infinite re-renders
  */
 export function usePaginatedQuery<T = DocumentData>(
   options: UsePaginatedQueryOptions
@@ -54,6 +55,19 @@ export function usePaginatedQuery<T = DocumentData>(
     additionalConstraints = [],
     filterFn,
   } = options;
+
+  // Use refs to store mutable values without causing re-renders
+  const filterFnRef = useRef(filterFn);
+  const additionalConstraintsRef = useRef(additionalConstraints);
+  
+  // Update refs when values change (without triggering re-renders)
+  useEffect(() => {
+    filterFnRef.current = filterFn;
+  }, [filterFn]);
+  
+  useEffect(() => {
+    additionalConstraintsRef.current = additionalConstraints;
+  }, [additionalConstraints]);
 
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,9 +86,10 @@ export function usePaginatedQuery<T = DocumentData>(
           constraints.push(orderBy(orderByField, orderByDirection));
         }
 
-        // Add additional constraints
-        if (additionalConstraints.length > 0) {
-          constraints.push(...additionalConstraints);
+        // Add additional constraints from ref
+        const currentConstraints = additionalConstraintsRef.current;
+        if (currentConstraints.length > 0) {
+          constraints.push(...currentConstraints);
         }
 
         // Add limit
@@ -90,13 +105,14 @@ export function usePaginatedQuery<T = DocumentData>(
 
         const newDocs: T[] = [];
         let lastDocument: QueryDocumentSnapshot<DocumentData> | null = null;
+        const currentFilterFn = filterFnRef.current;
 
         snapshot.forEach((doc) => {
           const docData = { id: doc.id, ...doc.data() } as T;
           
-          // Apply filter function if provided
-          if (filterFn) {
-            if (filterFn(doc.data())) {
+          // Apply filter function if provided (using ref to avoid dependency)
+          if (currentFilterFn) {
+            if (currentFilterFn(doc.data())) {
               newDocs.push(docData);
             }
           } else {
@@ -125,15 +141,23 @@ export function usePaginatedQuery<T = DocumentData>(
         console.error("Error fetching paginated data:", error);
       }
     },
-    [db, collectionName, pageSize, orderByField, orderByDirection, additionalConstraints, filterFn]
+    // Only depend on stable primitives, not functions/arrays
+    [db, collectionName, pageSize, orderByField, orderByDirection]
   );
 
-  // Initial load
+  // Initial load - only run once or when stable dependencies change
   useEffect(() => {
+    let isMounted = true;
     setLoading(true);
     fetchPage(null).finally(() => {
-      setLoading(false);
+      if (isMounted) {
+        setLoading(false);
+      }
     });
+    
+    return () => {
+      isMounted = false;
+    };
   }, [fetchPage]);
 
   const loadMore = useCallback(async () => {

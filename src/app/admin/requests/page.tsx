@@ -28,6 +28,19 @@ export default function AdminRequestsPage() {
   const [selectedClient, setSelectedClient] = useState<PendingUser | null>(null);
   const [slideoverOpen, setSlideoverOpen] = useState(false);
 
+  // Memoize filter function to prevent re-renders
+  const filterPendingRequests = useMemo(
+    () => (doc: any) => {
+      const status = doc.mealPlanStatus ?? MealPlanStatus.NOT_STARTED;
+      // Filter out admins for display purposes only (role field is display-only, NOT used for authorization)
+      if (doc.role === "admin") return false;
+      // Only show pending requests (not delivered)
+      if (!status || status === MealPlanStatus.DELIVERED) return false;
+      return true;
+    },
+    []
+  );
+
   // Use paginated query instead of full collection listener
   const {
     data: rawUsers,
@@ -42,14 +55,7 @@ export default function AdminRequestsPage() {
     pageSize: 25,
     orderByField: "createdAt",
     orderByDirection: "desc",
-    filterFn: (doc) => {
-      const status = doc.mealPlanStatus ?? MealPlanStatus.NOT_STARTED;
-      // Filter out admins for display purposes only (role field is display-only, NOT used for authorization)
-      if (doc.role === "admin") return false;
-      // Only show pending requests (not delivered)
-      if (!status || status === MealPlanStatus.DELIVERED) return false;
-      return true;
-    },
+    filterFn: filterPendingRequests,
   });
 
   // Transform data with proper date handling

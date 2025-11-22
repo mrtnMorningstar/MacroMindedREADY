@@ -29,6 +29,19 @@ export default function AdminUsersPage() {
   const [selectedClient, setSelectedClient] = useState<UserCard | null>(null);
   const [slideoverOpen, setSlideoverOpen] = useState(false);
 
+  // Memoize filter function to prevent re-renders
+  const filterNonAdmins = useMemo(
+    () => (doc: any) => {
+      // Filter out admins for display purposes only (role field is display-only, NOT used for authorization)
+      if (doc.role === "admin") return false;
+      
+      // Apply package tier filter on server side if possible
+      // Note: Client-side filtering is done in useMemo below for flexibility
+      return true;
+    },
+    []
+  );
+
   // Use paginated query instead of full collection listener
   const {
     data: users,
@@ -43,14 +56,7 @@ export default function AdminUsersPage() {
     pageSize: 25,
     orderByField: "createdAt",
     orderByDirection: "desc",
-    filterFn: (doc) => {
-      // Filter out admins for display purposes only (role field is display-only, NOT used for authorization)
-      if (doc.role === "admin") return false;
-      
-      // Apply package tier filter on server side if possible
-      // Note: Client-side filtering is done in useMemo below for flexibility
-      return true;
-    },
+    filterFn: filterNonAdmins,
   });
 
   // Transform data to include proper date handling

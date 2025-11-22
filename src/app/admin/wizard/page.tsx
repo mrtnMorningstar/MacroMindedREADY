@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { doc, updateDoc } from "firebase/firestore";
 import { motion } from "framer-motion";
 import { db } from "@/lib/firebase";
@@ -34,6 +34,12 @@ type UserWizardData = {
 export default function AdminWizardPage() {
   const toast = useToast();
 
+  // Memoize filter function to prevent re-renders
+  const filterNonAdmins = useMemo(
+    () => (doc: any) => doc.role !== "admin",
+    []
+  );
+
   // Use paginated query instead of full collection listener
   const {
     data: users,
@@ -47,10 +53,7 @@ export default function AdminWizardPage() {
     pageSize: 25,
     orderByField: "createdAt",
     orderByDirection: "desc",
-    filterFn: (doc) => {
-      // Filter out admins for display purposes only (role field is display-only, NOT used for authorization)
-      return doc.role !== "admin";
-    },
+    filterFn: filterNonAdmins,
   });
 
   const handleVerify = async (userId: string) => {
