@@ -9,6 +9,7 @@ import AdminSidebar from "./AdminSidebar";
 import AdminHeader from "./AdminHeader";
 import AdminContentWrapper from "./AdminContentWrapper";
 import ImpersonationBanner from "./ImpersonationBanner";
+import Navbar from "../Navbar";
 import { Bars3Icon } from "@heroicons/react/24/outline";
 
 type AdminLayoutProps = {
@@ -71,14 +72,12 @@ export default function AdminLayoutWrapper({ children }: AdminLayoutProps) {
     [pathname]
   );
 
-  const handleQuickActions = () => {
-    // Quick actions menu - to be implemented
-    console.log("Quick actions clicked");
-  };
-
   return (
     <div className="flex h-screen w-full bg-black text-white overflow-hidden">
       <ImpersonationBanner />
+      
+      {/* Navbar */}
+      <Navbar />
       
       {/* Desktop Sidebar - Always visible */}
       <AdminSidebar
@@ -104,7 +103,6 @@ export default function AdminLayoutWrapper({ children }: AdminLayoutProps) {
               title={pageTitle}
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
-              onQuickActions={handleQuickActions}
             />
           </div>
 

@@ -19,11 +19,6 @@ export default function Navbar() {
   const router = useRouter();
   const { user, isAdmin, isUnlocked, loadingAuth, sessionExpired, setSessionExpired } = useAppContext();
 
-  // Hide navbar on admin routes
-  if (pathname?.startsWith("/admin")) {
-    return null;
-  }
-
   const handleLogout = useCallback(async () => {
     try {
       await signOut(auth);
