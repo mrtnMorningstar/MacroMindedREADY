@@ -55,25 +55,13 @@ service cloud.firestore {
     // Validate user document on create/update
     function isValidUserData(data, isCreate) {
       // Profile validation (if present)
-      if ('profile' in data && data.profile != null) {
-        if (!isValidProfile(data.profile)) {
-          return false;
-        }
-      }
+      let profileValid = !('profile' in data && data.profile != null) || isValidProfile(data.profile);
 
       // estimatedMacros validation (if present)
-      if ('estimatedMacros' in data && data.estimatedMacros != null) {
-        if (!isValidEstimatedMacros(data.estimatedMacros)) {
-          return false;
-        }
-      }
+      let macrosValid = !('estimatedMacros' in data && data.estimatedMacros != null) || isValidEstimatedMacros(data.estimatedMacros);
 
       // macroWizardCompleted must be boolean (if present)
-      if ('macroWizardCompleted' in data && data.macroWizardCompleted != null) {
-        if (data.macroWizardCompleted is bool == false) {
-          return false;
-        }
-      }
+      let wizardValid = !('macroWizardCompleted' in data && data.macroWizardCompleted != null) || data.macroWizardCompleted is bool;
 
       // Admin-only fields that users cannot modify
       let adminOnlyFields = [
@@ -96,12 +84,9 @@ service cloud.firestore {
 
       // On user updates, check that admin-only fields are not being modified
       // (Admins can modify anything)
-      if (!isCreate && !isAdmin()) {
-        let changedKeys = request.resource.data.diff(resource.data).changedKeys();
-        return !changedKeys.hasAny(adminOnlyFields);
-      }
+      let adminFieldsValid = isCreate || isAdmin() || !request.resource.data.diff(resource.data).changedKeys().hasAny(adminOnlyFields);
 
-      return true;
+      return profileValid && macrosValid && wizardValid && adminFieldsValid;
     }
 
     // Validate planUpdateRequests document
