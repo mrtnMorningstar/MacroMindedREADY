@@ -72,23 +72,28 @@ export default function AdminLayoutWrapper({ children }: AdminLayoutProps) {
     [pathname]
   );
 
+  // Calculate top offset for sidebar and content
+  // Navbar height: 80px (h-20), ImpersonationBanner: 48px if active
+  const topOffset = hasImpersonationBanner ? 128 : 80; // 80px navbar + 48px banner, or just 80px navbar
+
   return (
-    <div className="flex h-screen w-full bg-black text-white overflow-hidden">
+    <div className="flex min-h-screen w-full flex-col bg-black text-white">
       <ImpersonationBanner />
       
       {/* Navbar */}
       <Navbar />
       
-      {/* Desktop Sidebar - Always visible */}
-      <AdminSidebar
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        onMenuClick={() => setSidebarOpen(true)}
-      />
+      <div className="flex flex-1 overflow-hidden">
+        {/* Desktop Sidebar - Always visible, positioned below navbar */}
+        <AdminSidebar
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          onMenuClick={() => setSidebarOpen(true)}
+        />
 
-      {/* Main Content Area */}
-      <div className={`flex flex-col flex-1 min-w-0 overflow-hidden lg:ml-64 ${hasImpersonationBanner ? 'pt-[48px]' : ''}`}>
-          {/* Top Header with spacer for impersonation banner */}
+        {/* Main Content Area */}
+        <div className={`flex flex-col flex-1 min-w-0 overflow-hidden lg:ml-64`}>
+          {/* Top Header */}
           <div className="relative">
             {/* Mobile Menu Button - inside header area */}
             <button
@@ -108,6 +113,7 @@ export default function AdminLayoutWrapper({ children }: AdminLayoutProps) {
 
           {/* Content Wrapper */}
           <AdminContentWrapper>{children}</AdminContentWrapper>
+        </div>
       </div>
     </div>
   );

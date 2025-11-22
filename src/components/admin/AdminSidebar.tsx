@@ -115,6 +115,9 @@ export default function AdminSidebar({
     };
   }, []);
 
+  // Calculate top offset: Navbar (80px) + ImpersonationBanner (48px if active)
+  const topOffset = hasImpersonationBanner ? 128 : 80;
+
   const isActive = (href: string) => {
     if (href === "/admin") {
       return pathname === "/admin";
@@ -138,11 +141,11 @@ export default function AdminSidebar({
         )}
       </AnimatePresence>
 
-      {/* Desktop Sidebar - Always visible */}
+      {/* Desktop Sidebar - Always visible, positioned below navbar */}
       <aside className={`hidden lg:flex fixed left-0 z-40 w-64 flex-col border-r border-neutral-800 bg-neutral-900 ${
         hasImpersonationBanner 
-          ? 'top-[48px] h-[calc(100vh-48px)]' 
-          : 'top-0 h-screen'
+          ? `top-[128px] h-[calc(100vh-128px)]` 
+          : `top-20 h-[calc(100vh-80px)]`
       }`}>
         <div className="flex h-full flex-col">
           {/* Brand Header */}
