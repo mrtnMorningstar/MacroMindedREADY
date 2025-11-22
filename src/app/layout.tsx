@@ -8,6 +8,7 @@ import PageTransition from "@/components/ui/PageTransition";
 import { ToastProvider } from "@/components/ui/Toast";
 import ImpersonationBanner from "@/components/admin/ImpersonationBanner";
 import { ErrorBoundaryWrapper } from "@/components/ErrorBoundaryWrapper";
+import { ConditionalLayout } from "@/components/ConditionalLayout";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,14 +45,13 @@ export default function RootLayout({
         <ErrorBoundaryWrapper>
           <AppProvider>
             <ToastProvider>
-              <div className="flex min-h-screen flex-col bg-background">
+              <ConditionalLayout
+                navbar={<Navbar />}
+                footer={<Footer />}
+              >
                 <ImpersonationBanner />
-                <Navbar />
-                <main className="flex-1">
-                  <PageTransition>{children}</PageTransition>
-                </main>
-                <Footer />
-              </div>
+                <PageTransition>{children}</PageTransition>
+              </ConditionalLayout>
             </ToastProvider>
           </AppProvider>
         </ErrorBoundaryWrapper>
