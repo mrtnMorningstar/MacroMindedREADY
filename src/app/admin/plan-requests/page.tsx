@@ -10,10 +10,11 @@ import {
 } from "firebase/firestore";
 import { ChevronDownIcon, ChevronUpIcon, CheckIcon } from "@heroicons/react/24/outline";
 import { db } from "@/lib/firebase";
-import AdminLayout from "@/components/admin/AdminLayout";
 import { SkeletonTable } from "@/components/common/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
+import EmptyState from "@/components/admin/EmptyState";
+import { ClipboardDocumentListIcon } from "@heroicons/react/24/outline";
 
 type PlanRequest = {
   id: string;
@@ -155,36 +156,43 @@ export default function PlanRequestsPage() {
   const handledRequests = filteredRequests.filter((r) => r.handled);
 
   return (
-    <AdminLayout>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      className="flex flex-col gap-6"
+    >
       {/* Filters */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-neutral-400">
-          {unhandledRequests.length} unhandled request{unhandledRequests.length !== 1 ? "s" : ""}
-        </p>
-        <div className="flex items-center gap-3">
-          <div className="flex gap-2">
-            {(["all", "unhandled", "handled"] as FilterType[]).map((f) => (
+      <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-neutral-400">
+            {unhandledRequests.length} unhandled request{unhandledRequests.length !== 1 ? "s" : ""}
+          </p>
+          <div className="flex items-center gap-3">
+            <div className="flex gap-2">
+              {(["all", "unhandled", "handled"] as FilterType[]).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                    filter === f
+                      ? "bg-[#D7263D] text-white"
+                      : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+                  }`}
+                >
+                  {f === "all" ? "All" : f === "unhandled" ? "Unhandled" : "Handled"}
+                </button>
+              ))}
+            </div>
+            {unhandledRequests.length > 0 && (
               <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
-                  filter === f
-                    ? "bg-[#D7263D] text-white"
-                    : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
-                }`}
+                onClick={handleMarkAllHandled}
+                className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
               >
-                {f === "all" ? "All" : f === "unhandled" ? "Unhandled" : "Handled"}
+                Mark All as Handled
               </button>
-            ))}
+            )}
           </div>
-          {unhandledRequests.length > 0 && (
-            <button
-              onClick={handleMarkAllHandled}
-              className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
-            >
-              Mark All as Handled
-            </button>
-          )}
         </div>
       </div>
 
@@ -327,15 +335,17 @@ export default function PlanRequestsPage() {
             </div>
           )}
 
-          {requests.length === 0 && (
-            <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-12 text-center">
-              <p className="text-sm text-neutral-400">No plan update requests found.</p>
-            </div>
+          {requests.length === 0 && !loading && !enriching && (
+            <EmptyState
+              icon={<ClipboardDocumentListIcon className="h-16 w-16" />}
+              title="No plan update requests"
+              description="There are no plan update requests at this time."
+            />
           )}
 
           {/* Load More Button */}
           {hasMore && (
-            <div className="mt-6">
+            <div>
               <button
                 onClick={loadMore}
                 disabled={loadingMore}
@@ -347,12 +357,12 @@ export default function PlanRequestsPage() {
           )}
 
           {!hasMore && requests.length > 0 && (
-            <div className="mt-6 text-center">
+            <div className="text-center">
               <p className="text-sm text-neutral-400">All requests loaded</p>
             </div>
           )}
         </div>
       )}
-    </AdminLayout>
+    </motion.div>
   );
 }

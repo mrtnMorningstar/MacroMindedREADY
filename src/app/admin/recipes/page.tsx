@@ -19,12 +19,12 @@ import type { ChangeEvent, FormEvent } from "react";
 
 import { db } from "@/lib/firebase";
 import type { RecipeDocument } from "@/types/recipe";
-import AdminLayout from "@/components/admin/AdminLayout";
 import { SkeletonCard } from "@/components/common/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import AppModal from "@/components/ui/AppModal";
 import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
 import Image from "next/image";
+import EmptyState from "@/components/admin/EmptyState";
 
 type RecipeFormState = {
   title: string;
@@ -197,25 +197,32 @@ export default function AdminRecipesPage() {
   );
 
   return (
-    <AdminLayout>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      className="flex flex-col gap-6"
+    >
       {/* Header with Create Button */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-neutral-400">
-          {recipes.length} recipe{recipes.length !== 1 ? "s" : ""} total
-        </p>
-        <button
-          onClick={() => {
-            setFormState(initialFormState);
-            setImageFile(null);
-            setImagePreview(null);
-            setSelectedRecipeId(null);
-            setShowForm(true);
-          }}
-          className="flex items-center gap-2 rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
-        >
-          <PlusIcon className="h-5 w-5" />
-          Create New Recipe
-        </button>
+      <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-neutral-400">
+            {recipes.length} recipe{recipes.length !== 1 ? "s" : ""} total
+          </p>
+          <button
+            onClick={() => {
+              setFormState(initialFormState);
+              setImageFile(null);
+              setImagePreview(null);
+              setSelectedRecipeId(null);
+              setShowForm(true);
+            }}
+            className="flex items-center gap-2 rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
+          >
+            <PlusIcon className="h-5 w-5" />
+            Create New Recipe
+          </button>
+        </div>
       </div>
 
       {/* Recipe Grid */}
@@ -226,21 +233,19 @@ export default function AdminRecipesPage() {
           ))}
         </div>
       ) : recipes.length === 0 ? (
-        <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-12 text-center">
-          <div className="max-w-md mx-auto">
-            <SparklesIcon className="h-16 w-16 text-neutral-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">No recipes yet</h3>
-            <p className="text-sm text-neutral-400 mb-6">
-              Create your first recipe to get started building your recipe library.
-            </p>
+        <EmptyState
+          icon={<SparklesIcon className="h-16 w-16" />}
+          title="No recipes yet"
+          description="Create your first recipe to get started building your recipe library."
+          action={
             <button
               onClick={() => setShowForm(true)}
               className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
             >
               Create Recipe
             </button>
-          </div>
-        </div>
+          }
+        />
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {recipes.map((recipe, index) => (
@@ -303,7 +308,7 @@ export default function AdminRecipesPage() {
 
       {/* Load More Button */}
       {hasMore && (
-        <div className="mt-6">
+        <div>
           <button
             onClick={loadMore}
             disabled={loadingMore}
@@ -315,7 +320,7 @@ export default function AdminRecipesPage() {
       )}
 
       {!hasMore && recipes.length > 0 && (
-        <div className="mt-6 text-center">
+        <div className="text-center">
           <p className="text-sm text-neutral-400">All recipes loaded</p>
         </div>
       )}
@@ -488,6 +493,6 @@ export default function AdminRecipesPage() {
           </div>
         </div>
       </AppModal>
-    </AdminLayout>
+    </motion.div>
   );
 }

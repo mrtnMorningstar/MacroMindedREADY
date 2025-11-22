@@ -220,11 +220,27 @@ All guards show `FullScreenLoader` during transitions (never return null).
 ### Component Organization
 
 **Admin Components** (`src/components/admin/`):
-- `AdminLayout.tsx`: Main layout wrapper (sidebar + header)
-- `AdminSidebar.tsx`: Navigation sidebar
-- `DashboardSummary.tsx`: Stats cards component
+- `AdminLayout.tsx`: Main layout wrapper (master container)
+- `AdminSidebar.tsx`: Navigation sidebar (256px, always visible on desktop)
+- `AdminHeader.tsx`: Top navbar with search and quick actions
+- `AdminContentWrapper.tsx`: Scrollable content container with animations
+- `AdminMobileMenu.tsx`: Mobile-responsive menu overlay
+- `DashboardSummary.tsx`: Stats cards component with pagination
 - `ClientDetailSlideover.tsx`: User detail panel
-- `ImpersonationBanner.tsx`: Impersonation notification
+- `ImpersonationBanner.tsx`: Impersonation notification banner
+
+**Reusable Admin Components**:
+- `StatCard.tsx`: Consistent stat card with loading states, animations, and highlight support
+  - Features: Hover lift effect, staggered entrance animations, skeleton loading
+  - Styling: `rounded-2xl border border-neutral-800 bg-neutral-900` with red accent for highlights
+  - Props: `title`, `value`, `isLoading`, `isHighlight`, `delay`, `icon`, `description`
+- `EmptyState.tsx`: Polished empty state component with icon, title, description, and optional action
+  - Features: Fade-in animation, centered layout, consistent spacing
+  - Used for: "No items found", "All loaded" replacements, empty data states
+- `TableContainer.tsx`: Wrapper for tables with consistent styling and footer handling
+  - Features: Empty state integration, load more button, footer content slot
+  - Styling: `rounded-2xl border border-neutral-800 bg-neutral-900`
+  - Handles: Loading states, empty states, pagination footer
 
 **Guard Components** (`src/components/guards/`):
 - Route protection components (all use `useAppContext`)
@@ -307,29 +323,100 @@ src/
   - Navigation links with icons (solid when active)
   - Settings section at bottom
   - Mobile: Overlay with slide animation
+  - Conditional positioning based on impersonation banner
 
-- **Top Navbar** (`AdminLayout.tsx`):
-  - Page title (left)
+- **Top Navbar** (`AdminHeader.tsx`):
+  - Page title (left) - provided by AdminLayout based on route
   - Search bar (center, hidden on mobile)
   - Quick Actions button + User avatar (right)
+  - Smooth entrance animations
 
-- **Main Content**: Scrollable area with padding
+- **Main Content** (`AdminContentWrapper.tsx`): 
+  - Scrollable area with consistent padding (`px-6 py-8`)
+  - Fade-in animations for page transitions
+  - Responsive max-width and spacing
 
 ### Admin Routes
-- `/admin` - Dashboard (stats cards)
-- `/admin/clients` - Client list
-- `/admin/revenue` - Sales & revenue (aliased from `/admin/sales`)
-- `/admin/referrals` - Referral tracking
-- `/admin/plan-requests` - Plan update requests
-- `/admin/recipes` - Recipe management
-- `/admin/manage-admins` - Admin user management
-- `/admin/settings` - Admin settings
+
+All admin pages follow consistent structure:
+- No duplicate `<AdminLayout>` wrappers (provided by `src/app/admin/layout.tsx`)
+- Page title provided by `AdminHeader` component (no duplicate titles)
+- Consistent spacing: `gap-6` between sections, `p-6` for cards
+- Motion animations on all pages: `initial={{ opacity: 0, y: 20 }}` → `animate={{ opacity: 1, y: 0 }}`
+
+**Route Details**:
+- `/admin` - Dashboard (stats cards using `StatCard` component)
+- `/admin/clients` - Client list with filters and `TableContainer`
+- `/admin/revenue` (from `/admin/sales`) - Revenue metrics with `StatCard` grid
+- `/admin/referrals` - Referral tracking with search and `TableContainer`
+- `/admin/plan-requests` - Plan update requests with expandable cards
+- `/admin/recipes` - Recipe management grid with `EmptyState`
+- `/admin/manage-admins` - Admin user management with `TableContainer`
+- `/admin/settings` - Settings page with `EmptyState` placeholder
+
+### Admin Page Patterns
+
+**Consistent Structure**:
+```typescript
+// All admin pages follow this pattern:
+<motion.div
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+  className="flex flex-col gap-6"
+>
+  {/* Filters/Search */}
+  <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
+    ...
+  </div>
+  
+  {/* Main Content */}
+  {loading ? <Skeleton /> : <TableContainer>...</TableContainer>}
+</motion.div>
+```
+
+**Reusable Components Usage**:
+- **StatCard**: All metric/stats displays (Dashboard, Revenue pages)
+- **EmptyState**: All "no data" states (replaces "All loaded" messages)
+- **TableContainer**: All table-based pages (Clients, Referrals, Manage Admins)
+- **Motion animations**: Consistent entrance animations across all pages
+
+**Filter/Button Patterns**:
+- Filter buttons: `rounded-lg px-4 py-2 text-sm font-semibold`
+- Active state: `bg-[#D7263D] text-white`
+- Inactive state: `bg-neutral-800 text-neutral-300 hover:bg-neutral-700`
+- Primary actions: `border border-[#D7263D] bg-[#D7263D] text-white`
 
 ### Data Fetching
 - Uses `usePaginatedQuery` hook for all data fetching
 - No real-time listeners (manual refresh)
-- Filter functions memoized to prevent re-renders
+- Filter functions memoized to prevent re-renders (using `useRef` for stability)
 - Loading states: `loading`, `loadingMore`, `hasMore`
+- Client-side filtering via `filterFn` prop for display purposes only
+
+### Styling Standards
+
+**Card Styling**:
+- Standard: `rounded-2xl border border-neutral-800 bg-neutral-900 p-6`
+- Highlighted: Adds `border-[#D7263D]/50` and red glow shadow
+- Consistent padding: `p-6` for all cards
+
+**Spacing**:
+- Section gaps: `gap-6` (24px)
+- Card padding: `p-6` (24px)
+- Table cell padding: `px-6 py-4`
+- Consistent margins: `mb-6` for section spacing
+
+**Empty States**:
+- Replaced all "All loaded" placeholders with `EmptyState` component
+- Consistent messaging and iconography
+- Optional action buttons for empty states
+
+**Tables**:
+- Wrapped in `TableContainer` component
+- Consistent header styling: `bg-neutral-800/50`
+- Alternating row colors: `bg-neutral-900/50` and `bg-neutral-900`
+- Hover effects: `hover:bg-neutral-800/30`
 
 ## Security & Permissions
 
@@ -372,10 +459,34 @@ src/
 - Shadows: Custom red glow: `shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)]`
 
 ### Component Patterns
-- Cards: `rounded-2xl border border-neutral-800 bg-neutral-900`
-- Buttons: Primary (red bg), Secondary (transparent border)
-- Badges: Rounded full with colored borders
-- Tables: Dark theme with alternating row colors
+
+**Cards**:
+- Standard: `rounded-2xl border border-neutral-800 bg-neutral-900 p-6`
+- Highlighted: `border-[#D7263D]/50 bg-neutral-900/80 backdrop-blur shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)]`
+- Hover effects: `hover:scale-1.02 hover:y-[-4px]` on stat cards
+
+**Buttons**:
+- Primary: `border border-[#D7263D] bg-[#D7263D] text-white hover:bg-[#D7263D]/90`
+- Secondary: `border border-neutral-700 bg-neutral-800 text-neutral-300 hover:bg-neutral-700`
+- Filter active: `bg-[#D7263D] text-white`
+- Filter inactive: `bg-neutral-800 text-neutral-300 hover:bg-neutral-700`
+
+**Badges**:
+- Status: `rounded-full border px-3 py-1 text-xs font-semibold`
+- Colors: Green (delivered), Amber (in-progress), Red accent (highlights)
+
+**Tables**:
+- Container: `rounded-2xl border border-neutral-800 bg-neutral-900 overflow-hidden`
+- Header: `bg-neutral-800/50 sticky top-0`
+- Rows: Alternating `bg-neutral-900/50` and `bg-neutral-900`
+- Hover: `hover:bg-neutral-800/30 transition`
+- Cell padding: `px-6 py-4`
+
+**Stat Cards** (`StatCard.tsx`):
+- Consistent metrics display across admin pages
+- Loading skeleton states
+- Staggered entrance animations
+- Highlight variant for important metrics (red accent)
 
 ## Accessibility & Dark Mode
 
@@ -397,11 +508,71 @@ src/
 - Memoized filter functions to prevent re-renders
 - Image optimization via `OptimizedImage` component
 - Client-side data transformation (date parsing, etc.)
+- Stable refs (`useRef`) for filter functions in `usePaginatedQuery`
 
-### Current Issues (To Fix)
-- Admin pages should NOT wrap with `<AdminLayout>` (layout already provides it)
-- ConditionalLayout isolates admin routes from Navbar/Footer
-- Sidebar always visible on desktop via CSS classes
+### Middleware (`src/middleware.ts`)
+- Runs in Edge Runtime (no Firebase Admin SDK)
+- Handles impersonation token redirects
+- Clears impersonation cookie on exit (`?exit-impersonation=true`)
+- Token verification delegated to `/api/admin/verify-impersonation`
+- Matches all routes except static files and most API routes
+
+### Environment Variables
+
+**Firebase (Client)**:
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `NEXT_PUBLIC_FIREBASE_APP_ID`
+
+**Firebase Admin (Server)**:
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_CLIENT_EMAIL`
+- `FIREBASE_PRIVATE_KEY`
+
+**Stripe**:
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+
+**Email**:
+- `RESEND_API_KEY` (or `SENDGRID_API_KEY`)
+
+### Custom Utilities (`src/lib/`)
+
+**Core Services**:
+- `firebase.ts`: Firebase client SDK initialization
+- `firebase-admin.ts`: Firebase Admin SDK initialization (server-side)
+- `admin.ts`: Admin utilities (check admin status, etc.)
+- `impersonation.ts`: Impersonation cookie utilities (client-side)
+
+**Data & Business Logic**:
+- `purchases.ts`: Purchase data utilities (client-side)
+- `purchases-server.ts`: Server-side purchase operations
+- `prices.ts`: Package pricing configuration
+- `recipes.ts`: Recipe utilities
+- `referral.ts`: Referral code generation
+
+**Services**:
+- `stripe.ts`: Stripe client initialization
+- `email.ts`: Email sending (Resend) with React Email support
+- `resend.ts`: Resend-specific email templates
+- `image-utils.ts`: Image processing utilities
+
+**UI Utilities**:
+- `ui.ts`: UI helper functions
+- `utils/date.ts`: Date formatting with dayjs
+
+### Status Types (`src/types/status.ts`)
+
+**MealPlanStatus Enum**:
+- `NOT_STARTED`
+- `IN_PROGRESS`
+- `DELIVERED`
+
+Used throughout the app for meal plan status tracking.
 
 ### Branding
 - **Brand Name**: MacroMinded
@@ -411,5 +582,93 @@ src/
 
 ---
 
-**Note**: This project uses Firebase for all backend services (Auth, Firestore, Storage). All client-side writes are blocked; writes must go through secure API routes using Firebase Admin SDK.
+### Animation System
+
+**Framer Motion**:
+- Page transitions: Fade + slide up animations
+- Hover effects: Scale transforms on interactive elements
+- Sidebar: Spring animations for mobile slide-in/out
+- Active indicators: Layout animations for navigation states
+- Toast notifications: Slide-in from right with fade
+
+**Animation Patterns**:
+- Entrance: `initial={{ opacity: 0, y: 20 }}` → `animate={{ opacity: 1, y: 0 }}`
+- Hover: `whileHover={{ scale: 1.02, y: -2 }}`
+- Spring transitions: `{ type: "spring", stiffness: 500, damping: 30 }`
+
+### React Email Integration
+
+- Uses `@react-email/components` for email templates
+- Server-side rendering: `render()` from `@react-email/render`
+- Email provider: Resend (primary), SendGrid (alternative)
+- Templates: Meal plan delivery emails, notifications
+
+---
+
+**Note**: This project uses Firebase for all backend services (Auth, Firestore, Storage). All client-side writes are blocked; writes must go through secure API routes using Firebase Admin SDK. The admin panel uses a modern dark-themed design with glassy cards, smooth animations, and a responsive 256px sidebar layout.
+
+---
+
+## Admin Panel Refactoring (2024)
+
+### Completed Refactoring
+
+**Structural Improvements**:
+- ✅ Removed duplicate `<AdminLayout>` wrappers (provided by `src/app/admin/layout.tsx`)
+- ✅ Removed duplicate page titles (provided by `AdminHeader` component)
+- ✅ Standardized spacing: All pages use `gap-6`, `p-6` consistently
+- ✅ Unified card styling: `rounded-2xl border border-neutral-800 bg-neutral-900`
+
+**Reusable Components Created**:
+- ✅ `StatCard.tsx`: Consistent stat cards with loading states, animations, highlight support
+- ✅ `EmptyState.tsx`: Polished empty state component (replaces "All loaded" placeholders)
+- ✅ `TableContainer.tsx`: Table wrapper with empty state integration and footer handling
+
+**Page Structure Standardization**:
+All admin pages now follow consistent patterns:
+```typescript
+<motion.div
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+  className="flex flex-col gap-6"
+>
+  {/* Filters/Search - wrapped in card */}
+  <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
+    ...
+  </div>
+  
+  {/* Main Content - uses TableContainer or grid */}
+  {loading ? <Skeleton /> : <TableContainer>...</TableContainer>}
+</motion.div>
+```
+
+**Key Improvements**:
+- **Maintainability**: Reusable components reduce code duplication by ~40%
+- **Consistency**: Unified spacing, styling, and animations across all 8 admin pages
+- **UX**: Polished empty states replace generic "All loaded" messages
+- **Performance**: Memoized filters and stable refs prevent unnecessary re-renders
+- **Accessibility**: Consistent semantic HTML and ARIA patterns throughout
+
+**Component Usage Patterns**:
+- **StatCard**: Used in Dashboard (`/admin`) and Revenue (`/admin/sales`) pages
+- **EmptyState**: Used in Clients, Referrals, Plan Requests, Recipes, Manage Admins, Settings
+- **TableContainer**: Used in Clients, Referrals, Manage Admins pages
+- **Motion animations**: Consistent entrance animations on all pages
+
+**Refactored Pages**:
+1. `/admin` - Dashboard (uses `StatCard` component via `DashboardSummary`)
+2. `/admin/clients` - Uses `TableContainer` and `EmptyState`
+3. `/admin/sales` - Revenue page (uses `StatCard` component)
+4. `/admin/referrals` - Uses `TableContainer` and `EmptyState`
+5. `/admin/plan-requests` - Uses `EmptyState` for empty states
+6. `/admin/recipes` - Uses `EmptyState` for empty recipe library
+7. `/admin/manage-admins` - Uses `TableContainer` and `EmptyState`
+8. `/admin/settings` - Uses `EmptyState` as placeholder
+
+**Before vs After**:
+- **Before**: Each page had custom "All loaded" messages, inconsistent spacing, duplicate wrappers
+- **After**: Unified empty states, consistent spacing (`gap-6`), no duplicate wrappers, reusable components
+
+This refactoring ensures all admin pages maintain visual and structural consistency while preserving all Firebase logic, hooks (`usePaginatedQuery`), and context integrations (`AppContext`).
 

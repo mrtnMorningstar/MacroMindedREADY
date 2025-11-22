@@ -1,12 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { db } from "@/lib/firebase";
-import AdminLayout from "@/components/admin/AdminLayout";
-import { SkeletonCard } from "@/components/common/Skeleton";
 import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
 import { Timestamp, where } from "firebase/firestore";
+import StatCard from "@/components/admin/StatCard";
 
 type PurchaseRecord = {
   id: string;
@@ -99,88 +98,57 @@ export default function AdminSalesPage() {
   }, [purchases]);
 
   return (
-    <AdminLayout>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      className="flex flex-col gap-6"
+    >
       {/* KPI Cards */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
-        {loading ? (
-          Array.from({ length: 5 }).map((_, i) => (
-            <SkeletonCard key={i} className="h-32" />
-          ))
-        ) : (
-          <>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6"
-            >
-              <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">
-                Total Revenue
-              </p>
-              <p className="text-3xl font-bold text-white">
-                ${metrics.totalRevenue.toLocaleString()}
-              </p>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6"
-            >
-              <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">
-                Last 30 Days
-              </p>
-              <p className="text-3xl font-bold text-[#D7263D]">
-                ${metrics.revenueLast30Days.toLocaleString()}
-              </p>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6"
-            >
-              <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">
-                Total Purchases
-              </p>
-              <p className="text-3xl font-bold text-white">{metrics.totalPurchases}</p>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6"
-            >
-              <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">
-                Avg Purchase
-              </p>
-              <p className="text-3xl font-bold text-white">
-                ${metrics.avgPurchaseValue.toFixed(0)}
-              </p>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6"
-            >
-              <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">
-                Active Users
-              </p>
-              <p className="text-3xl font-bold text-white">{metrics.activeUsers}</p>
-            </motion.div>
-          </>
-        )}
+        <StatCard
+          title="Total Revenue"
+          value={`$${metrics.totalRevenue.toLocaleString()}`}
+          isLoading={loading}
+          delay={0}
+        />
+        <StatCard
+          title="Last 30 Days"
+          value={`$${metrics.revenueLast30Days.toLocaleString()}`}
+          isLoading={loading}
+          isHighlight
+          delay={0.1}
+        />
+        <StatCard
+          title="Total Purchases"
+          value={metrics.totalPurchases}
+          isLoading={loading}
+          delay={0.2}
+        />
+        <StatCard
+          title="Avg Purchase"
+          value={`$${metrics.avgPurchaseValue.toFixed(0)}`}
+          isLoading={loading}
+          delay={0.3}
+        />
+        <StatCard
+          title="Active Users"
+          value={metrics.activeUsers}
+          isLoading={loading}
+          delay={0.4}
+        />
       </div>
 
       {/* Tier Breakdown */}
       <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
         <p className="uppercase text-xs text-neutral-500 tracking-wide mb-6">Plan Breakdown</p>
         <div className="grid gap-6 sm:grid-cols-3">
-          {(["Basic", "Pro", "Elite"] as const).map((tier) => (
+          {(["Basic", "Pro", "Elite"] as const).map((tier, index) => (
             <motion.div
               key={tier}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 + index * 0.1 }}
               className="rounded-xl border border-neutral-800 bg-neutral-800/50 p-6"
             >
               <p className="text-sm uppercase tracking-wide text-neutral-500 mb-4">{tier} Plan</p>
@@ -205,7 +173,7 @@ export default function AdminSalesPage() {
 
       {/* Load More Button (if needed for detailed view) */}
       {hasMore && (
-        <div className="mt-6">
+        <div>
           <button
             onClick={loadMore}
             disabled={loadingMore}
@@ -215,6 +183,6 @@ export default function AdminSalesPage() {
           </button>
         </div>
       )}
-    </AdminLayout>
+    </motion.div>
   );
 }

@@ -4,11 +4,13 @@ import { useCallback, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { EyeIcon } from "@heroicons/react/24/outline";
 import { db } from "@/lib/firebase";
-import AdminLayout from "@/components/admin/AdminLayout";
 import { SkeletonTable } from "@/components/common/Skeleton";
 import ClientDetailSlideover from "@/components/admin/ClientDetailSlideover";
 import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
 import { MealPlanStatus } from "@/types/status";
+import TableContainer from "@/components/admin/TableContainer";
+import EmptyState from "@/components/admin/EmptyState";
+import { UsersIcon } from "@heroicons/react/24/outline";
 
 type Client = {
   id: string;
@@ -120,40 +122,57 @@ export default function AdminClientsPage() {
   };
 
   return (
-    <AdminLayout>
-      {/* Filters */}
-      <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
-        <div className="flex flex-wrap gap-2">
-          {(["all", "needs-plan", "in-progress", "delivered"] as FilterType[]).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
-                filter === f
-                  ? "bg-[#D7263D] text-white"
-                  : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
-              }`}
-            >
-              {f === "all"
-                ? "All Clients"
-                : f === "needs-plan"
-                ? "Needs Plan"
-                : f === "in-progress"
-                ? "In Progress"
-                : "Delivered"}
-            </button>
-          ))}
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        className="flex flex-col gap-6"
+      >
+        {/* Filters */}
+        <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
+          <div className="flex flex-wrap gap-2">
+            {(["all", "needs-plan", "in-progress", "delivered"] as FilterType[]).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                  filter === f
+                    ? "bg-[#D7263D] text-white"
+                    : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+                }`}
+              >
+                {f === "all"
+                  ? "All Clients"
+                  : f === "needs-plan"
+                  ? "Needs Plan"
+                  : f === "in-progress"
+                  ? "In Progress"
+                  : "Delivered"}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Main Table */}
-      {loading ? (
-        <SkeletonTable rows={8} />
-      ) : (
-        <div className="rounded-2xl border border-neutral-800 bg-neutral-900 overflow-hidden">
-          <div className="overflow-x-auto">
+        {/* Main Table */}
+        {loading ? (
+          <SkeletonTable rows={8} />
+        ) : (
+          <TableContainer
+            isEmpty={filteredClients.length === 0}
+            emptyTitle="No clients found"
+            emptyDescription="No clients match your current filters. Try adjusting your search criteria."
+            hasMore={hasMore}
+            loadingMore={loadingMore}
+            onLoadMore={loadMore}
+            footerContent={
+              !hasMore && filteredClients.length > 0 ? (
+                <p className="text-sm text-neutral-400">All clients loaded</p>
+              ) : undefined
+            }
+          >
             <table className="w-full">
-              <thead className="bg-neutral-800/50 sticky top-0">
+              <thead className="bg-neutral-800/50">
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
                     Name
@@ -234,36 +253,9 @@ export default function AdminClientsPage() {
                 ))}
               </tbody>
             </table>
-          </div>
-
-          {filteredClients.length === 0 && !loading && (
-            <div className="px-6 py-12 text-center">
-              <p className="text-sm text-neutral-400">
-                No clients found matching your filters.
-              </p>
-            </div>
-          )}
-
-          {/* Load More Button */}
-          {hasMore && (
-            <div className="border-t border-neutral-800 px-6 py-4">
-              <button
-                onClick={loadMore}
-                disabled={loadingMore}
-                className="w-full rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loadingMore ? "Loading..." : "Load More"}
-              </button>
-            </div>
-          )}
-
-          {!hasMore && filteredClients.length > 0 && (
-            <div className="border-t border-neutral-800 px-6 py-4 text-center">
-              <p className="text-sm text-neutral-400">All clients loaded</p>
-            </div>
-          )}
-        </div>
-      )}
+          </TableContainer>
+        )}
+      </motion.div>
 
       {/* Client Detail Slideover */}
       <ClientDetailSlideover
@@ -275,6 +267,6 @@ export default function AdminClientsPage() {
         }}
         onUpdate={refresh}
       />
-    </AdminLayout>
+    </>
   );
 }
