@@ -25,6 +25,7 @@ import {
 import { onAuthStateChanged } from "firebase/auth";
 
 import { auth, db, storage } from "@/lib/firebase";
+import { MealPlanStatus } from "@/types/status";
 
 const containerVariants = {
   hidden: { opacity: 0, y: 16 },
