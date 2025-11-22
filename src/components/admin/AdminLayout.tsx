@@ -110,7 +110,6 @@ export default function AdminLayoutWrapper({ children }: AdminLayoutProps) {
 
           {/* Content Wrapper */}
           <AdminContentWrapper>{children}</AdminContentWrapper>
-        </div>
       </div>
     </div>
   );
