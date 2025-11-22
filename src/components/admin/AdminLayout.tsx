@@ -1,23 +1,15 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
 import { useAppContext } from "@/context/AppContext";
+import { getImpersonationFromCookie } from "@/lib/impersonation";
 import AdminSidebar from "./AdminSidebar";
+import AdminHeader from "./AdminHeader";
+import AdminContentWrapper from "./AdminContentWrapper";
 import ImpersonationBanner from "./ImpersonationBanner";
-
-// Icons
-import {
-  HomeIcon,
-  UsersIcon,
-  ClipboardDocumentListIcon,
-  SparklesIcon,
-  ChartBarIcon,
-  Cog6ToothIcon,
-  Bars3Icon,
-  XMarkIcon,
-} from "@heroicons/react/24/outline";
+import { Bars3Icon } from "@heroicons/react/24/outline";
 
 type AdminLayoutProps = {
   children: React.ReactNode;
@@ -39,80 +31,87 @@ export default function AdminLayoutWrapper({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const { user } = useAppContext();
 
-  // We only need ONE search and ONE quick actions for all admin pages
+  // Search state
   const [searchQuery, setSearchQuery] = useState("");
-  // Sidebar open by default on desktop (always visible), closed on mobile
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  
+  // Sidebar state - always open on desktop
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // Check if impersonation banner is active
+  const [hasImpersonationBanner, setHasImpersonationBanner] = useState(false);
 
-  // Ensure sidebar is always considered "open" on desktop (it's always visible via CSS)
+  // Check for impersonation banner on mount and periodically
+  useEffect(() => {
+    const checkImpersonation = () => {
+      const context = getImpersonationFromCookie();
+      setHasImpersonationBanner(!!context);
+    };
+    
+    checkImpersonation();
+    const interval = setInterval(checkImpersonation, 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  // Ensure sidebar is open on desktop
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1024) {
-        setSidebarOpen(true); // Desktop: always visible
+        setSidebarOpen(false); // Desktop sidebar is always visible (not "open" state)
       }
     };
     
-    handleResize(); // Check on mount
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const pageTitle = useMemo(() => pageTitles[pathname] || "Admin Panel", [pathname]);
-  
-  // Memoize user initial to prevent re-renders
-  const userInitial = useMemo(() => user?.displayName?.[0] || "M", [user?.displayName]);
+  const pageTitle = useMemo(
+    () => pageTitles[pathname] || "Admin Panel",
+    [pathname]
+  );
+
+  const handleQuickActions = () => {
+    // Quick actions menu - to be implemented
+    console.log("Quick actions clicked");
+  };
 
   return (
-    <>
+    <div className="flex h-screen w-full bg-black text-white overflow-hidden">
       <ImpersonationBanner />
-      <div className="flex h-screen w-full bg-black text-white overflow-hidden">
-        {/* SIDEBAR - Always visible on desktop, toggleable on mobile */}
-        <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      
+      {/* Desktop Sidebar - Always visible */}
+      <AdminSidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        onMenuClick={() => setSidebarOpen(true)}
+      />
 
-      {/* MAIN CONTENT AREA */}
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        {/* TOP NAVBAR - Single header bar */}
-        <header className="flex-shrink-0 flex items-center justify-between gap-4 px-6 py-4 border-b border-neutral-800 bg-neutral-950">
-          {/* Left: Menu button + Page title */}
-          <div className="flex items-center gap-3 min-w-0">
+      {/* Main Content Area */}
+      <div className={`flex flex-col flex-1 min-w-0 overflow-hidden lg:ml-64 ${hasImpersonationBanner ? 'pt-[48px]' : ''}`}>
+          {/* Top Header with spacer for impersonation banner */}
+          <div className="relative">
+            {/* Mobile Menu Button - inside header area */}
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden flex-shrink-0 text-neutral-300 hover:text-white transition"
-              aria-label="Open sidebar"
+              className="lg:hidden absolute left-4 top-1/2 -translate-y-1/2 z-50 p-2 rounded-lg bg-neutral-900/80 backdrop-blur border border-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors"
+              aria-label="Open menu"
             >
-              <Bars3Icon className="w-6 h-6" />
+              <Bars3Icon className="h-6 w-6" />
             </button>
-            <h1 className="text-xl font-semibold text-white truncate">{pageTitle}</h1>
-          </div>
-
-          {/* Center: Search bar (hidden on mobile, flexible width) */}
-          <div className="hidden md:flex flex-1 max-w-md mx-4">
-            <input
-              type="text"
-              placeholder="Search clients, recipes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-white text-sm placeholder:text-neutral-500 focus:outline-none focus:border-[#D7263D] transition"
+            
+            <AdminHeader
+              title={pageTitle}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              onQuickActions={handleQuickActions}
             />
           </div>
 
-          {/* Right: Quick Actions + User Avatar */}
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <button className="hidden sm:block px-4 py-2 bg-[#D7263D] hover:bg-[#D7263D]/90 rounded-lg text-sm font-semibold text-white transition whitespace-nowrap">
-              + Quick Actions
-            </button>
-            <div className="w-8 h-8 bg-[#D7263D] rounded-full flex items-center justify-center text-sm font-bold text-white uppercase cursor-pointer hover:bg-[#D7263D]/90 transition flex-shrink-0">
-              {userInitial}
-            </div>
-          </div>
-        </header>
-
-        {/* MAIN CONTENT */}
-        <main className="flex-1 overflow-y-auto bg-neutral-950 px-6 py-8">
-          {children}
-        </main>
+          {/* Content Wrapper */}
+          <AdminContentWrapper>{children}</AdminContentWrapper>
+        </div>
       </div>
     </div>
-    </>
   );
 }

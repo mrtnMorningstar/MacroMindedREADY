@@ -46,21 +46,17 @@ export default function ImpersonationBanner() {
     "User";
 
   return (
-    <>
-      <div className="fixed top-0 left-0 right-0 z-50 bg-[#D7263D] text-white px-6 py-3 flex items-center justify-between shadow-lg">
-        <span className="font-semibold text-sm">
-          🔍 Impersonating <strong>{displayName}</strong> — Admin mode active
-        </span>
-        <button
-          onClick={handleExit}
-          className="rounded-lg bg-white/20 px-4 py-1.5 text-sm font-semibold hover:bg-white/30 transition whitespace-nowrap"
-        >
-          Exit Impersonation
-        </button>
-      </div>
-      {/* Spacer to prevent content from going under the banner */}
-      <div className="h-[48px]" />
-    </>
+    <div className="fixed top-0 left-0 right-0 z-[60] bg-[#D7263D] text-white px-6 py-3 flex items-center justify-between shadow-lg">
+      <span className="font-semibold text-sm">
+        🔍 Impersonating <strong>{displayName}</strong> — Admin mode active
+      </span>
+      <button
+        onClick={handleExit}
+        className="rounded-lg bg-white/20 px-4 py-1.5 text-sm font-semibold hover:bg-white/30 transition whitespace-nowrap"
+      >
+        Exit Impersonation
+      </button>
+    </div>
   );
 }
 

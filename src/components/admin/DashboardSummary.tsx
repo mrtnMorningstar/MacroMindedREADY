@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { db } from "@/lib/firebase";
 import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
@@ -19,34 +19,48 @@ type StatCardProps = {
   value: string | number;
   isLoading: boolean;
   isHighlight?: boolean;
+  delay?: number;
 };
 
-function StatCard({ title, value, isLoading, isHighlight = false }: StatCardProps) {
+function StatCard({
+  title,
+  value,
+  isLoading,
+  isHighlight = false,
+  delay = 0,
+}: StatCardProps) {
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-border/70 bg-muted/60 p-6 shadow-lg">
-        <div className="h-4 w-24 animate-pulse rounded bg-background/20 mb-3" />
-        <div className="h-8 w-32 animate-pulse rounded bg-background/20" />
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay, duration: 0.3 }}
+        className="rounded-2xl border border-neutral-800 bg-neutral-900/50 backdrop-blur p-6 shadow-lg"
+      >
+        <div className="h-4 w-24 animate-pulse rounded bg-neutral-800 mb-4" />
+        <div className="h-10 w-32 animate-pulse rounded bg-neutral-800" />
+      </motion.div>
     );
   }
 
   return (
     <motion.div
-      whileHover={{ scale: 1.02, y: -2 }}
-      transition={{ duration: 0.2 }}
-      className={`rounded-3xl border p-6 shadow-lg transition ${
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ scale: 1.02, y: -4 }}
+      transition={{ delay, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      className={`rounded-2xl border p-6 shadow-lg transition-all duration-300 ${
         isHighlight
-          ? "border-accent/70 bg-muted/60 shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)]"
-          : "border-border/70 bg-muted/60"
+          ? "border-[#D7263D]/50 bg-neutral-900/80 backdrop-blur shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)]"
+          : "border-neutral-800 bg-neutral-900/50 backdrop-blur"
       }`}
     >
-      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-foreground/60">
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400 mb-3">
         {title}
       </p>
       <p
-        className={`mt-2 text-3xl font-bold uppercase tracking-[0.2em] ${
-          isHighlight ? "text-accent" : "text-foreground"
+        className={`text-3xl font-bold uppercase tracking-wide ${
+          isHighlight ? "text-[#D7263D]" : "text-white"
         }`}
       >
         {value}
@@ -64,7 +78,7 @@ export default function DashboardSummary() {
   });
   const [loading, setLoading] = useState(true);
 
-  // Calculate current month start/end
+  // Calculate current month range
   const currentMonthRange = useMemo(() => {
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -90,29 +104,27 @@ export default function DashboardSummary() {
     [threeMonthsAgo]
   );
 
-  // Use paginated queries instead of full collection listeners
-  // Load users for client stats (limit to recent users for performance)
+  // Load users for client stats
   const {
     data: users,
     loading: loadingUsers,
   } = usePaginatedQuery<any>({
     db,
     collectionName: "users",
-    pageSize: 100, // Load first 100 users for stats (sufficient for most dashboards)
+    pageSize: 100,
     orderByField: "createdAt",
     orderByDirection: "desc",
-    filterFn: filterNonAdmins, // Filter out admins for display purposes only
+    filterFn: filterNonAdmins,
   });
 
-  // Load purchases from current month only for revenue calculation
-  // Use a wider range (last 90 days) to avoid index issues, then filter client-side
+  // Load purchases for revenue calculation
   const {
     data: rawPurchases,
     loading: loadingPurchases,
   } = usePaginatedQuery<any>({
     db,
     collectionName: "purchases",
-    pageSize: 500, // Larger page size for monthly revenue
+    pageSize: 500,
     orderByField: "createdAt",
     orderByDirection: "desc",
     additionalConstraints: purchaseConstraints,
@@ -179,25 +191,31 @@ export default function DashboardSummary() {
         title="Total Clients"
         value={stats.totalClients}
         isLoading={loading}
+        delay={0}
       />
       <StatCard
         title="Plans Pending"
         value={stats.plansPending}
         isLoading={loading}
         isHighlight
+        delay={0.1}
       />
       <StatCard
         title="Plans Delivered"
         value={stats.plansDelivered}
         isLoading={loading}
+        delay={0.2}
       />
       <StatCard
         title="Revenue This Month"
-        value={`$${stats.revenueThisMonth.toFixed(2)}`}
+        value={`$${stats.revenueThisMonth.toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}`}
         isLoading={loading}
         isHighlight
+        delay={0.3}
       />
     </section>
   );
 }
-
