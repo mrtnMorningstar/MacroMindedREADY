@@ -105,9 +105,9 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
 
       {/* Sidebar - Always visible on desktop, animated on mobile */}
       <aside 
-        className={`fixed left-0 top-0 z-50 h-full w-64 border-r border-neutral-800 bg-neutral-900 lg:relative lg:translate-x-0 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0 transition-transform duration-300 ease-in-out`}
+        className={`fixed left-0 top-0 z-50 h-full w-64 border-r border-neutral-800 bg-neutral-900 transition-transform duration-300 ease-in-out ${
+          isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}
       >
         <div className="flex h-full flex-col">
           {/* Brand */}
