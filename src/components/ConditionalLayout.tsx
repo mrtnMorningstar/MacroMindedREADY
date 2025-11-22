@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { type ReactNode } from "react";
+import PageTransition from "@/components/ui/PageTransition";
 
 type ConditionalLayoutProps = {
   children: ReactNode;
@@ -11,14 +12,15 @@ type ConditionalLayoutProps = {
 
 /**
  * Conditionally wraps children based on the current route.
- * - On admin routes: Renders children directly without Navbar/Footer (admin layout handles everything)
+ * - On admin routes: Renders children directly without Navbar/Footer/PageTransition (admin layout handles everything)
  * - On other routes: Wraps children in the standard layout structure with Navbar and Footer
  */
 export function ConditionalLayout({ children, navbar, footer }: ConditionalLayoutProps) {
   const pathname = usePathname();
   const isAdminRoute = pathname?.startsWith("/admin");
 
-  // On admin routes, render children directly (admin layout handles everything)
+  // On admin routes, render children directly without any wrapping
+  // AdminLayout handles its own structure
   if (isAdminRoute) {
     return <>{children}</>;
   }
@@ -28,7 +30,7 @@ export function ConditionalLayout({ children, navbar, footer }: ConditionalLayou
     <div className="flex min-h-screen flex-col bg-background">
       {navbar}
       <main className="flex-1">
-        {children}
+        <PageTransition>{children}</PageTransition>
       </main>
       {footer}
     </div>

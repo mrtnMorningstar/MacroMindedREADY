@@ -50,7 +50,7 @@ export default function RootLayout({
                 footer={<Footer />}
               >
                 <ImpersonationBanner />
-                <PageTransition>{children}</PageTransition>
+                {children}
               </ConditionalLayout>
             </ToastProvider>
           </AppProvider>

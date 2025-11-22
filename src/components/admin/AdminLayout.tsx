@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAppContext } from "@/context/AppContext";
 import AdminSidebar from "./AdminSidebar";
+import ImpersonationBanner from "./ImpersonationBanner";
 
 // Icons
 import {
@@ -62,9 +63,11 @@ export default function AdminLayoutWrapper({ children }: AdminLayoutProps) {
   const userInitial = useMemo(() => user?.displayName?.[0] || "M", [user?.displayName]);
 
   return (
-    <div className="flex h-screen w-full bg-black text-white overflow-hidden">
-      {/* SIDEBAR - Always visible on desktop, toggleable on mobile */}
-      <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <>
+      <ImpersonationBanner />
+      <div className="flex h-screen w-full bg-black text-white overflow-hidden">
+        {/* SIDEBAR - Always visible on desktop, toggleable on mobile */}
+        <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* MAIN CONTENT AREA */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
@@ -105,12 +108,11 @@ export default function AdminLayoutWrapper({ children }: AdminLayoutProps) {
         </header>
 
         {/* MAIN CONTENT */}
-        <main className="flex-1 overflow-y-auto bg-neutral-950">
-          <div className="max-w-full px-6 py-8">
-            {children}
-          </div>
+        <main className="flex-1 overflow-y-auto bg-neutral-950 px-6 py-8">
+          {children}
         </main>
       </div>
     </div>
+    </>
   );
 }
