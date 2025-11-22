@@ -26,9 +26,11 @@ type AdminLayoutProps = {
 const pageTitles: Record<string, string> = {
   "/admin": "Dashboard",
   "/admin/clients": "Clients",
+  "/admin/sales": "Revenue",
+  "/admin/referrals": "Referrals",
   "/admin/plan-requests": "Plan Requests",
   "/admin/recipes": "Recipes",
-  "/admin/sales": "Sales & Revenue",
+  "/admin/manage-admins": "Manage Admins",
   "/admin/settings": "Settings",
 };
 
@@ -48,7 +50,7 @@ export default function AdminLayoutWrapper({ children }: AdminLayoutProps) {
   return (
     <div className="flex h-screen bg-black text-white">
 
-      {/* SIDEBAR */}
+      {/* SIDEBAR - Always visible on desktop, toggleable on mobile */}
       <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* MAIN CONTENT */}

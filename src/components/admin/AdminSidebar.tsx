@@ -11,6 +11,7 @@ import {
   ChartBarIcon,
   Cog6ToothIcon,
   ShieldCheckIcon,
+  GiftIcon,
 } from "@heroicons/react/24/outline";
 import {
   HomeIcon as HomeIconSolid,
@@ -20,6 +21,7 @@ import {
   ChartBarIcon as ChartBarIconSolid,
   Cog6ToothIcon as Cog6ToothIconSolid,
   ShieldCheckIcon as ShieldCheckIconSolid,
+  GiftIcon as GiftIconSolid,
 } from "@heroicons/react/24/solid";
 
 type AdminSidebarProps = {
@@ -41,6 +43,18 @@ const navLinks = [
     iconSolid: UsersIconSolid,
   },
   {
+    label: "Revenue",
+    href: "/admin/sales",
+    icon: ChartBarIcon,
+    iconSolid: ChartBarIconSolid,
+  },
+  {
+    label: "Referrals",
+    href: "/admin/referrals",
+    icon: GiftIcon,
+    iconSolid: GiftIconSolid,
+  },
+  {
     label: "Plan Requests",
     href: "/admin/plan-requests",
     icon: ClipboardDocumentListIcon,
@@ -52,26 +66,20 @@ const navLinks = [
     icon: SparklesIcon,
     iconSolid: SparklesIconSolid,
   },
-  {
-    label: "Sales & Revenue",
-    href: "/admin/sales",
-    icon: ChartBarIcon,
-    iconSolid: ChartBarIconSolid,
-  },
 ];
 
 const settingsLinks = [
+  {
+    label: "Manage Admins",
+    href: "/admin/manage-admins",
+    icon: ShieldCheckIcon,
+    iconSolid: ShieldCheckIconSolid,
+  },
   {
     label: "Settings",
     href: "/admin/settings",
     icon: Cog6ToothIcon,
     iconSolid: Cog6ToothIconSolid,
-  },
-  {
-    label: "Admins",
-    href: "/admin/manage-admins",
-    icon: ShieldCheckIcon,
-    iconSolid: ShieldCheckIconSolid,
   },
 ];
 
@@ -95,14 +103,11 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
         />
       )}
 
-      {/* Sidebar */}
-      <motion.aside
-        initial={false}
-        animate={{
-          x: isOpen ? 0 : "-100%",
-        }}
-        transition={{ type: "spring", damping: 30, stiffness: 300 }}
-        className="fixed left-0 top-0 z-50 h-full w-64 border-r border-neutral-800 bg-neutral-900 lg:translate-x-0"
+      {/* Sidebar - Always visible on desktop, animated on mobile */}
+      <aside 
+        className={`fixed left-0 top-0 z-50 h-full w-64 border-r border-neutral-800 bg-neutral-900 lg:relative lg:translate-x-0 ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        } lg:translate-x-0 transition-transform duration-300 ease-in-out`}
       >
         <div className="flex h-full flex-col">
           {/* Brand */}
@@ -187,7 +192,7 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
             </div>
           </nav>
         </div>
-      </motion.aside>
+      </aside>
     </>
   );
 }
