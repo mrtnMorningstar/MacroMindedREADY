@@ -38,10 +38,10 @@ export default withSentryConfig(nextConfig, {
   // side errors will fail.
   tunnelRoute: "/monitoring",
 
-  // Hides data sent to Sentry from browser DevTools.
-  // This is a recommended security measure.
-  hideSourceMaps: true,
-
   // Transpiles SDK to be compatible with IE11 (increases bundle size)
   transpileClientSDK: true,
+  
+  // Source maps configuration
+  // Note: hideSourceMaps is no longer a valid option in newer versions
+  // Source maps are automatically hidden in production builds
 });
