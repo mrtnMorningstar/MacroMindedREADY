@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { db } from "@/lib/firebase";
 import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
 import { Timestamp, where } from "firebase/firestore";
+import { MealPlanStatus } from "@/types/status";
 
 type DashboardStats = {
   totalClients: number;
