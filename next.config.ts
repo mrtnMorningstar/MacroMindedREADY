@@ -37,11 +37,7 @@ export default withSentryConfig(nextConfig, {
   // Note: Check that the configured route will not match with your Next.js middleware, otherwise reporting of client-
   // side errors will fail.
   tunnelRoute: "/monitoring",
-
-  // Transpiles SDK to be compatible with IE11 (increases bundle size)
-  transpileClientSDK: true,
   
-  // Source maps configuration
-  // Note: hideSourceMaps is no longer a valid option in newer versions
-  // Source maps are automatically hidden in production builds
+  // Note: Some Sentry config options (transpileClientSDK, hideSourceMaps) are no longer valid
+  // in newer versions of @sentry/nextjs. Source maps and SDK transpilation are handled automatically.
 });
