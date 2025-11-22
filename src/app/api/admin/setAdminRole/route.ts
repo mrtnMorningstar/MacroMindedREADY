@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import * as Sentry from "@sentry/nextjs";
 
 import { getAdminAuth, getAdminDb } from "@/lib/firebase-admin";
 
@@ -139,18 +138,6 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Error in setAdminRole API:", error);
-    
-    // Capture error to Sentry
-    Sentry.captureException(error, {
-      tags: {
-        route: "/api/admin/setAdminRole",
-        type: "admin_error",
-      },
-      extra: {
-        requesterUid: decodedToken?.uid,
-        targetUid: body?.uid,
-      },
-    });
     
     return NextResponse.json(
       {

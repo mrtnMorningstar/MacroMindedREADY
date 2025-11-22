@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import * as Sentry from "@sentry/nextjs";
 import { FieldValue } from "firebase-admin/firestore";
 
 import { getAdminAuth, getAdminDb } from "@/lib/firebase-admin";
@@ -126,12 +125,6 @@ export async function POST(request: Request) {
       userReferralCode = await generateUniqueReferralCode(trimmedName);
     } catch (error) {
       console.error("Failed to generate referral code:", error);
-      Sentry.captureException(error, {
-        tags: {
-          route: "/api/user/create-user-document",
-          type: "referral_code_generation_error",
-        },
-      });
       return NextResponse.json(
         { error: "Failed to generate referral code. Please try again." },
         { status: 500 }
@@ -158,17 +151,6 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Error in create-user-document API:", error);
-
-    // Capture error to Sentry
-    Sentry.captureException(error, {
-      tags: {
-        route: "/api/user/create-user-document",
-        type: "user_error",
-      },
-      extra: {
-        userId: decodedToken?.uid,
-      },
-    });
 
     return NextResponse.json(
       {

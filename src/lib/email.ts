@@ -2,7 +2,6 @@
 
 import { Resend } from "resend";
 import { render } from "@react-email/render";
-import * as Sentry from "@sentry/nextjs";
 import type { ReactElement } from "react";
 
 type SendEmailArgs = {
@@ -55,20 +54,6 @@ export async function sendEmail({ to, subject, html, react }: SendEmailArgs) {
     });
   } catch (err) {
     console.error("Email send error:", err);
-    
-    // Capture email sending errors to Sentry
-    Sentry.captureException(err, {
-      tags: {
-        type: "email_error",
-        service: "resend",
-      },
-      extra: {
-        to,
-        subject,
-        // Don't include html content as it may be large
-      },
-    });
-    
     throw err;
   }
 }

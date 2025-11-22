@@ -1,43 +1,4 @@
 export async function register() {
-  if (process.env.NEXT_RUNTIME === "nodejs") {
-    await import("./sentry.server.config");
-  }
-
-  if (process.env.NEXT_RUNTIME === "edge") {
-    await import("./sentry.edge.config");
-  }
-}
-
-// Instrument request errors from nested React Server Components
-export async function onRequestError(
-  err: Error,
-  request: {
-    path: string;
-    method: string;
-    headers: Headers;
-  },
-  context: {
-    routerKind: string;
-    routePath: string;
-  }
-) {
-  const { captureRequestError } = await import("@sentry/nextjs");
-  
-  // Convert Headers object to plain object for Sentry
-  const headersRecord: Record<string, string | string[] | undefined> = {};
-  request.headers.forEach((value, key) => {
-    headersRecord[key] = value;
-  });
-  
-  // Ensure context has required routeType property
-  const errorContext = {
-    ...context,
-    routeType: context.routerKind === "pages" ? "pages" : "app",
-  };
-  
-  captureRequestError(err, {
-    ...request,
-    headers: headersRecord,
-  }, errorContext);
+  // No-op: Sentry removed
 }
 

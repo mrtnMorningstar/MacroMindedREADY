@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import * as Sentry from "@sentry/nextjs";
 
 import { getStripe } from "@/lib/stripe";
 import { PRICE_IDS } from "@/lib/prices";
@@ -125,19 +124,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ url: session.url });
   } catch (error) {
     console.error("Failed to create checkout session:", error);
-    
-    // Capture error to Sentry
-    Sentry.captureException(error, {
-      tags: {
-        route: "/api/checkout",
-        type: "checkout_error",
-      },
-      extra: {
-        plan: body?.plan,
-        userId: body?.userId,
-        requesterUid: decodedToken?.uid,
-      },
-    });
     
     const message =
       error instanceof Error

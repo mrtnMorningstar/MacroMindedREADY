@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
 import { Timestamp } from "firebase-admin/firestore";
-import * as Sentry from "@sentry/nextjs";
 
 import { getAdminDb } from "@/lib/firebase-admin";
 
@@ -57,13 +56,6 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error in verify-impersonation API:", error);
     
-    Sentry.captureException(error, {
-      tags: {
-        route: "/api/admin/verify-impersonation",
-        type: "admin_error",
-      },
-    });
-    
     const redirectUrl = new URL(redirect, request.url);
     redirectUrl.searchParams.set("error", "impersonation_error");
     return NextResponse.redirect(redirectUrl);
@@ -100,13 +92,6 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Error in verify-impersonation API:", error);
-    
-    Sentry.captureException(error, {
-      tags: {
-        route: "/api/admin/verify-impersonation",
-        type: "admin_error",
-      },
-    });
     
     return NextResponse.json(
       {
@@ -178,12 +163,6 @@ async function verifyAndConsumeToken(token: string): Promise<{
     };
   } catch (error) {
     console.error("Error verifying impersonation token:", error);
-    Sentry.captureException(error, {
-      tags: {
-        route: "/api/admin/verify-impersonation",
-        type: "admin_error",
-      },
-    });
     return { success: false, error: "Internal server error." };
   }
 }

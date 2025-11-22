@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import * as Sentry from "@sentry/nextjs";
 import { sendEmail } from "@/lib/email";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -79,17 +78,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Failed to send reminder email:", error);
-    
-    // Capture error to Sentry
-    Sentry.captureException(error, {
-      tags: {
-        route: "/api/admin/send-reminder-email",
-        type: "email_error",
-      },
-      extra: {
-        userId: body?.userId,
-      },
-    });
     
     return NextResponse.json(
       { error: "Failed to send reminder email" },

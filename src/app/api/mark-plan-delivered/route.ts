@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import * as Sentry from "@sentry/nextjs";
 import { FieldValue } from "firebase-admin/firestore";
 
 import { getAdminAuth, getAdminDb } from "@/lib/firebase-admin";
@@ -128,16 +127,7 @@ export async function POST(request: Request) {
       }
     } catch (purchaseError) {
       console.error("Failed to update purchase record:", purchaseError);
-      // Log to Sentry but don't fail the request
-      Sentry.captureException(purchaseError, {
-        tags: {
-          route: "/api/mark-plan-delivered",
-          type: "purchase_update_warning",
-        },
-        extra: {
-          userId,
-        },
-      });
+      // Log error but don't fail the request
     }
 
     // Send delivery email
@@ -159,18 +149,6 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Failed to mark plan as delivered:", error);
-    
-    // Capture error to Sentry
-    Sentry.captureException(error, {
-      tags: {
-        route: "/api/mark-plan-delivered",
-        type: "delivery_error",
-      },
-      extra: {
-        userId: body?.userId,
-        requesterUid: decodedToken?.uid,
-      },
-    });
     
     return NextResponse.json(
       {

@@ -13,7 +13,6 @@
     "@react-email/components": "^0.0.27",
     "@react-email/render": "^0.0.14",
     "@sendgrid/mail": "^8.1.6",
-    "@sentry/nextjs": "^10.26.0",
     "@stripe/stripe-js": "^8.3.0",
     "dayjs": "^1.11.19",
     "dotenv": "^17.2.3",

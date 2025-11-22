@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import * as Sentry from "@sentry/nextjs";
 import { FieldValue } from "firebase-admin/firestore";
 
 import { getAdminAuth, getAdminDb } from "@/lib/firebase-admin";
@@ -102,17 +101,6 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Error in create-plan-update-request API:", error);
-
-    // Capture error to Sentry
-    Sentry.captureException(error, {
-      tags: {
-        route: "/api/user/create-plan-update-request",
-        type: "user_error",
-      },
-      extra: {
-        userId: decodedToken?.uid,
-      },
-    });
 
     return NextResponse.json(
       {

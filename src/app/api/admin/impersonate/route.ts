@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { randomBytes } from "crypto";
 import { Timestamp } from "firebase-admin/firestore";
-import * as Sentry from "@sentry/nextjs";
 
 import { getAdminAuth, getAdminDb } from "@/lib/firebase-admin";
 
@@ -113,18 +112,6 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Error in impersonate API:", error);
-    
-    // Capture error to Sentry
-    Sentry.captureException(error, {
-      tags: {
-        route: "/api/admin/impersonate",
-        type: "admin_error",
-      },
-      extra: {
-        requesterUid: decodedToken?.uid,
-        targetUserId: body?.targetUserId,
-      },
-    });
     
     return NextResponse.json(
       {

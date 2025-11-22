@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import * as Sentry from "@sentry/nextjs";
 
 import { sendMealPlanEmail } from "@/lib/resend";
 
@@ -21,14 +20,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Failed to send meal plan email", error);
-    
-    // Capture error to Sentry
-    Sentry.captureException(error, {
-      tags: {
-        route: "/api/notifications/meal-plan",
-        type: "email_error",
-      },
-    });
     
     return NextResponse.json(
       { error: "Failed to send meal plan email." },

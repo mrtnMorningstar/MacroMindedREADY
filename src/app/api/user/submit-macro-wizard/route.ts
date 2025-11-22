@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import * as Sentry from "@sentry/nextjs";
 import { FieldValue } from "firebase-admin/firestore";
 
 import { getAdminAuth, getAdminDb } from "@/lib/firebase-admin";
@@ -152,17 +151,6 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Error in submit-macro-wizard API:", error);
-
-    // Capture error to Sentry
-    Sentry.captureException(error, {
-      tags: {
-        route: "/api/user/submit-macro-wizard",
-        type: "user_error",
-      },
-      extra: {
-        userId: decodedToken?.uid,
-      },
-    });
 
     return NextResponse.json(
       {

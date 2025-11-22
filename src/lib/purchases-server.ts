@@ -1,5 +1,4 @@
 import { FieldValue } from "firebase-admin/firestore";
-import * as Sentry from "@sentry/nextjs";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { sendEmail } from "@/lib/email";
 import { MealPlanDeliveredEmail } from "../../emails/meal-plan-delivered";
@@ -11,7 +10,7 @@ import { MealPlanDeliveredEmail } from "../../emails/meal-plan-delivered";
  * - Uses Firebase Admin SDK for secure Firestore writes
  * - Updates purchase record with delivery information
  * - Sends delivery email notification
- * - Properly handles errors with Sentry logging
+ * - Properly handles errors
  */
 export async function deliverMealPlan(
   purchaseId: string,
@@ -61,17 +60,8 @@ export async function deliverMealPlan(
       }),
     });
   } catch (error) {
-    // Capture error to Sentry
-    Sentry.captureException(error, {
-      tags: {
-        function: "deliverMealPlan",
-        type: "purchase_error",
-      },
-      extra: {
-        purchaseId,
-        userEmail,
-      },
-    });
+    // Log error
+    console.error("Failed to deliver meal plan:", error);
     throw error;
   }
 }

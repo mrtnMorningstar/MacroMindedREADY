@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { FieldValue } from "firebase-admin/firestore";
-import * as Sentry from "@sentry/nextjs";
 
 import { getStripe } from "@/lib/stripe";
 import { adminDb } from "@/lib/firebase-admin";
-import { captureWebhookError } from "@/lib/sentry";
 import { MealPlanStatus } from "@/types/status";
 
 export const runtime = "nodejs";
@@ -148,16 +146,6 @@ export async function POST(request: Request) {
     console.error("Webhook handling failed:", error);
     const errorMessage = error instanceof Error ? error.message : "Failed to handle webhook.";
     const errorStack = error instanceof Error ? error.stack : undefined;
-    
-    // Capture error to Sentry with context
-    captureWebhookError(error, {
-      webhookType: "stripe",
-      eventId: event?.id,
-      eventType: event?.type,
-      sessionId: (event?.data?.object as Stripe.Checkout.Session)?.id,
-      errorMessage,
-      errorStack,
-    });
     
     // Log detailed error for debugging
     console.error("Error details:", {

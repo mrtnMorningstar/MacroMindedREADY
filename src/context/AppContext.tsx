@@ -4,7 +4,6 @@ import { createContext, useContext, useEffect, useState, useCallback, useMemo, t
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import * as Sentry from "@sentry/nextjs";
 import { auth, db } from "@/lib/firebase";
 import { isAdmin } from "@/lib/admin";
 import { getUserPurchase } from "@/lib/purchases";
@@ -181,17 +180,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (!u && user) {
         // User was logged in but now logged out - session expired
         setSessionExpired(true);
-        Sentry.setUser(null);
       } else {
         setSessionExpired(false);
-        if (u) {
-          Sentry.setUser({
-            id: u.uid,
-            email: u.email || undefined,
-          });
-        } else {
-          Sentry.setUser(null);
-        }
       }
       setUser(u);
       setLoadingAuth(false);
