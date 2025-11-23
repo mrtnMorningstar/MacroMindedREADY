@@ -308,7 +308,7 @@ export default function ClientDetailSlideover({
             <div className="space-y-4">
               {/* Name */}
               <div>
-                <label htmlFor="clientName" className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
+                <label htmlFor={editing === "name" ? "clientName" : undefined} className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
                   Name
                 </label>
                 {editing === "name" ? (
@@ -352,7 +352,7 @@ export default function ClientDetailSlideover({
 
               {/* Email */}
               <div>
-                <label htmlFor="clientEmail" className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
+                <label htmlFor={editing === "email" ? "clientEmail" : undefined} className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
                   Email
                 </label>
                 {editing === "email" ? (
@@ -393,7 +393,7 @@ export default function ClientDetailSlideover({
 
               {/* Package Tier */}
               <div>
-                <label htmlFor="clientPackageTier" className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
+                <label htmlFor={editing === "packageTier" ? "clientPackageTier" : undefined} className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
                   Package Tier
                 </label>
                 {editing === "packageTier" ? (
@@ -438,7 +438,7 @@ export default function ClientDetailSlideover({
 
               {/* Meal Plan Status */}
               <div>
-                <label htmlFor="clientMealPlanStatus" className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
+                <label htmlFor={editing === "mealPlanStatus" ? "clientMealPlanStatus" : undefined} className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
                   Meal Plan Status
                 </label>
                 {editing === "mealPlanStatus" ? (
@@ -492,7 +492,7 @@ export default function ClientDetailSlideover({
 
               {/* Referral Credits */}
               <div>
-                <label htmlFor="clientReferralCredits" className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
+                <label htmlFor={editing === "referralCredits" ? "clientReferralCredits" : undefined} className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
                   Referral Credits
                 </label>
                 {editing === "referralCredits" ? (
