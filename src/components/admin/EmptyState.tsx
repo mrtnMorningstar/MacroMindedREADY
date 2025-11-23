@@ -23,7 +23,7 @@ export default function EmptyState({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className={`rounded-2xl border border-neutral-800 bg-neutral-900 p-12 text-center ${className}`}
+      className={`rounded-2xl border border-neutral-800/50 bg-gradient-to-br from-neutral-900 to-neutral-950 p-12 text-center shadow-xl ${className}`}
     >
       <div className="max-w-md mx-auto">
         {icon && (
@@ -31,14 +31,14 @@ export default function EmptyState({
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.1, duration: 0.3 }}
-            className="text-neutral-600 mb-4 flex justify-center"
+            className="text-neutral-600 mb-6 flex justify-center"
           >
             {icon}
           </motion.div>
         )}
-        <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
+        <h3 className="text-xl font-bold text-white mb-3 font-display">{title}</h3>
         {description && (
-          <p className="text-sm text-neutral-400 mb-6">{description}</p>
+          <p className="text-sm text-neutral-400 mb-6 leading-relaxed">{description}</p>
         )}
         {action && (
           <motion.div
@@ -53,4 +53,3 @@ export default function EmptyState({
     </motion.div>
   );
 }
-

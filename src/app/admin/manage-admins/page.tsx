@@ -9,7 +9,7 @@ import { useToast } from "@/components/ui/Toast";
 import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
 import TableContainer from "@/components/admin/TableContainer";
 import EmptyState from "@/components/admin/EmptyState";
-import { ShieldCheckIcon } from "@heroicons/react/24/outline";
+import { ShieldCheckIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 
 type UserRecord = {
   id: string;
@@ -44,7 +44,7 @@ export default function ManageAdminsPage() {
   const filteredUsers = useMemo(() => {
     let filtered = users;
 
-    // Filter by role for display purposes only (role field is display-only, NOT used for authorization)
+    // Filter by role for display purposes only
     if (filterRole === "admin") {
       filtered = filtered.filter((u) => u.role === "admin");
     } else if (filterRole === "user") {
@@ -81,7 +81,6 @@ export default function ManageAdminsPage() {
       try {
         const makeAdmin = currentRole !== "admin";
         
-        // Get the current user's ID token for authorization
         const { auth } = await import("@/lib/firebase");
         const { currentUser } = auth;
         if (!currentUser) {
@@ -91,7 +90,6 @@ export default function ManageAdminsPage() {
 
         const idToken = await currentUser.getIdToken();
 
-        // Use the API route which handles custom claims AND Firestore role field
         const response = await fetch("/api/admin/setAdminRole", {
           method: "POST",
           headers: {
@@ -111,6 +109,7 @@ export default function ManageAdminsPage() {
         }
 
         toast.success(makeAdmin ? "User promoted to admin" : "Admin role removed");
+        await refresh();
       } catch (error) {
         console.error("Failed to update admin role:", error);
         toast.error(error instanceof Error ? error.message : "Failed to update admin role");
@@ -122,7 +121,7 @@ export default function ManageAdminsPage() {
         });
       }
     },
-    [toast]
+    [toast, refresh]
   );
 
   return (
@@ -130,28 +129,64 @@ export default function ManageAdminsPage() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      className="flex flex-col gap-6"
+      className="flex flex-col gap-8"
     >
-      {/* Filters */}
-      <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      {/* Page Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col gap-2"
+      >
+        <h2 className="text-3xl font-bold text-white font-display tracking-tight">
+          Manage Admins
+        </h2>
+        <p className="text-sm text-neutral-400">
+          Grant or revoke admin access to users
+        </p>
+      </motion.div>
+
+      {/* Filters and Search */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="rounded-2xl border border-neutral-800/50 bg-gradient-to-br from-neutral-900 to-neutral-950 p-6 shadow-xl"
+      >
+        <div className="flex flex-col gap-4">
+          {/* Search */}
+          <div className="relative">
+            <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-500 pointer-events-none" />
+            <input
+              id="adminSearch"
+              name="adminSearch"
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name or email..."
+              className="w-full pl-12 pr-4 py-3 rounded-xl bg-neutral-800/50 border border-neutral-800 text-white text-sm placeholder:text-neutral-500 focus:outline-none focus:border-[#D7263D] focus:ring-2 focus:ring-[#D7263D]/20 transition-all duration-200"
+            />
+          </div>
+          
+          {/* Role Filter */}
           <div className="flex flex-wrap gap-2">
             {(["all", "admin", "user"] as const).map((f) => (
-              <button
+              <motion.button
                 key={f}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setFilterRole(f)}
-                className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-200 ${
                   filterRole === f
-                    ? "bg-[#D7263D] text-white"
-                    : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+                    ? "bg-[#D7263D] text-white shadow-[0_0_20px_-10px_rgba(215,38,61,0.5)]"
+                    : "bg-neutral-800/50 text-neutral-300 hover:bg-neutral-800 hover:text-white border border-neutral-800"
                 }`}
               >
                 {f === "all" ? "All" : f === "admin" ? "Admins" : "Users"}
-              </button>
+              </motion.button>
             ))}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Users Table */}
       {loadingUsers ? (
@@ -173,31 +208,32 @@ export default function ManageAdminsPage() {
           }
         >
           <table className="w-full">
-            <thead className="bg-neutral-800/50">
+            <thead className="bg-neutral-800/50 border-b border-neutral-800/50">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.15em] text-neutral-400">
                   User
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.15em] text-neutral-400">
                   Package
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.15em] text-neutral-400">
                   Role
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.15em] text-neutral-400">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-800">
+            <tbody className="divide-y divide-neutral-800/50">
               {filteredUsers.map((user, index) => (
                 <motion.tr
                   key={user.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className={`hover:bg-neutral-800/30 transition ${
-                    index % 2 === 0 ? "bg-neutral-900/50" : "bg-neutral-900"
+                  transition={{ delay: index * 0.03 }}
+                  whileHover={{ x: 4 }}
+                  className={`hover:bg-neutral-800/30 transition-all duration-200 ${
+                    index % 2 === 0 ? "bg-neutral-900/30" : "bg-neutral-900/50"
                   }`}
                 >
                   <td className="px-6 py-4">
@@ -215,31 +251,33 @@ export default function ManageAdminsPage() {
                   </td>
                   <td className="px-6 py-4">
                     <span
-                      className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${
+                      className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold ${
                         user.role === "admin"
-                          ? "bg-[#D7263D]/20 text-[#D7263D] border-[#D7263D]/50"
-                          : "bg-neutral-600/20 text-neutral-400 border-neutral-600/50"
+                          ? "bg-[#D7263D]/20 text-[#D7263D] border-[#D7263D]/30"
+                          : "bg-neutral-600/20 text-neutral-400 border-neutral-600/30"
                       }`}
                     >
                       {user.role === "admin" ? "Admin" : "User"}
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <button
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       onClick={() => handleToggleAdmin(user.id, user.role)}
                       disabled={updatingUids.has(user.id)}
-                      className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                      className={`rounded-xl px-5 py-2 text-sm font-semibold transition-all duration-200 ${
                         user.role === "admin"
-                          ? "border border-red-500/50 bg-red-500/20 text-red-500 hover:bg-red-500/30"
-                          : "border border-[#D7263D] bg-[#D7263D] text-white hover:bg-[#D7263D]/90"
-                      } disabled:opacity-50`}
+                          ? "border border-red-500/50 bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                          : "border border-[#D7263D] bg-[#D7263D] text-white hover:bg-[#D7263D]/90 hover:shadow-[0_0_15px_-8px_rgba(215,38,61,0.5)]"
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                       {updatingUids.has(user.id)
                         ? "Updating..."
                         : user.role === "admin"
                         ? "Remove Admin"
                         : "Make Admin"}
-                    </button>
+                    </motion.button>
                   </td>
                 </motion.tr>
               ))}

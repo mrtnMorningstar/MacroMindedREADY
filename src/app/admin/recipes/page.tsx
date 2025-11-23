@@ -106,7 +106,7 @@ export default function AdminRecipesPage() {
       const { uploadRecipeImageWithThumbnail } = await import("@/lib/image-utils");
       const { fullUrl } = await uploadRecipeImageWithThumbnail(imageFile);
       setUploadingAsset(false);
-      return fullUrl; // Store only full URL, thumbnails are generated automatically
+      return fullUrl;
     } catch (error) {
       console.error("Failed to upload image:", error);
       toast.error("Failed to upload image");
@@ -149,8 +149,6 @@ export default function AdminRecipesPage() {
         setImagePreview(null);
         setSelectedRecipeId(null);
         setShowForm(false);
-        
-        // Refresh the list to show new/updated recipe
         await refresh();
       } catch (error) {
         console.error("Failed to save recipe:", error);
@@ -159,7 +157,7 @@ export default function AdminRecipesPage() {
         setIsSubmitting(false);
       }
     },
-    [formState, imageFile, selectedRecipeId, handleUploadImage, toast]
+    [formState, imageFile, selectedRecipeId, handleUploadImage, toast, refresh]
   );
 
   const handleEdit = useCallback((recipe: RecipeDocument) => {
@@ -186,7 +184,6 @@ export default function AdminRecipesPage() {
         await deleteDoc(doc(db, "recipes", recipeId));
         toast.success("Recipe deleted successfully");
         setShowDeleteConfirm(null);
-        // Refresh the list to remove deleted recipe
         await refresh();
       } catch (error) {
         console.error("Failed to delete recipe:", error);
@@ -201,15 +198,36 @@ export default function AdminRecipesPage() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      className="flex flex-col gap-6"
+      className="flex flex-col gap-8"
     >
+      {/* Page Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col gap-2"
+      >
+        <h2 className="text-3xl font-bold text-white font-display tracking-tight">
+          Recipes
+        </h2>
+        <p className="text-sm text-neutral-400">
+          Manage your recipe library
+        </p>
+      </motion.div>
+
       {/* Header with Create Button */}
-      <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="rounded-2xl border border-neutral-800/50 bg-gradient-to-br from-neutral-900 to-neutral-950 p-6 shadow-xl"
+      >
         <div className="flex items-center justify-between">
-          <p className="text-sm text-neutral-400">
+          <p className="text-sm font-semibold text-neutral-300">
             {recipes.length} recipe{recipes.length !== 1 ? "s" : ""} total
           </p>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => {
               setFormState(initialFormState);
               setImageFile(null);
@@ -217,13 +235,13 @@ export default function AdminRecipesPage() {
               setSelectedRecipeId(null);
               setShowForm(true);
             }}
-            className="flex items-center gap-2 rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
+            className="flex items-center gap-2 rounded-xl border border-[#D7263D] bg-[#D7263D] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 hover:shadow-[0_0_20px_-10px_rgba(215,38,61,0.5)]"
           >
             <PlusIcon className="h-5 w-5" />
             Create New Recipe
-          </button>
+          </motion.button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Recipe Grid */}
       {loading ? (
@@ -238,12 +256,14 @@ export default function AdminRecipesPage() {
           title="No recipes yet"
           description="Create your first recipe to get started building your recipe library."
           action={
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setShowForm(true)}
-              className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
+              className="rounded-xl border border-[#D7263D] bg-[#D7263D] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 hover:shadow-[0_0_20px_-10px_rgba(215,38,61,0.5)]"
             >
               Create Recipe
-            </button>
+            </motion.button>
           }
         />
       ) : (
@@ -254,7 +274,8 @@ export default function AdminRecipesPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              className="rounded-2xl border border-neutral-800 bg-neutral-900 overflow-hidden"
+              whileHover={{ scale: 1.02, y: -4 }}
+              className="rounded-2xl border border-neutral-800/50 bg-gradient-to-br from-neutral-900 to-neutral-950 overflow-hidden shadow-xl hover:shadow-2xl hover:border-[#D7263D]/30 transition-all duration-300 group"
             >
               {recipe.imageURL && (
                 <div className="relative h-48 w-full overflow-hidden">
@@ -263,42 +284,48 @@ export default function AdminRecipesPage() {
                     alt={recipe.title}
                     fill
                     sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    className="object-cover"
+                    className="object-cover group-hover:scale-110 transition-transform duration-300"
                     loading="lazy"
                     unoptimized
                   />
                 </div>
               )}
               <div className="p-6">
-                <h3 className="text-lg font-semibold text-white mb-2">{recipe.title}</h3>
-                <p className="text-sm text-neutral-400 mb-4 line-clamp-2">
+                <h3 className="text-lg font-bold text-white mb-2 font-display">
+                  {recipe.title}
+                </h3>
+                <p className="text-sm text-neutral-400 mb-4 line-clamp-2 leading-relaxed">
                   {recipe.description}
                 </p>
                 <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="rounded-full border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs text-neutral-300">
+                  <span className="rounded-full border border-neutral-700 bg-neutral-800/50 px-2.5 py-1 text-xs font-semibold text-neutral-300">
                     {recipe.protein}g P
                   </span>
-                  <span className="rounded-full border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs text-neutral-300">
+                  <span className="rounded-full border border-neutral-700 bg-neutral-800/50 px-2.5 py-1 text-xs font-semibold text-neutral-300">
                     {recipe.carbs}g C
                   </span>
-                  <span className="rounded-full border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs text-neutral-300">
+                  <span className="rounded-full border border-neutral-700 bg-neutral-800/50 px-2.5 py-1 text-xs font-semibold text-neutral-300">
                     {recipe.fats}g F
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => handleEdit(recipe)}
-                    className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700"
+                    className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-neutral-700 bg-neutral-800/50 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700 hover:text-white"
                   >
                     <PencilIcon className="h-4 w-4" />
                     Edit
-                  </button>
-                  <button
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => setShowDeleteConfirm(recipe.id)}
-                    className="flex items-center justify-center gap-2 rounded-lg border border-red-500/50 bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-500/30"
+                    className="flex items-center justify-center gap-2 rounded-xl border border-red-500/50 bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-500/30"
                   >
                     <TrashIcon className="h-4 w-4" />
-                  </button>
+                  </motion.button>
                 </div>
               </div>
             </motion.div>
@@ -308,15 +335,18 @@ export default function AdminRecipesPage() {
 
       {/* Load More Button */}
       {hasMore && (
-        <div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
           <button
             onClick={loadMore}
             disabled={loadingMore}
-            className="w-full rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-xl border border-[#D7263D] bg-[#D7263D] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 hover:shadow-[0_0_20px_-10px_rgba(215,38,61,0.5)] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loadingMore ? "Loading..." : "Load More Recipes"}
           </button>
-        </div>
+        </motion.div>
       )}
 
       {!hasMore && recipes.length > 0 && (
@@ -340,17 +370,17 @@ export default function AdminRecipesPage() {
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-neutral-300 mb-2">Title</label>
+            <label className="block text-sm font-semibold text-white mb-2">Title</label>
             <input
               type="text"
               value={formState.title}
               onChange={(e) => setFormState({ ...formState, title: e.target.value })}
               required
-              className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white focus:border-[#D7263D] focus:outline-none"
+              className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white focus:border-[#D7263D] focus:outline-none focus:ring-2 focus:ring-[#D7263D]/20 transition-all"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-neutral-300 mb-2">
+            <label className="block text-sm font-semibold text-white mb-2">
               Description
             </label>
             <textarea
@@ -358,13 +388,13 @@ export default function AdminRecipesPage() {
               onChange={(e) => setFormState({ ...formState, description: e.target.value })}
               required
               rows={3}
-              className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-3 text-sm text-white focus:border-[#D7263D] focus:outline-none"
+              className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-3 text-sm text-white focus:border-[#D7263D] focus:outline-none focus:ring-2 focus:ring-[#D7263D]/20 transition-all"
             />
           </div>
           <div className="grid grid-cols-4 gap-4">
             {(["calories", "protein", "carbs", "fats"] as const).map((field) => (
               <div key={field}>
-                <label className="block text-sm font-semibold text-neutral-300 mb-2 capitalize">
+                <label className="block text-sm font-semibold text-white mb-2 capitalize">
                   {field}
                 </label>
                 <input
@@ -372,13 +402,13 @@ export default function AdminRecipesPage() {
                   value={formState[field]}
                   onChange={(e) => setFormState({ ...formState, [field]: e.target.value })}
                   required
-                  className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white focus:border-[#D7263D] focus:outline-none"
+                  className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white focus:border-[#D7263D] focus:outline-none focus:ring-2 focus:ring-[#D7263D]/20 transition-all"
                 />
               </div>
             ))}
           </div>
           <div>
-            <label className="block text-sm font-semibold text-neutral-300 mb-2">
+            <label className="block text-sm font-semibold text-white mb-2">
               Ingredients (one per line)
             </label>
             <textarea
@@ -386,11 +416,11 @@ export default function AdminRecipesPage() {
               onChange={(e) => setFormState({ ...formState, ingredients: e.target.value })}
               required
               rows={5}
-              className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-3 text-sm text-white focus:border-[#D7263D] focus:outline-none"
+              className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-3 text-sm text-white focus:border-[#D7263D] focus:outline-none focus:ring-2 focus:ring-[#D7263D]/20 transition-all"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-neutral-300 mb-2">
+            <label className="block text-sm font-semibold text-white mb-2">
               Steps (one per line)
             </label>
             <textarea
@@ -398,22 +428,22 @@ export default function AdminRecipesPage() {
               onChange={(e) => setFormState({ ...formState, steps: e.target.value })}
               required
               rows={5}
-              className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-3 text-sm text-white focus:border-[#D7263D] focus:outline-none"
+              className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-3 text-sm text-white focus:border-[#D7263D] focus:outline-none focus:ring-2 focus:ring-[#D7263D]/20 transition-all"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-neutral-300 mb-2">
+            <label className="block text-sm font-semibold text-white mb-2">
               Tags (comma-separated)
             </label>
             <input
               type="text"
               value={formState.tags}
               onChange={(e) => setFormState({ ...formState, tags: e.target.value })}
-              className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white focus:border-[#D7263D] focus:outline-none"
+              className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white focus:border-[#D7263D] focus:outline-none focus:ring-2 focus:ring-[#D7263D]/20 transition-all"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-neutral-300 mb-2">Image</label>
+            <label className="block text-sm font-semibold text-white mb-2">Image</label>
             <div className="space-y-3">
               {imagePreview && (
                 <div className="relative h-32 w-32 overflow-hidden rounded-lg border border-neutral-800">
@@ -434,7 +464,7 @@ export default function AdminRecipesPage() {
                   onChange={handleImageChange}
                   className="hidden"
                 />
-                <div className="flex items-center gap-2 rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700">
+                <div className="flex items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-800/50 px-4 py-2.5 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700 hover:text-white">
                   <ArrowUpTrayIcon className="h-5 w-5" />
                   {imageFile ? "Change Image" : "Upload Image"}
                 </div>
@@ -451,14 +481,14 @@ export default function AdminRecipesPage() {
                 setImagePreview(null);
                 setSelectedRecipeId(null);
               }}
-              className="rounded-lg border border-neutral-700 bg-neutral-800 px-6 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700"
+              className="rounded-xl border border-neutral-700 bg-neutral-800 px-6 py-2.5 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting || uploadingAsset}
-              className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-6 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50"
+              className="rounded-xl border border-[#D7263D] bg-[#D7263D] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 hover:shadow-[0_0_20px_-10px_rgba(215,38,61,0.5)] disabled:opacity-50"
             >
               {isSubmitting ? "Saving..." : selectedRecipeId ? "Update" : "Create"}
             </button>
@@ -480,13 +510,13 @@ export default function AdminRecipesPage() {
           <div className="flex gap-3 justify-end">
             <button
               onClick={() => setShowDeleteConfirm(null)}
-              className="rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700"
+              className="rounded-xl border border-neutral-700 bg-neutral-800 px-4 py-2.5 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700"
             >
               Cancel
             </button>
             <button
               onClick={() => showDeleteConfirm && handleDelete(showDeleteConfirm)}
-              className="rounded-lg border border-red-500/50 bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-500/30"
+              className="rounded-xl border border-red-500/50 bg-red-500/20 px-4 py-2.5 text-sm font-semibold text-red-500 transition hover:bg-red-500/30"
             >
               Delete Recipe
             </button>

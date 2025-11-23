@@ -99,7 +99,6 @@ export default function PlanRequestsPage() {
           handled: true,
         });
         toast.success("Request marked as handled");
-        // Refresh to show updated state
         await refresh();
       } catch (error) {
         console.error("Failed to mark as handled:", error);
@@ -124,7 +123,6 @@ export default function PlanRequestsPage() {
       });
       await batch.commit();
       toast.success(`Marked ${unhandledRequests.length} requests as handled`);
-      // Refresh to show updated state
       await refresh();
     } catch (error) {
       console.error("Failed to mark all as handled:", error);
@@ -160,69 +158,94 @@ export default function PlanRequestsPage() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      className="flex flex-col gap-6"
+      className="flex flex-col gap-8"
     >
+      {/* Page Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col gap-2"
+      >
+        <h2 className="text-3xl font-bold text-white font-display tracking-tight">
+          Plan Requests
+        </h2>
+        <p className="text-sm text-neutral-400">
+          Review and manage plan update requests from clients
+        </p>
+      </motion.div>
+
       {/* Filters */}
-      <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="rounded-2xl border border-neutral-800/50 bg-gradient-to-br from-neutral-900 to-neutral-950 p-6 shadow-xl"
+      >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-neutral-400">
+          <p className="text-sm font-semibold text-neutral-300">
             {unhandledRequests.length} unhandled request{unhandledRequests.length !== 1 ? "s" : ""}
           </p>
           <div className="flex items-center gap-3">
             <div className="flex gap-2">
               {(["all", "unhandled", "handled"] as FilterType[]).map((f) => (
-                <button
+                <motion.button
                   key={f}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => setFilter(f)}
-                  className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                  className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-200 ${
                     filter === f
-                      ? "bg-[#D7263D] text-white"
-                      : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+                      ? "bg-[#D7263D] text-white shadow-[0_0_20px_-10px_rgba(215,38,61,0.5)]"
+                      : "bg-neutral-800/50 text-neutral-300 hover:bg-neutral-800 hover:text-white border border-neutral-800"
                   }`}
                 >
                   {f === "all" ? "All" : f === "unhandled" ? "Unhandled" : "Handled"}
-                </button>
+                </motion.button>
               ))}
             </div>
             {unhandledRequests.length > 0 && (
-              <button
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={handleMarkAllHandled}
-                className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
+                className="rounded-xl border border-[#D7263D] bg-[#D7263D] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 hover:shadow-[0_0_20px_-10px_rgba(215,38,61,0.5)]"
               >
                 Mark All as Handled
-              </button>
+              </motion.button>
             )}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Main Content */}
       {loading || enriching ? (
         <SkeletonTable rows={5} />
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {/* Unhandled Requests */}
           {unhandledRequests.length > 0 && (
             <div>
-              <p className="uppercase text-xs text-neutral-500 tracking-wide mb-4">
+              <p className="uppercase text-xs font-bold text-neutral-500 tracking-[0.2em] mb-4">
                 Unhandled Requests
               </p>
-              <div className="space-y-3">
-                {unhandledRequests.map((request) => (
+              <div className="space-y-4">
+                {unhandledRequests.map((request, index) => (
                   <motion.div
                     key={request.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="rounded-2xl border border-neutral-800 bg-neutral-900 overflow-hidden"
+                    transition={{ delay: index * 0.05 }}
+                    whileHover={{ scale: 1.01 }}
+                    className="rounded-2xl border border-neutral-800/50 bg-gradient-to-br from-neutral-900 to-neutral-950 overflow-hidden shadow-xl"
                   >
                     <div
-                      className="flex items-center justify-between p-6 cursor-pointer hover:bg-neutral-800/50 transition"
+                      className="flex items-center justify-between p-6 cursor-pointer hover:bg-neutral-800/30 transition-all duration-200"
                       onClick={() =>
                         setExpandedId(expandedId === request.id ? null : request.id)
                       }
                     >
                       <div className="flex-1">
-                        <div className="flex items-center gap-4 mb-2">
+                        <div className="flex items-center gap-4 mb-2 flex-wrap">
                           <p className="text-sm font-semibold text-white">{request.userName}</p>
                           <p className="text-xs text-neutral-400">{request.userEmail}</p>
                           {request.date && (
@@ -236,15 +259,17 @@ export default function PlanRequestsPage() {
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
-                        <button
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleMarkHandled(request.id);
                           }}
-                          className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
+                          className="rounded-xl border border-[#D7263D] bg-[#D7263D] p-2.5 text-white transition hover:bg-[#D7263D]/90 hover:shadow-[0_0_15px_-8px_rgba(215,38,61,0.6)]"
                         >
-                          <CheckIcon className="h-4 w-4" />
-                        </button>
+                          <CheckIcon className="h-5 w-5" />
+                        </motion.button>
                         {expandedId === request.id ? (
                           <ChevronUpIcon className="h-5 w-5 text-neutral-400" />
                         ) : (
@@ -258,9 +283,10 @@ export default function PlanRequestsPage() {
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: "auto", opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
-                          className="border-t border-neutral-800 bg-neutral-800/30 p-6"
+                          transition={{ duration: 0.3 }}
+                          className="border-t border-neutral-800/50 bg-neutral-800/20 p-6"
                         >
-                          <p className="text-sm text-neutral-300 whitespace-pre-wrap">
+                          <p className="text-sm text-neutral-300 whitespace-pre-wrap leading-relaxed">
                             {request.requestText}
                           </p>
                         </motion.div>
@@ -275,25 +301,26 @@ export default function PlanRequestsPage() {
           {/* Handled Requests */}
           {handledRequests.length > 0 && (
             <div>
-              <p className="uppercase text-xs text-neutral-500 tracking-wide mb-4">
+              <p className="uppercase text-xs font-bold text-neutral-500 tracking-[0.2em] mb-4">
                 Handled Requests
               </p>
-              <div className="space-y-3">
-                {handledRequests.map((request) => (
+              <div className="space-y-4">
+                {handledRequests.map((request, index) => (
                   <motion.div
                     key={request.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="rounded-2xl border border-neutral-800 bg-neutral-900/50 overflow-hidden opacity-60"
+                    transition={{ delay: index * 0.05 }}
+                    className="rounded-2xl border border-neutral-800/50 bg-gradient-to-br from-neutral-900 to-neutral-950 overflow-hidden opacity-60"
                   >
                     <div
-                      className="flex items-center justify-between p-6 cursor-pointer hover:bg-neutral-800/30 transition"
+                      className="flex items-center justify-between p-6 cursor-pointer hover:bg-neutral-800/20 transition-all duration-200"
                       onClick={() =>
                         setExpandedId(expandedId === request.id ? null : request.id)
                       }
                     >
                       <div className="flex-1">
-                        <div className="flex items-center gap-4 mb-2">
+                        <div className="flex items-center gap-4 mb-2 flex-wrap">
                           <p className="text-sm font-semibold text-white">{request.userName}</p>
                           <p className="text-xs text-neutral-400">{request.userEmail}</p>
                           {request.date && (
@@ -301,7 +328,7 @@ export default function PlanRequestsPage() {
                               {formatTimeAgo(request.date)}
                             </p>
                           )}
-                          <span className="inline-flex items-center rounded-full border border-green-500/50 bg-green-500/20 px-2 py-1 text-xs font-semibold text-green-500">
+                          <span className="inline-flex items-center rounded-full border border-green-500/30 bg-green-500/20 px-2.5 py-1 text-xs font-bold text-green-400">
                             Handled
                           </span>
                         </div>
@@ -321,9 +348,10 @@ export default function PlanRequestsPage() {
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: "auto", opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
-                          className="border-t border-neutral-800 bg-neutral-800/30 p-6"
+                          transition={{ duration: 0.3 }}
+                          className="border-t border-neutral-800/50 bg-neutral-800/20 p-6"
                         >
-                          <p className="text-sm text-neutral-300 whitespace-pre-wrap">
+                          <p className="text-sm text-neutral-300 whitespace-pre-wrap leading-relaxed">
                             {request.requestText}
                           </p>
                         </motion.div>
@@ -345,15 +373,18 @@ export default function PlanRequestsPage() {
 
           {/* Load More Button */}
           {hasMore && (
-            <div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
               <button
                 onClick={loadMore}
                 disabled={loadingMore}
-                className="w-full rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full rounded-xl border border-[#D7263D] bg-[#D7263D] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 hover:shadow-[0_0_20px_-10px_rgba(215,38,61,0.5)] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loadingMore ? "Loading..." : "Load More Requests"}
               </button>
-            </div>
+            </motion.div>
           )}
 
           {!hasMore && requests.length > 0 && (

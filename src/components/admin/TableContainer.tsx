@@ -36,10 +36,6 @@ export default function TableContainer({
     return null; // Let parent handle loading state
   }
 
-  if (loading) {
-    return null; // Let parent handle loading state
-  }
-
   if (isEmpty) {
     return (
       <EmptyState
@@ -53,19 +49,23 @@ export default function TableContainer({
   }
 
   return (
-    <div className={`rounded-2xl border border-neutral-800 bg-neutral-900 overflow-hidden ${className}`}>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`rounded-2xl border border-neutral-800/50 bg-gradient-to-br from-neutral-900 to-neutral-950 overflow-hidden shadow-xl ${className}`}
+    >
       <div className="overflow-x-auto">
         {children}
       </div>
       
       {/* Footer with Load More or status */}
       {(hasMore || footerContent) && (
-        <div className="border-t border-neutral-800 px-6 py-4">
+        <div className="border-t border-neutral-800/50 px-6 py-4 bg-neutral-900/50">
           {hasMore && onLoadMore ? (
             <button
               onClick={onLoadMore}
               disabled={loadingMore}
-              className="w-full rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full rounded-xl border border-[#D7263D] bg-[#D7263D] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 hover:shadow-[0_0_20px_-10px_rgba(215,38,61,0.5)] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loadingMore ? "Loading..." : "Load More"}
             </button>
@@ -78,7 +78,6 @@ export default function TableContainer({
           )}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
-

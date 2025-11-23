@@ -54,7 +54,7 @@ export default function AdminClientsPage() {
     pageSize: 25,
     orderByField: "createdAt",
     orderByDirection: "desc",
-    filterFn: filterNonAdmins, // Filter out admins for display purposes only
+    filterFn: filterNonAdmins,
   });
 
   // Transform data to calculate purchase dates
@@ -109,15 +109,14 @@ export default function AdminClientsPage() {
     setSlideoverOpen(true);
   }, []);
 
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case MealPlanStatus.DELIVERED:
-        return "bg-green-500/20 text-green-500 border-green-500/50";
+        return "bg-green-500/20 text-green-400 border-green-500/30";
       case MealPlanStatus.IN_PROGRESS:
-        return "bg-amber-500/20 text-amber-500 border-amber-500/50";
+        return "bg-amber-500/20 text-amber-400 border-amber-500/30";
       default:
-        return "bg-neutral-600/20 text-neutral-400 border-neutral-600/50";
+        return "bg-neutral-600/20 text-neutral-400 border-neutral-600/30";
     }
   };
 
@@ -129,17 +128,38 @@ export default function AdminClientsPage() {
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
         className="flex flex-col gap-6"
       >
+        {/* Page Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col gap-2"
+        >
+          <h2 className="text-3xl font-bold text-white font-display tracking-tight">
+            Clients
+          </h2>
+          <p className="text-sm text-neutral-400">
+            Manage and view all client accounts
+          </p>
+        </motion.div>
+
         {/* Filters */}
-        <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
-          <div className="flex flex-wrap gap-2">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="rounded-2xl border border-neutral-800/50 bg-gradient-to-br from-neutral-900 to-neutral-950 p-6 shadow-xl"
+        >
+          <div className="flex flex-wrap gap-3">
             {(["all", "needs-plan", "in-progress", "delivered"] as FilterType[]).map((f) => (
-              <button
+              <motion.button
                 key={f}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setFilter(f)}
-                className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-200 ${
                   filter === f
-                    ? "bg-[#D7263D] text-white"
-                    : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+                    ? "bg-[#D7263D] text-white shadow-[0_0_20px_-10px_rgba(215,38,61,0.5)]"
+                    : "bg-neutral-800/50 text-neutral-300 hover:bg-neutral-800 hover:text-white border border-neutral-800"
                 }`}
               >
                 {f === "all"
@@ -149,10 +169,10 @@ export default function AdminClientsPage() {
                   : f === "in-progress"
                   ? "In Progress"
                   : "Delivered"}
-              </button>
+              </motion.button>
             ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* Main Table */}
         {loading ? (
@@ -162,6 +182,14 @@ export default function AdminClientsPage() {
             isEmpty={filteredClients.length === 0}
             emptyTitle="No clients found"
             emptyDescription="No clients match your current filters. Try adjusting your search criteria."
+            emptyAction={
+              <button
+                onClick={() => setFilter("all")}
+                className="rounded-xl border border-[#D7263D] bg-[#D7263D] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
+              >
+                Clear Filters
+              </button>
+            }
             hasMore={hasMore}
             loadingMore={loadingMore}
             onLoadMore={loadMore}
@@ -172,44 +200,47 @@ export default function AdminClientsPage() {
             }
           >
             <table className="w-full">
-              <thead className="bg-neutral-800/50">
+              <thead className="bg-neutral-800/50 border-b border-neutral-800/50">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                  <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.15em] text-neutral-400">
                     Name
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                  <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.15em] text-neutral-400">
                     Email
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                  <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.15em] text-neutral-400">
                     Package
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                  <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.15em] text-neutral-400">
                     Days Since Purchase
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                  <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.15em] text-neutral-400">
                     Plan Status
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                  <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.15em] text-neutral-400">
                     Referral Credits
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                  <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.15em] text-neutral-400">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-800">
+              <tbody className="divide-y divide-neutral-800/50">
                 {filteredClients.map((client, index) => (
                   <motion.tr
                     key={client.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className={`hover:bg-neutral-800/30 transition ${
-                      index % 2 === 0 ? "bg-neutral-900/50" : "bg-neutral-900"
+                    transition={{ delay: index * 0.03 }}
+                    whileHover={{ x: 4 }}
+                    className={`hover:bg-neutral-800/30 transition-all duration-200 ${
+                      index % 2 === 0 ? "bg-neutral-900/30" : "bg-neutral-900/50"
                     }`}
                   >
-                    <td className="px-6 py-4 text-sm font-semibold text-white">
-                      {client.name}
+                    <td className="px-6 py-4">
+                      <span className="text-sm font-semibold text-white">
+                        {client.name}
+                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-sm text-neutral-300">{client.email}</span>
@@ -228,7 +259,7 @@ export default function AdminClientsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span
-                        className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${getStatusBadge(
+                        className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold ${getStatusBadge(
                           client.mealPlanStatus
                         )}`}
                       >
@@ -236,18 +267,20 @@ export default function AdminClientsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="inline-flex items-center rounded-full bg-[#D7263D]/20 px-3 py-1 text-xs font-semibold text-[#D7263D]">
+                      <span className="inline-flex items-center rounded-full bg-[#D7263D]/20 border border-[#D7263D]/30 px-3 py-1 text-xs font-bold text-[#D7263D]">
                         {client.referralCredits}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <button
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                         onClick={() => handleViewClient(client)}
-                        className="rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-xs font-semibold text-neutral-300 transition hover:bg-neutral-700 flex items-center gap-2"
+                        className="rounded-xl border border-neutral-700 bg-neutral-800/50 px-4 py-2 text-xs font-semibold text-neutral-300 transition hover:bg-[#D7263D] hover:border-[#D7263D] hover:text-white flex items-center gap-2"
                       >
                         <EyeIcon className="h-4 w-4" />
-                        View
-                      </button>
+                        Details
+                      </motion.button>
                     </td>
                   </motion.tr>
                 ))}
