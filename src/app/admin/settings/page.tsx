@@ -156,6 +156,16 @@ export default function AdminSettingsPage() {
         return;
       }
 
+      // Check if any value actually changed
+      const hasChanges = Object.keys(updates).some(
+        (key) => updates[key as keyof AdminSettings] !== settingsRef.current[key as keyof AdminSettings]
+      );
+
+      if (!hasChanges) {
+        // No actual changes, don't save
+        return;
+      }
+
       setSaving(true);
       
       // Update local state immediately
@@ -198,6 +208,7 @@ export default function AdminSettingsPage() {
   // Update local state only (don't save immediately)
   const updateField = useCallback(
     (key: string, value: any) => {
+      // ONLY update local state - never save
       setSettings((prev) => ({ ...prev, [key]: value }));
     },
     []
@@ -206,7 +217,11 @@ export default function AdminSettingsPage() {
   // Save a specific field to Firestore (called on blur or immediate action)
   const saveField = useCallback(
     (key: string, value: any) => {
-      saveSettings({ [key]: value });
+      // Only save if the value actually changed from current ref
+      const currentValue = settingsRef.current[key as keyof AdminSettings];
+      if (value !== currentValue) {
+        saveSettings({ [key]: value });
+      }
     },
     [saveSettings]
   );
@@ -430,8 +445,26 @@ export default function AdminSettingsPage() {
         <input
           type="email"
           value={settings.adminEmail || ""}
-          onChange={(e) => updateField("adminEmail", e.target.value)}
-          onBlur={(e) => saveField("adminEmail", e.target.value)}
+          onChange={(e) => {
+            // ONLY update local state - NEVER save on change
+            const newValue = e.target.value;
+            setSettings((prev) => ({ ...prev, adminEmail: newValue }));
+          }}
+          onBlur={(e) => {
+            // Only save on blur if value actually changed
+            const newValue = e.target.value;
+            const currentValue = settingsRef.current.adminEmail || "";
+            if (newValue !== currentValue && newValue.trim() !== "") {
+              saveSettings({ adminEmail: newValue });
+            }
+          }}
+          onKeyDown={(e) => {
+            // Prevent Enter key from triggering any save behavior
+            if (e.key === "Enter") {
+              e.preventDefault();
+              e.currentTarget.blur(); // This will trigger onBlur which handles save
+            }
+          }}
           className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:border-[#D7263D] focus:outline-none transition-all"
           placeholder="admin@macrominded.com"
         />
