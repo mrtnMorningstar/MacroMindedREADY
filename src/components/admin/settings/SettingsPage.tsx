@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { useSettingsForm } from "@/hooks/useSettingsForm";
 import SettingsTabs from "@/components/admin/SettingsTabs";
 import GeneralSettings from "./GeneralSettings";
@@ -12,7 +12,7 @@ import DataManagementSettings from "./DataManagementSettings";
 
 type TabType = "general" | "notifications" | "payments" | "security" | "data";
 
-const tabContentVariants = {
+const tabContentVariants: Variants = {
   initial: {
     opacity: 0,
     y: 20,
@@ -20,17 +20,10 @@ const tabContentVariants = {
   animate: {
     opacity: 1,
     y: 0,
-    transition: {
-      duration: 0.3,
-      ease: [0.22, 1, 0.36, 1],
-    },
   },
   exit: {
     opacity: 0,
     y: -20,
-    transition: {
-      duration: 0.2,
-    },
   },
 };
 
@@ -110,6 +103,10 @@ export default function SettingsPage() {
             initial="initial"
             animate="animate"
             exit="exit"
+            transition={{
+              duration: 0.3,
+              ease: [0.22, 1, 0.36, 1],
+            }}
             className="w-full"
           >
             {activeTab === "general" && (
