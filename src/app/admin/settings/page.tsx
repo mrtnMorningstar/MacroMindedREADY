@@ -148,10 +148,13 @@ export default function AdminSettingsPage() {
   // Update nested field (e.g., emailAlerts.newSignups)
   const updateNestedField = useCallback(
     (parentKey: string, childKey: string, value: any) => {
-      const parent = settings[parentKey as keyof AdminSettings] || {};
+      const parent = settings[parentKey as keyof AdminSettings];
+      const parentValue = parent && typeof parent === "object" && !Array.isArray(parent)
+        ? parent
+        : {};
       saveSettings({
         [parentKey]: {
-          ...parent,
+          ...parentValue,
           [childKey]: value,
         },
       });
