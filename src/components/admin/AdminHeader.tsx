@@ -33,11 +33,14 @@ export default function AdminHeader({
         <div className="relative w-full">
           <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-500 pointer-events-none" />
           <input
-            type="text"
+            id="adminSearch"
+            name="adminSearch"
+            type="search"
             placeholder="Search clients, recipes..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-neutral-900/50 border border-neutral-700 text-white text-sm placeholder:text-neutral-500 focus:outline-none focus:border-[#D7263D] focus:bg-neutral-900 transition-all duration-200"
+            aria-label="Search clients and recipes"
           />
         </div>
       </div>
