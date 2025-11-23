@@ -153,9 +153,6 @@ export default function AdminSettingsPage() {
 
   const saveSettings = useCallback(
     async (updates: Partial<AdminSettings>) => {
-      // DEBUG: Log full stack trace to see what's calling this
-      console.trace("🔒 saveSettings called - this should ONLY happen when Save button is clicked", updates);
-      
       if (!user) {
         toast.error("You must be logged in to update settings");
         return;
@@ -398,10 +395,15 @@ export default function AdminSettingsPage() {
           name="brandName"
           type="text"
           value={settings.brandName || "MacroMinded"}
-          onChange={(e) => updateField("brandName", e.target.value)}
+          onChange={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            updateField("brandName", e.target.value);
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
+              e.stopPropagation();
             }
           }}
           className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:border-[#D7263D] focus:outline-none transition-all"
@@ -433,6 +435,7 @@ export default function AdminSettingsPage() {
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
+                e.stopPropagation();
               }
             }}
             className="flex-1 rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white font-mono focus:border-[#D7263D] focus:outline-none transition-all"
@@ -500,7 +503,12 @@ export default function AdminSettingsPage() {
       </SettingsFormSection>
       <div className="flex justify-end mt-6">
         <button
-          onClick={handleSaveAll}
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleSaveAll();
+          }}
           disabled={saving}
           className="flex items-center gap-2 rounded-lg border border-[#D7263D] bg-[#D7263D] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -609,7 +617,12 @@ export default function AdminSettingsPage() {
       </SettingsFormSection>
       <div className="flex justify-end mt-6">
         <button
-          onClick={handleSaveAll}
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleSaveAll();
+          }}
           disabled={saving}
           className="flex items-center gap-2 rounded-lg border border-[#D7263D] bg-[#D7263D] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -716,12 +729,17 @@ export default function AdminSettingsPage() {
                 max="100"
                 step="0.01"
                 value={settings.taxRate || 0}
-                onChange={(e) => updateField("taxRate", parseFloat(e.target.value) || 0)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                  }
-                }}
+          onChange={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            updateField("taxRate", parseFloat(e.target.value) || 0);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }}
                 className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:border-[#D7263D] focus:outline-none transition-all"
                 placeholder="0.00"
               />
@@ -732,7 +750,12 @@ export default function AdminSettingsPage() {
       </SettingsFormSection>
       <div className="flex justify-end mt-6">
         <button
-          onClick={handleSaveAll}
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleSaveAll();
+          }}
           disabled={saving}
           className="flex items-center gap-2 rounded-lg border border-[#D7263D] bg-[#D7263D] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -861,7 +884,12 @@ export default function AdminSettingsPage() {
       </SettingsFormSection>
       <div className="flex justify-end mt-6">
         <button
-          onClick={handleSaveAll}
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleSaveAll();
+          }}
           disabled={saving}
           className="flex items-center gap-2 rounded-lg border border-[#D7263D] bg-[#D7263D] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -909,7 +937,12 @@ export default function AdminSettingsPage() {
                 </p>
               </div>
               <button
-                onClick={handleBackup}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleBackup();
+                }}
                 className="flex items-center gap-2 rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
               >
                 <ArrowDownTrayIcon className="h-4 w-4" />
@@ -935,7 +968,12 @@ export default function AdminSettingsPage() {
                 </p>
               </div>
               <button
-                onClick={() => setShowDeleteConfirm(true)}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowDeleteConfirm(true);
+                }}
                 className="flex items-center gap-2 rounded-lg border border-red-500/50 bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-500/30"
               >
                 <TrashIcon className="h-4 w-4" />
@@ -987,37 +1025,46 @@ export default function AdminSettingsPage() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }}
       className="flex flex-col gap-6"
     >
-      {/* Settings Tabs */}
-      <SettingsTabs activeTab={activeTab} onTabChange={handleTabChange} />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        className="flex flex-col gap-6"
+      >
+        {/* Settings Tabs */}
+        <SettingsTabs activeTab={activeTab} onTabChange={handleTabChange} />
 
-      {/* Tab Content */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.3 }}
-        >
-          {renderTabContent()}
-        </motion.div>
-      </AnimatePresence>
+        {/* Tab Content */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            {renderTabContent()}
+          </motion.div>
+        </AnimatePresence>
 
-      {/* Saving Indicator */}
-      {saving && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-lg border border-neutral-800 bg-neutral-900 px-4 py-3 shadow-lg">
-          <div className="flex items-center gap-3">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#D7263D] border-t-transparent" />
-            <p className="text-sm font-medium text-white">Saving settings...</p>
+        {/* Saving Indicator */}
+        {saving && (
+          <div className="fixed bottom-6 right-6 z-50 rounded-lg border border-neutral-800 bg-neutral-900 px-4 py-3 shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#D7263D] border-t-transparent" />
+              <p className="text-sm font-medium text-white">Saving settings...</p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </motion.div>
 
       {/* Delete Test Data Confirmation Modal */}
       <AppModal
