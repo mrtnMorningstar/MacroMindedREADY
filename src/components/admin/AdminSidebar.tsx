@@ -140,10 +140,10 @@ export default function AdminSidebar({
       </AnimatePresence>
 
       {/* Desktop Sidebar - Fixed 256px width */}
-      <aside className={`hidden lg:flex fixed left-0 top-0 z-40 w-64 h-screen flex-col border-r border-neutral-800/50 bg-gradient-to-b from-neutral-950 to-black shadow-2xl ${
+      <aside className={`hidden lg:flex fixed left-0 z-40 w-64 flex-col border-r border-neutral-800/50 bg-gradient-to-b from-neutral-950 to-black shadow-2xl ${
         hasImpersonationBanner 
-          ? `pt-[48px]` 
-          : `pt-0`
+          ? `top-[128px] h-[calc(100vh-128px)]` 
+          : `top-[80px] h-[calc(100vh-80px)]`
       }`}>
         <div className="flex h-full flex-col overflow-hidden">
           {/* Brand Header */}
@@ -302,7 +302,11 @@ export default function AdminSidebar({
           x: isOpen ? 0 : "-100%",
         }}
         transition={{ type: "spring", damping: 30, stiffness: 300 }}
-        className="lg:hidden fixed left-0 top-0 z-50 h-full w-64 border-r border-neutral-800 bg-gradient-to-b from-neutral-950 to-black shadow-2xl"
+        className={`lg:hidden fixed left-0 z-50 w-64 border-r border-neutral-800 bg-gradient-to-b from-neutral-950 to-black shadow-2xl ${
+          hasImpersonationBanner 
+            ? `top-[128px] h-[calc(100vh-128px)]` 
+            : `top-[80px] h-[calc(100vh-80px)]`
+        }`}
       >
         <div className="flex h-full flex-col">
           {/* Mobile Header */}

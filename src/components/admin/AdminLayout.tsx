@@ -9,6 +9,7 @@ import AdminSidebar from "./AdminSidebar";
 import AdminHeader from "./AdminHeader";
 import AdminContentWrapper from "./AdminContentWrapper";
 import ImpersonationBanner from "./ImpersonationBanner";
+import Navbar from "../Navbar";
 import { Bars3Icon } from "@heroicons/react/24/outline";
 
 type AdminLayoutProps = {
@@ -77,6 +78,7 @@ export default function AdminLayoutWrapper({ children }: AdminLayoutProps) {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-black text-white">
+      <Navbar />
       <ImpersonationBanner />
       
       <div className="flex flex-1 overflow-hidden">
@@ -92,7 +94,7 @@ export default function AdminLayoutWrapper({ children }: AdminLayoutProps) {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden fixed left-4 top-24 z-50 p-2 rounded-lg bg-neutral-900/80 backdrop-blur border border-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors"
+            className="lg:hidden fixed left-4 top-32 z-50 p-2 rounded-lg bg-neutral-900/80 backdrop-blur border border-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors"
             aria-label="Open menu"
           >
             <Bars3Icon className="h-6 w-6" />
