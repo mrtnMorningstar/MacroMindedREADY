@@ -69,21 +69,21 @@ export default function RecentClients() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case MealPlanStatus.DELIVERED:
-        return "bg-green-500/20 text-green-500 border-green-500/50";
+        return "bg-green-500/20 text-green-400 border-green-500/30";
       case MealPlanStatus.IN_PROGRESS:
-        return "bg-amber-500/20 text-amber-500 border-amber-500/50";
+        return "bg-amber-500/20 text-amber-400 border-amber-500/30";
       default:
-        return "bg-neutral-600/20 text-neutral-400 border-neutral-600/50";
+        return "bg-neutral-600/20 text-neutral-400 border-neutral-600/30";
     }
   };
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
+      <div className="rounded-2xl border border-neutral-800/50 bg-gradient-to-br from-neutral-900 to-neutral-950 p-6 shadow-xl">
         <div className="h-6 w-32 animate-pulse rounded bg-neutral-800 mb-4" />
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-12 animate-pulse rounded bg-neutral-800" />
+            <div key={i} className="h-16 animate-pulse rounded-lg bg-neutral-800/50" />
           ))}
         </div>
       </div>
@@ -92,12 +92,16 @@ export default function RecentClients() {
 
   if (recentClients.length === 0) {
     return (
-      <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="rounded-2xl border border-neutral-800/50 bg-gradient-to-br from-neutral-900 to-neutral-950 p-6 shadow-xl"
+      >
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-white">Recent Clients</h3>
+          <h3 className="text-lg font-bold text-white font-display">Recent Clients</h3>
           <Link
             href="/admin/clients"
-            className="text-sm text-[#D7263D] hover:text-[#D7263D]/80 transition-colors"
+            className="text-sm font-semibold text-[#D7263D] hover:text-[#D7263D]/80 transition-colors"
           >
             View all
           </Link>
@@ -108,20 +112,24 @@ export default function RecentClients() {
           description="New clients will appear here once they register."
           className="rounded-xl border-0 m-0 p-8"
         />
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-2xl border border-neutral-800/50 bg-gradient-to-br from-neutral-900 to-neutral-950 p-6 shadow-xl"
+    >
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-white">Recent Clients</h3>
+        <h3 className="text-lg font-bold text-white font-display">Recent Clients</h3>
         <Link
           href="/admin/clients"
-          className="flex items-center gap-1 text-sm text-[#D7263D] hover:text-[#D7263D]/80 transition-colors"
+          className="flex items-center gap-1 text-sm font-semibold text-[#D7263D] hover:text-[#D7263D]/80 transition-colors group"
         >
           View all
-          <ArrowRightIcon className="h-4 w-4" />
+          <ArrowRightIcon className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
         </Link>
       </div>
       <div className="space-y-3">
@@ -130,35 +138,38 @@ export default function RecentClients() {
             key={client.id}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className="flex items-center justify-between p-4 rounded-lg border border-neutral-800 bg-neutral-800/30 hover:bg-neutral-800/50 transition-colors"
+            transition={{ delay: index * 0.05 }}
+            whileHover={{ x: 4 }}
+            className="flex items-center justify-between p-4 rounded-xl border border-neutral-800/50 bg-neutral-800/20 hover:bg-neutral-800/40 hover:border-neutral-700 transition-all duration-200 group cursor-pointer"
           >
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3">
-                <p className="text-sm font-semibold text-white truncate">
+              <div className="flex items-center gap-3 mb-1.5">
+                <p className="text-sm font-semibold text-white truncate group-hover:text-[#D7263D] transition-colors">
                   {client.name}
                 </p>
                 <span
-                  className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold flex-shrink-0 ${getStatusColor(
+                  className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold flex-shrink-0 ${getStatusColor(
                     client.mealPlanStatus
                   )}`}
                 >
                   {client.mealPlanStatus}
                 </span>
               </div>
-              <p className="text-xs text-neutral-400 mt-1 truncate">
+              <p className="text-xs text-neutral-400 truncate">
                 {client.email}
               </p>
             </div>
-            <button
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => {
                 setSelectedClient(client);
                 setSlideoverOpen(true);
               }}
-              className="ml-4 p-2 rounded-lg border border-neutral-700 bg-neutral-800 hover:bg-neutral-700 transition-colors flex-shrink-0"
+              className="ml-4 p-2 rounded-lg border border-neutral-700 bg-neutral-800/50 hover:bg-[#D7263D] hover:border-[#D7263D] transition-all duration-200 flex-shrink-0 group"
             >
-              <EyeIcon className="h-4 w-4 text-neutral-300" />
-            </button>
+              <EyeIcon className="h-4 w-4 text-neutral-300 group-hover:text-white transition-colors" />
+            </motion.button>
           </motion.div>
         ))}
       </div>
@@ -173,7 +184,6 @@ export default function RecentClients() {
         }}
         onUpdate={refresh}
       />
-    </div>
+    </motion.div>
   );
 }
-

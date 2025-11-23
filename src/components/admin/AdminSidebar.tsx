@@ -14,6 +14,7 @@ import {
   ShieldCheckIcon,
   GiftIcon,
   Bars3Icon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import {
   HomeIcon as HomeIconSolid,
@@ -115,9 +116,6 @@ export default function AdminSidebar({
     };
   }, []);
 
-  // Calculate top offset: Navbar (80px) + ImpersonationBanner (48px if active)
-  const topOffset = hasImpersonationBanner ? 128 : 80;
-
   const isActive = (href: string) => {
     if (href === "/admin") {
       return pathname === "/admin";
@@ -135,137 +133,160 @@ export default function AdminSidebar({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+            className="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm lg:hidden"
             onClick={onClose}
           />
         )}
       </AnimatePresence>
 
       {/* Desktop Sidebar - Fixed 256px width */}
-      <aside className={`hidden lg:flex fixed left-0 top-0 z-40 w-64 h-screen flex-col border-r border-neutral-800 bg-neutral-950 ${
+      <aside className={`hidden lg:flex fixed left-0 top-0 z-40 w-64 h-screen flex-col border-r border-neutral-800/50 bg-gradient-to-b from-neutral-950 to-black shadow-2xl ${
         hasImpersonationBanner 
           ? `pt-[48px]` 
           : `pt-0`
       }`}>
         <div className="flex h-full flex-col overflow-hidden">
           {/* Brand Header */}
-          <div className="border-b border-neutral-800 px-6 py-6 flex-shrink-0">
-            <h2 className="text-xl font-bold uppercase tracking-[0.15em] text-white font-display">
+          <div className="border-b border-neutral-800/50 px-6 py-6 flex-shrink-0 bg-gradient-to-r from-neutral-900/50 to-transparent">
+            <motion.h2 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="text-2xl font-bold uppercase tracking-[0.2em] text-white font-display bg-gradient-to-r from-white via-white to-neutral-400 bg-clip-text text-transparent"
+            >
               MacroMinded
-            </h2>
-            <p className="mt-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">
+            </motion.h2>
+            <motion.p 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+              className="mt-2 text-xs font-semibold uppercase tracking-[0.3em] text-neutral-500"
+            >
               Admin Panel
-            </p>
+            </motion.p>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto px-4 py-6 scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-transparent">
+          <nav className="flex-1 overflow-y-auto px-3 py-6 scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-transparent">
             <div className="space-y-1">
-              {navLinks.map((link) => {
+              {navLinks.map((link, index) => {
                 const active = isActive(link.href);
                 const Icon = active ? link.iconSolid : link.icon;
 
                 return (
-                  <Link
+                  <motion.div
                     key={link.href}
-                    href={link.href}
-                    className="group relative flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
                   >
-                    {/* Active Indicator - Red accent bar */}
-                    {active && (
-                      <motion.div
-                        layoutId="activeIndicator"
-                        className="absolute left-0 top-0 h-full w-1 rounded-r-full bg-[#D7263D] shadow-[0_0_10px_rgba(215,38,61,0.6)]"
-                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      />
-                    )}
-
-                    {/* Background highlight */}
-                    <div
-                      className={`absolute inset-0 rounded-lg transition-all duration-200 ${
-                        active
-                          ? "bg-[#D7263D]/20 shadow-[0_0_20px_-10px_rgba(215,38,61,0.4)]"
-                          : "bg-transparent group-hover:bg-neutral-800/50"
-                      }`}
-                    />
-
-                    {/* Icon and Label */}
-                    <Icon
-                      className={`relative h-5 w-5 flex-shrink-0 transition-colors duration-200 ${
-                        active ? "text-[#D7263D]" : "text-neutral-400 group-hover:text-white"
-                      }`}
-                    />
-                    <span
-                      className={`relative transition-colors duration-200 ${
-                        active
-                          ? "text-[#D7263D] font-semibold"
-                          : "text-neutral-400 group-hover:text-white"
-                      }`}
-                    >
-                      {link.label}
-                    </span>
-
-                    {/* Tooltip on hover (desktop only) */}
-                    {!active && (
-                      <div className="absolute left-full ml-2 px-2 py-1 bg-neutral-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50">
-                        {link.label}
-                      </div>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-
-            {/* Settings Section */}
-            <div className="mt-8 pt-8 border-t border-neutral-800">
-              <p className="px-4 mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">
-                Settings
-              </p>
-              <div className="space-y-1">
-                {settingsLinks.map((link) => {
-                  const active = isActive(link.href);
-                  const Icon = active ? link.iconSolid : link.icon;
-
-                  return (
                     <Link
-                      key={link.href}
                       href={link.href}
-                      className="group relative flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200"
+                      className="group relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200"
                     >
-                      {/* Active Indicator */}
+                      {/* Active Indicator - Red accent bar */}
                       {active && (
                         <motion.div
-                          layoutId="activeIndicatorSettings"
-                          className="absolute left-0 top-0 h-full w-1 rounded-r-full bg-[#D7263D] shadow-[0_0_10px_rgba(215,38,61,0.6)]"
+                          layoutId="activeIndicator"
+                          className="absolute left-0 top-0 h-full w-1.5 rounded-r-full bg-[#D7263D] shadow-[0_0_15px_rgba(215,38,61,0.8)]"
                           transition={{ type: "spring", stiffness: 500, damping: 30 }}
                         />
                       )}
 
                       {/* Background highlight */}
                       <div
-                        className={`absolute inset-0 rounded-lg transition-all duration-200 ${
+                        className={`absolute inset-0 rounded-xl transition-all duration-200 ${
                           active
-                            ? "bg-[#D7263D]/20 shadow-[0_0_20px_-10px_rgba(215,38,61,0.4)]"
-                            : "bg-transparent group-hover:bg-neutral-800/50"
+                            ? "bg-gradient-to-r from-[#D7263D]/20 via-[#D7263D]/10 to-transparent shadow-[0_0_30px_-15px_rgba(215,38,61,0.6)]"
+                            : "bg-transparent group-hover:bg-neutral-800/40"
                         }`}
                       />
 
                       {/* Icon and Label */}
                       <Icon
-                        className={`relative h-5 w-5 flex-shrink-0 transition-colors duration-200 ${
-                          active ? "text-[#D7263D]" : "text-neutral-400 group-hover:text-white"
+                        className={`relative h-5 w-5 flex-shrink-0 transition-all duration-200 ${
+                          active 
+                            ? "text-[#D7263D] drop-shadow-[0_0_8px_rgba(215,38,61,0.6)]" 
+                            : "text-neutral-400 group-hover:text-white group-hover:scale-110"
                         }`}
                       />
                       <span
-                        className={`relative transition-colors duration-200 ${
+                        className={`relative transition-all duration-200 ${
                           active
-                            ? "text-[#D7263D] font-semibold"
+                            ? "text-[#D7263D] font-bold"
                             : "text-neutral-400 group-hover:text-white"
                         }`}
                       >
                         {link.label}
                       </span>
                     </Link>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {/* Settings Section */}
+            <div className="mt-8 pt-8 border-t border-neutral-800/50">
+              <motion.p 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="px-4 mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-neutral-600"
+              >
+                Settings
+              </motion.p>
+              <div className="space-y-1">
+                {settingsLinks.map((link, index) => {
+                  const active = isActive(link.href);
+                  const Icon = active ? link.iconSolid : link.icon;
+
+                  return (
+                    <motion.div
+                      key={link.href}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.35 + index * 0.05 }}
+                    >
+                      <Link
+                        href={link.href}
+                        className="group relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200"
+                      >
+                        {/* Active Indicator */}
+                        {active && (
+                          <motion.div
+                            layoutId="activeIndicatorSettings"
+                            className="absolute left-0 top-0 h-full w-1.5 rounded-r-full bg-[#D7263D] shadow-[0_0_15px_rgba(215,38,61,0.8)]"
+                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                          />
+                        )}
+
+                        {/* Background highlight */}
+                        <div
+                          className={`absolute inset-0 rounded-xl transition-all duration-200 ${
+                            active
+                              ? "bg-gradient-to-r from-[#D7263D]/20 via-[#D7263D]/10 to-transparent shadow-[0_0_30px_-15px_rgba(215,38,61,0.6)]"
+                              : "bg-transparent group-hover:bg-neutral-800/40"
+                          }`}
+                        />
+
+                        {/* Icon and Label */}
+                        <Icon
+                          className={`relative h-5 w-5 flex-shrink-0 transition-all duration-200 ${
+                            active 
+                              ? "text-[#D7263D] drop-shadow-[0_0_8px_rgba(215,38,61,0.6)]" 
+                              : "text-neutral-400 group-hover:text-white group-hover:scale-110"
+                          }`}
+                        />
+                        <span
+                          className={`relative transition-all duration-200 ${
+                            active
+                              ? "text-[#D7263D] font-bold"
+                              : "text-neutral-400 group-hover:text-white"
+                          }`}
+                        >
+                          {link.label}
+                        </span>
+                      </Link>
+                    </motion.div>
                   );
                 })}
               </div>
@@ -281,13 +302,13 @@ export default function AdminSidebar({
           x: isOpen ? 0 : "-100%",
         }}
         transition={{ type: "spring", damping: 30, stiffness: 300 }}
-        className="lg:hidden fixed left-0 top-0 z-50 h-full w-64 border-r border-neutral-800 bg-neutral-900"
+        className="lg:hidden fixed left-0 top-0 z-50 h-full w-64 border-r border-neutral-800 bg-gradient-to-b from-neutral-950 to-black shadow-2xl"
       >
         <div className="flex h-full flex-col">
           {/* Mobile Header */}
-          <div className="flex items-center justify-between border-b border-neutral-800 px-6 py-4">
+          <div className="flex items-center justify-between border-b border-neutral-800 px-6 py-5">
             <div>
-              <h2 className="text-lg font-bold uppercase tracking-wide text-white font-display">
+              <h2 className="text-xl font-bold uppercase tracking-wide text-white font-display">
                 MacroMinded
               </h2>
               <p className="mt-1 text-xs uppercase tracking-wide text-neutral-500">
@@ -299,12 +320,12 @@ export default function AdminSidebar({
               className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
               aria-label="Close sidebar"
             >
-              <Bars3Icon className="h-6 w-6" />
+              <XMarkIcon className="h-6 w-6" />
             </button>
           </div>
 
           {/* Mobile Navigation */}
-          <nav className="flex-1 overflow-y-auto px-4 py-6">
+          <nav className="flex-1 overflow-y-auto px-3 py-6">
             <div className="space-y-1">
               {navLinks.map((link) => {
                 const active = isActive(link.href);
@@ -315,16 +336,16 @@ export default function AdminSidebar({
                     key={link.href}
                     href={link.href}
                     onClick={onClose}
-                    className={`group relative flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 ${
+                    className={`group relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${
                       active
-                        ? "bg-[#D7263D]/20 text-[#D7263D]"
-                        : "text-neutral-400 hover:bg-neutral-800 hover:text-white"
+                        ? "bg-gradient-to-r from-[#D7263D]/20 via-[#D7263D]/10 to-transparent text-[#D7263D]"
+                        : "text-neutral-400 hover:bg-neutral-800/40 hover:text-white"
                     }`}
                   >
                     {active && (
                       <motion.div
                         layoutId="activeIndicatorMobile"
-                        className="absolute left-0 top-0 h-full w-1 rounded-r-full bg-[#D7263D]"
+                        className="absolute left-0 top-0 h-full w-1.5 rounded-r-full bg-[#D7263D]"
                         transition={{ type: "spring", stiffness: 500, damping: 30 }}
                       />
                     )}
@@ -337,7 +358,7 @@ export default function AdminSidebar({
 
             {/* Settings Section */}
             <div className="mt-8 pt-8 border-t border-neutral-800">
-              <p className="px-4 mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              <p className="px-4 mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-600">
                 Settings
               </p>
               <div className="space-y-1">
@@ -350,16 +371,16 @@ export default function AdminSidebar({
                       key={link.href}
                       href={link.href}
                       onClick={onClose}
-                      className={`group relative flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 ${
+                      className={`group relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${
                         active
-                          ? "bg-[#D7263D]/20 text-[#D7263D]"
-                          : "text-neutral-400 hover:bg-neutral-800 hover:text-white"
+                          ? "bg-gradient-to-r from-[#D7263D]/20 via-[#D7263D]/10 to-transparent text-[#D7263D]"
+                          : "text-neutral-400 hover:bg-neutral-800/40 hover:text-white"
                       }`}
                     >
                       {active && (
                         <motion.div
                           layoutId="activeIndicatorSettingsMobile"
-                          className="absolute left-0 top-0 h-full w-1 rounded-r-full bg-[#D7263D]"
+                          className="absolute left-0 top-0 h-full w-1.5 rounded-r-full bg-[#D7263D]"
                           transition={{ type: "spring", stiffness: 500, damping: 30 }}
                         />
                       )}
