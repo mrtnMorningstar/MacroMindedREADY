@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { MagnifyingGlassIcon, PlusIcon, UserCircleIcon } from "@heroicons/react/24/outline";
-import { useAppContext } from "@/context/AppContext";
+import { motion } from "framer-motion";
+import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { usePathname } from "next/navigation";
 
 type AdminHeaderProps = {
@@ -17,47 +16,7 @@ export default function AdminHeader({
   searchQuery,
   onSearchChange,
 }: AdminHeaderProps) {
-  const { user, signOutAndRedirect } = useAppContext();
   const pathname = usePathname();
-  const [showQuickActions, setShowQuickActions] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const quickActionsRef = useRef<HTMLDivElement>(null);
-  const userMenuRef = useRef<HTMLDivElement>(null);
-
-  // Close menus when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (quickActionsRef.current && !quickActionsRef.current.contains(event.target as Node)) {
-        setShowQuickActions(false);
-      }
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
-        setShowUserMenu(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // Quick actions based on route
-  const getQuickActions = () => {
-    if (pathname === "/admin/clients") {
-      return [
-        { label: "Add Client", href: "#", onClick: () => {} },
-      ];
-    }
-    if (pathname === "/admin/recipes") {
-      return [
-        { label: "Add Recipe", href: "#", onClick: () => {} },
-      ];
-    }
-    return [
-      { label: "New Client", href: "/admin/clients", onClick: () => {} },
-      { label: "New Recipe", href: "/admin/recipes", onClick: () => {} },
-    ];
-  };
-
-  const quickActions = getQuickActions();
 
   return (
     <motion.header
@@ -94,109 +53,9 @@ export default function AdminHeader({
         </div>
       </div>
 
-      {/* Right: Quick Actions + User Avatar */}
+      {/* Right: Empty space for balance */}
       <div className="flex items-center gap-3">
-        {/* Quick Actions */}
-        <div className="relative" ref={quickActionsRef}>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowQuickActions(!showQuickActions)}
-            className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 hover:border-[#D7263D] hover:shadow-[0_0_20px_-10px_rgba(215,38,61,0.5)] transition-all duration-200 group"
-            aria-label="Quick Actions"
-          >
-            <PlusIcon className="h-5 w-5 text-neutral-400 group-hover:text-[#D7263D] transition-colors" />
-            <span className="text-sm font-semibold text-neutral-300 group-hover:text-white">
-              Quick Actions
-            </span>
-          </motion.button>
-
-          <AnimatePresence>
-            {showQuickActions && (
-              <motion.div
-                initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                transition={{ duration: 0.2 }}
-                className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-neutral-800 bg-neutral-900 shadow-2xl overflow-hidden z-50 backdrop-blur-sm"
-              >
-                <div className="py-2">
-                  {quickActions.map((action, index) => (
-                    <motion.button
-                      key={index}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      onClick={() => {
-                        action.onClick();
-                        setShowQuickActions(false);
-                      }}
-                      className="w-full px-4 py-2.5 text-left text-sm text-neutral-300 hover:bg-gradient-to-r hover:from-[#D7263D]/20 hover:to-transparent hover:text-white transition-all duration-200"
-                    >
-                      {action.label}
-                    </motion.button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* User Avatar */}
-        <div className="relative" ref={userMenuRef}>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-2 px-2 py-2 rounded-xl hover:bg-neutral-800/50 transition-colors border border-transparent hover:border-neutral-800"
-            aria-label="User menu"
-          >
-            {user?.photoURL ? (
-              <img
-                src={user.photoURL}
-                alt={user.displayName || "User"}
-                className="h-9 w-9 rounded-full border-2 border-neutral-800 hover:border-[#D7263D] transition-colors"
-              />
-            ) : (
-              <div className="h-9 w-9 rounded-full border-2 border-neutral-800 bg-gradient-to-br from-neutral-800 to-neutral-900 flex items-center justify-center hover:border-[#D7263D] transition-colors">
-                <UserCircleIcon className="h-6 w-6 text-neutral-400" />
-              </div>
-            )}
-          </motion.button>
-
-          <AnimatePresence>
-            {showUserMenu && (
-              <motion.div
-                initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                transition={{ duration: 0.2 }}
-                className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-neutral-800 bg-neutral-900 shadow-2xl overflow-hidden z-50 backdrop-blur-sm"
-              >
-                <div className="py-2">
-                  <div className="px-4 py-3 border-b border-neutral-800">
-                    <p className="text-sm font-semibold text-white truncate">
-                      {user?.displayName || "Admin"}
-                    </p>
-                    <p className="text-xs text-neutral-400 truncate mt-0.5">
-                      {user?.email || ""}
-                    </p>
-                  </div>
-                  <motion.button
-                    whileHover={{ x: 4 }}
-                    onClick={async () => {
-                      setShowUserMenu(false);
-                      await signOutAndRedirect();
-                    }}
-                    className="w-full px-4 py-2.5 text-left text-sm text-neutral-300 hover:bg-gradient-to-r hover:from-red-500/20 hover:to-transparent hover:text-red-400 transition-all duration-200"
-                  >
-                    Logout
-                  </motion.button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        {/* Empty div for layout balance */}
       </div>
     </motion.header>
   );

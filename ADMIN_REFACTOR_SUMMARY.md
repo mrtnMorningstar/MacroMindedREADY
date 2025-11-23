@@ -180,3 +180,4 @@ The Storage rules already use custom claims (`request.auth.token.admin == true`)
 2. Add admin status caching to reduce ID token refreshes
 3. Consider adding admin status to the user object in AuthContext for easier access
 
+
