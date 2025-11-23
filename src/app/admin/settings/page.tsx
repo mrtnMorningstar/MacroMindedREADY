@@ -1,6 +1,26 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+
+// Debounce utility
+function useDebounce<T extends (...args: any[]) => any>(
+  callback: T,
+  delay: number
+): T {
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  return useCallback(
+    ((...args: any[]) => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      timeoutRef.current = setTimeout(() => {
+        callback(...args);
+      }, delay);
+    }) as T,
+    [callback, delay]
+  );
+}
 import { motion, AnimatePresence } from "framer-motion";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, query, getDocs, orderBy, limit, where } from "firebase/firestore";
@@ -150,36 +170,44 @@ export default function AdminSettingsPage() {
       try {
         const idToken = await user.getIdToken();
 
-        const response = await fetch("/api/admin/update-settings", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${idToken}`,
-          },
-          body: JSON.stringify({
-            settings: {
-              ...settings,
-              ...updates,
+        // Get current settings state
+        setSettings((currentSettings) => {
+          const mergedSettings = { ...currentSettings, ...updates };
+          
+          // Save to Firestore
+          fetch("/api/admin/update-settings", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${idToken}`,
             },
-          }),
+            body: JSON.stringify({
+              settings: mergedSettings,
+            }),
+          })
+            .then(async (response) => {
+              const data = await response.json();
+              if (!response.ok) {
+                throw new Error(data.error || "Failed to update settings");
+              }
+              toast.success("Settings saved successfully");
+              setSaving(false);
+            })
+            .catch((error) => {
+              console.error("Failed to save settings:", error);
+              toast.error(error instanceof Error ? error.message : "Failed to save settings");
+              setSaving(false);
+            });
+          
+          return mergedSettings;
         });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || "Failed to update settings");
-        }
-
-        toast.success("Settings saved successfully");
-        setSettings((prev) => ({ ...prev, ...updates }));
       } catch (error) {
         console.error("Failed to save settings:", error);
         toast.error(error instanceof Error ? error.message : "Failed to save settings");
-      } finally {
         setSaving(false);
       }
     },
-    [user, settings, toast]
+    [user, toast]
   );
 
   // Update local state only (don't save immediately)
@@ -190,12 +218,15 @@ export default function AdminSettingsPage() {
     []
   );
 
+  // Debounced save function to prevent rapid saves
+  const debouncedSaveSettings = useDebounce(saveSettings, 500);
+
   // Save a specific field to Firestore (called on blur)
   const saveField = useCallback(
     (key: string, value: any) => {
-      saveSettings({ [key]: value });
+      debouncedSaveSettings({ [key]: value });
     },
-    [saveSettings]
+    [debouncedSaveSettings]
   );
 
   // Update nested field (e.g., emailAlerts.newSignups)
