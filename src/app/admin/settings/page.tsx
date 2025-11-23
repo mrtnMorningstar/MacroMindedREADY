@@ -786,9 +786,9 @@ export default function AdminSettingsPage() {
         </div>
         <div className="flex items-center justify-between p-4 rounded-lg border border-neutral-800 bg-neutral-800/30 cursor-pointer hover:bg-neutral-800/50 transition-colors">
           <div className="flex-1">
-            <label htmlFor="impersonationEnabled" className="text-sm font-medium text-white block cursor-pointer">
+            <span id="impersonationLabel" className="text-sm font-medium text-white block cursor-pointer">
               Enable Admin Impersonation
-            </label>
+            </span>
             <span className="text-xs text-neutral-400 mt-1 block">
               Allow admins to view the app as other users
             </span>
@@ -796,13 +796,15 @@ export default function AdminSettingsPage() {
           <button
             id="impersonationEnabled"
             type="button"
-            aria-label="Toggle Admin Impersonation"
+            aria-labelledby="impersonationLabel"
             onClick={() => {
               updateField("impersonationEnabled", !settings.impersonationEnabled);
             }}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
               settings.impersonationEnabled ? "bg-[#D7263D]" : "bg-neutral-700"
             }`}
+            role="switch"
+            aria-checked={settings.impersonationEnabled}
           >
             <span
               className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${

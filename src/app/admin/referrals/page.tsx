@@ -70,11 +70,17 @@ export default function AdminReferralsPage() {
 
       {/* Page-specific Search */}
       <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
+        <label htmlFor="referralsSearch" className="sr-only">
+          Search referrals by name or email
+        </label>
         <input
+          id="referralsSearch"
+          name="referralsSearch"
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name or email..."
+          aria-label="Search referrals by name or email"
           className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white placeholder:text-neutral-500 focus:border-[#D7263D] focus:outline-none"
         />
       </div>
