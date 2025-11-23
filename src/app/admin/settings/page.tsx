@@ -146,9 +146,6 @@ export default function AdminSettingsPage() {
 
   const saveSettings = useCallback(
     async (updates: Partial<AdminSettings>) => {
-      // DEBUG: Log where saveSettings is being called from - REMOVE AFTER DEBUGGING
-      console.log("🔄 saveSettings called with:", Object.keys(updates), new Error().stack);
-      
       if (!user) {
         toast.error("You must be logged in to update settings");
         return;
@@ -348,10 +345,12 @@ export default function AdminSettingsPage() {
       >
       {/* Brand Name */}
       <div>
-        <label className="block text-sm font-semibold text-white mb-2">
+        <label htmlFor="brandName" className="block text-sm font-semibold text-white mb-2">
           Brand Name
         </label>
         <input
+          id="brandName"
+          name="brandName"
           type="text"
           value={settings.brandName || "MacroMinded"}
           onChange={(e) => updateField("brandName", e.target.value)}
@@ -367,17 +366,22 @@ export default function AdminSettingsPage() {
 
       {/* Accent Color */}
       <div>
-        <label className="block text-sm font-semibold text-white mb-2">
+        <label htmlFor="accentColor" className="block text-sm font-semibold text-white mb-2">
           Accent Color
         </label>
         <div className="flex items-center gap-3">
           <input
+            id="accentColorPicker"
+            name="accentColorPicker"
             type="color"
             value={settings.accentColor || "#D7263D"}
             onChange={(e) => updateField("accentColor", e.target.value)}
             className="h-12 w-24 rounded-lg border border-neutral-800 bg-neutral-800/50 cursor-pointer"
+            aria-label="Accent color picker"
           />
           <input
+            id="accentColor"
+            name="accentColor"
             type="text"
             value={settings.accentColor || "#D7263D"}
             onChange={(e) => updateField("accentColor", e.target.value)}
@@ -394,10 +398,12 @@ export default function AdminSettingsPage() {
 
       {/* Timezone */}
       <div>
-        <label className="block text-sm font-semibold text-white mb-2">
+        <label htmlFor="timezone" className="block text-sm font-semibold text-white mb-2">
           Timezone
         </label>
         <select
+          id="timezone"
+          name="timezone"
           value={settings.timezone || "America/New_York"}
           onChange={(e) => updateField("timezone", e.target.value)}
           className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white focus:border-[#D7263D] focus:outline-none transition-all"
@@ -412,10 +418,12 @@ export default function AdminSettingsPage() {
 
       {/* Currency */}
       <div>
-        <label className="block text-sm font-semibold text-white mb-2">
+        <label htmlFor="currency" className="block text-sm font-semibold text-white mb-2">
           Default Currency
         </label>
         <select
+          id="currency"
+          name="currency"
           value={settings.currency || "USD"}
           onChange={(e) => updateField("currency", e.target.value)}
           className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white focus:border-[#D7263D] focus:outline-none transition-all"
@@ -429,10 +437,12 @@ export default function AdminSettingsPage() {
 
       {/* Date Format */}
       <div>
-        <label className="block text-sm font-semibold text-white mb-2">
+        <label htmlFor="dateFormat" className="block text-sm font-semibold text-white mb-2">
           Date Format
         </label>
         <select
+          id="dateFormat"
+          name="dateFormat"
           value={settings.dateFormat || "MM/DD/YYYY"}
           onChange={(e) => updateField("dateFormat", e.target.value)}
           className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white focus:border-[#D7263D] focus:outline-none transition-all"
@@ -471,16 +481,17 @@ export default function AdminSettingsPage() {
       >
       {/* Admin Email */}
       <div>
-        <label className="block text-sm font-semibold text-white mb-2">
+        <label htmlFor="adminEmail" className="block text-sm font-semibold text-white mb-2">
           Admin Contact Email
         </label>
         <input
+          id="adminEmail"
+          name="adminEmail"
           type="email"
           value={settings.adminEmail || ""}
           onChange={(e) => {
             // ONLY update local state - NEVER save automatically
             const newValue = e.target.value;
-            console.log("📝 onChange fired for adminEmail:", newValue);
             setSettings((prev) => {
               const updated = { ...prev, adminEmail: newValue };
               settingsRef.current = updated;
@@ -722,10 +733,12 @@ export default function AdminSettingsPage() {
 
       {/* Session Timeout */}
       <div>
-        <label className="block text-sm font-semibold text-white mb-2">
+        <label htmlFor="sessionTimeout" className="block text-sm font-semibold text-white mb-2">
           Session Timeout (hours)
         </label>
         <input
+          id="sessionTimeout"
+          name="sessionTimeout"
           type="number"
           min="1"
           max="168"
