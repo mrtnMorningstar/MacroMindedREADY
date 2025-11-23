@@ -1025,6 +1025,7 @@ export default function AdminSettingsPage() {
   }
 
   return (
+    <>
     <form
       onSubmit={(e) => {
         e.preventDefault();
@@ -1065,38 +1066,47 @@ export default function AdminSettingsPage() {
           </div>
         )}
       </motion.div>
+    </form>
 
-      {/* Delete Test Data Confirmation Modal */}
-      <AppModal
-        isOpen={showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(false)}
-        title="Delete Test Data"
-        size="sm"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-neutral-300">
-            Are you sure you want to delete all test data? This action cannot be undone.
-          </p>
-          <div className="flex gap-3 justify-end">
-            <button
-              onClick={() => setShowDeleteConfirm(false)}
-              className="rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => {
-                setShowDeleteConfirm(false);
-                // TODO: Implement test data deletion
-                toast.info("Test data deletion coming soon");
-              }}
-              className="rounded-lg border border-red-500/50 bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-500/30"
-            >
-              Delete Test Data
-            </button>
-          </div>
+    {/* Delete Test Data Confirmation Modal */}
+    <AppModal
+      isOpen={showDeleteConfirm}
+      onClose={() => setShowDeleteConfirm(false)}
+      title="Delete Test Data"
+      size="sm"
+    >
+      <div className="space-y-4">
+        <p className="text-sm text-neutral-300">
+          Are you sure you want to delete all test data? This action cannot be undone.
+        </p>
+        <div className="flex gap-3 justify-end">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowDeleteConfirm(false);
+            }}
+            className="rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowDeleteConfirm(false);
+              // TODO: Implement test data deletion
+              toast.info("Test data deletion coming soon");
+            }}
+            className="rounded-lg border border-red-500/50 bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-500/30"
+          >
+            Delete Test Data
+          </button>
         </div>
-      </AppModal>
-    </motion.div>
+      </div>
+    </AppModal>
+    </>
   );
 }
