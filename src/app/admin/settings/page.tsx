@@ -146,6 +146,9 @@ export default function AdminSettingsPage() {
 
   const saveSettings = useCallback(
     async (updates: Partial<AdminSettings>) => {
+      // DEBUG: Log to see if this is being called unexpectedly
+      console.log("🔒 saveSettings called - this should ONLY happen when Save button is clicked", updates);
+      
       if (!user) {
         toast.error("You must be logged in to update settings");
         return;
@@ -153,6 +156,7 @@ export default function AdminSettingsPage() {
 
       // Only save if there are actual updates
       if (Object.keys(updates).length === 0) {
+        console.warn("⚠️ saveSettings called with empty updates - ignoring");
         return;
       }
 
@@ -163,9 +167,11 @@ export default function AdminSettingsPage() {
 
       if (!hasChanges) {
         // No actual changes, don't save
+        console.warn("⚠️ saveSettings called but no actual changes detected - ignoring");
         return;
       }
 
+      console.log("✅ saveSettings proceeding with save");
       setSaving(true);
       
       // Update local state immediately
@@ -208,11 +214,11 @@ export default function AdminSettingsPage() {
   // Update local state only (don't save immediately)
   const updateField = useCallback(
     (key: string, value: any) => {
-      // ONLY update local state - never save
-      // Make sure we're NOT calling saveSettings here
+      // ONLY update local state - NEVER save
+      // This function should NEVER call saveSettings or saveField
       setSettings((prev) => {
         const updated = { ...prev, [key]: value };
-        // Ensure settingsRef is updated too
+        // Update ref synchronously
         settingsRef.current = updated;
         return updated;
       });
@@ -331,10 +337,12 @@ export default function AdminSettingsPage() {
     return d.toLocaleString();
   };
 
-  // Save all current settings
+  // Save all current settings - only called explicitly by button click
   const handleSaveAll = useCallback(() => {
-    saveSettings(settings);
-  }, [settings, saveSettings]);
+    // Use ref to get latest settings without dependency
+    const currentSettings = settingsRef.current;
+    saveSettings(currentSettings);
+  }, [saveSettings]);
 
   // General Settings Tab
   const GeneralSettings = () => (
@@ -521,7 +529,7 @@ export default function AdminSettingsPage() {
             { key: "payments", label: "Payments received" },
           ].map((alert) => {
             const toggleId = `emailAlert-${alert.key}`;
-            return (
+  return (
               <div
                 key={alert.key}
                 className="flex items-center justify-between p-4 rounded-lg border border-neutral-800 bg-neutral-800/30 cursor-pointer hover:bg-neutral-800/50 transition-colors"
