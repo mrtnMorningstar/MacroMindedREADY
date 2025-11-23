@@ -308,24 +308,28 @@ export default function ClientDetailSlideover({
             <div className="space-y-4">
               {/* Name */}
               <div>
-                <label className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
+                <label htmlFor="clientName" className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
                   Name
                 </label>
                 {editing === "name" ? (
                   <div className="flex gap-2">
                     <input
+                      id="clientName"
+                      name="clientName"
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       className="flex-1 rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white focus:border-[#D7263D] focus:outline-none"
                     />
                     <button
+                      type="button"
                       onClick={() => handleSave("name")}
                       className="rounded-lg bg-[#D7263D] px-4 py-2 text-sm font-semibold text-white"
                     >
                       Save
                     </button>
                     <button
+                      type="button"
                       onClick={() => setEditing(null)}
                       className="rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-300"
                     >
@@ -336,6 +340,7 @@ export default function ClientDetailSlideover({
                   <div className="flex items-center justify-between">
                     <p className="text-neutral-300">{formData.name}</p>
                     <button
+                      type="button"
                       onClick={() => setEditing("name")}
                       className="text-xs text-[#D7263D] hover:underline"
                     >
@@ -347,12 +352,14 @@ export default function ClientDetailSlideover({
 
               {/* Email */}
               <div>
-                <label className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
+                <label htmlFor="clientEmail" className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
                   Email
                 </label>
                 {editing === "email" ? (
                   <div className="flex gap-2">
                     <input
+                      id="clientEmail"
+                      name="clientEmail"
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -386,12 +393,14 @@ export default function ClientDetailSlideover({
 
               {/* Package Tier */}
               <div>
-                <label className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
+                <label htmlFor="clientPackageTier" className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
                   Package Tier
                 </label>
                 {editing === "packageTier" ? (
                   <div className="flex gap-2">
                     <select
+                      id="clientPackageTier"
+                      name="clientPackageTier"
                       value={formData.packageTier}
                       onChange={(e) => setFormData({ ...formData, packageTier: e.target.value })}
                       className="flex-1 rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white focus:border-[#D7263D] focus:outline-none"
@@ -429,12 +438,14 @@ export default function ClientDetailSlideover({
 
               {/* Meal Plan Status */}
               <div>
-                <label className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
+                <label htmlFor="clientMealPlanStatus" className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
                   Meal Plan Status
                 </label>
                 {editing === "mealPlanStatus" ? (
                   <div className="flex gap-2">
                     <select
+                      id="clientMealPlanStatus"
+                      name="clientMealPlanStatus"
                       value={formData.mealPlanStatus}
                       onChange={(e) => setFormData({ ...formData, mealPlanStatus: e.target.value })}
                       className="flex-1 rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white focus:border-[#D7263D] focus:outline-none"
@@ -481,12 +492,14 @@ export default function ClientDetailSlideover({
 
               {/* Referral Credits */}
               <div>
-                <label className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
+                <label htmlFor="clientReferralCredits" className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
                   Referral Credits
                 </label>
                 {editing === "referralCredits" ? (
                   <div className="flex gap-2">
                     <input
+                      id="clientReferralCredits"
+                      name="clientReferralCredits"
                       type="number"
                       value={formData.referralCredits}
                       onChange={(e) =>
@@ -522,12 +535,14 @@ export default function ClientDetailSlideover({
 
               {/* Admin Role Toggle */}
               <div>
-                <label className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
+                <div className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
                   Admin Role
-                </label>
+                </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <button
+                      id="adminRoleToggle"
+                      aria-label={formData.role === "admin" ? "Remove admin role" : "Grant admin role"}
                       onClick={() => {
                         const newRole = formData.role === "admin" ? "" : "admin";
                         setFormData({ ...formData, role: newRole });
@@ -536,6 +551,8 @@ export default function ClientDetailSlideover({
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                         formData.role === "admin" ? "bg-[#D7263D]" : "bg-neutral-700"
                       }`}
+                      role="switch"
+                      aria-checked={formData.role === "admin"}
                     >
                       <span
                         className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -554,10 +571,12 @@ export default function ClientDetailSlideover({
 
           {/* Admin Notes */}
           <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
-            <h3 className="text-sm uppercase tracking-wide text-neutral-500 mb-4">
+            <label htmlFor="adminNotes" className="block text-sm uppercase tracking-wide text-neutral-500 mb-4">
               Admin Notes
-            </h3>
+            </label>
             <textarea
+              id="adminNotes"
+              name="adminNotes"
               value={formData.adminNotes}
               onChange={(e) => setFormData({ ...formData, adminNotes: e.target.value })}
               onBlur={() => handleSave("adminNotes")}
@@ -571,8 +590,10 @@ export default function ClientDetailSlideover({
           <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
             <h3 className="text-sm uppercase tracking-wide text-neutral-500 mb-4">Actions</h3>
             <div className="grid grid-cols-2 gap-3">
-              <label className="cursor-pointer">
+              <label htmlFor="uploadPDF" className="cursor-pointer">
                 <input
+                  id="uploadPDF"
+                  name="uploadPDF"
                   type="file"
                   accept=".pdf"
                   onChange={(e) => e.target.files?.[0] && handleUploadPDF(e.target.files[0])}
@@ -584,8 +605,10 @@ export default function ClientDetailSlideover({
                   Upload PDF
                 </div>
               </label>
-              <label className="cursor-pointer">
+              <label htmlFor="uploadImages" className="cursor-pointer">
                 <input
+                  id="uploadImages"
+                  name="uploadImages"
                   type="file"
                   accept="image/*"
                   multiple
@@ -599,6 +622,7 @@ export default function ClientDetailSlideover({
                 </div>
               </label>
               <button
+                type="button"
                 onClick={handleMarkDelivered}
                 disabled={formData.mealPlanStatus === MealPlanStatus.DELIVERED}
                 className="flex items-center gap-2 rounded-lg border border-[#D7263D] bg-[#D7263D] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50"
@@ -607,6 +631,7 @@ export default function ClientDetailSlideover({
                 Mark Delivered
               </button>
               <button
+                type="button"
                 onClick={handleImpersonate}
                 className="flex items-center gap-2 rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-3 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700"
               >
@@ -614,6 +639,7 @@ export default function ClientDetailSlideover({
                 Impersonate
               </button>
               <button
+                type="button"
                 onClick={() => setShowDeleteModal(true)}
                 className="flex items-center gap-2 rounded-lg border border-red-500/50 bg-red-500/20 px-4 py-3 text-sm font-semibold text-red-500 transition hover:bg-red-500/30"
               >
@@ -685,12 +711,14 @@ export default function ClientDetailSlideover({
           </p>
           <div className="flex gap-3 justify-end">
             <button
+              type="button"
               onClick={() => setShowDeleteModal(false)}
               className="rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-700"
             >
               Cancel
             </button>
             <button
+              type="button"
               onClick={() => {
                 handleDeleteUser();
                 setShowDeleteModal(false);
