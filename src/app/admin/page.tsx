@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import DashboardSummary from "@/components/admin/DashboardSummary";
 import RecentClients from "@/components/admin/RecentClients";
-import QuickActions from "@/components/admin/QuickActions";
 import RecentActivity from "@/components/admin/RecentActivity";
 import PendingTasks from "@/components/admin/PendingTasks";
 
@@ -30,15 +29,12 @@ export default function AdminPage() {
 
       {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Quick Actions */}
-        <QuickActions />
-
         {/* Recent Activity */}
         <RecentActivity />
-      </div>
 
-      {/* Recent Clients */}
-      <RecentClients />
+        {/* Recent Clients */}
+        <RecentClients />
+      </div>
     </motion.div>
   );
 }
