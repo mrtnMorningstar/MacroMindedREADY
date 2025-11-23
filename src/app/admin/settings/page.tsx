@@ -43,6 +43,14 @@ export default function AdminSettingsPage() {
   const { user } = useAppContext();
   const toast = useToast();
   const [activeTab, setActiveTab] = useState<TabType>("general");
+
+  // Handle tab change with type validation
+  const handleTabChange = useCallback((tabId: string) => {
+    const validTabs: TabType[] = ["general", "notifications", "payments", "security", "data"];
+    if (validTabs.includes(tabId as TabType)) {
+      setActiveTab(tabId as TabType);
+    }
+  }, []);
   const [settings, setSettings] = useState<AdminSettings>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -659,7 +667,7 @@ export default function AdminSettingsPage() {
       className="flex flex-col gap-6"
     >
       {/* Settings Tabs */}
-      <SettingsTabs activeTab={activeTab} onTabChange={setActiveTab} />
+      <SettingsTabs activeTab={activeTab} onTabChange={handleTabChange} />
 
       {/* Tab Content */}
       <AnimatePresence mode="wait">
