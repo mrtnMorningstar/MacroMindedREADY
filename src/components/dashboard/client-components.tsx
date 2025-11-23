@@ -417,12 +417,17 @@ export function ReferralsCard({
 
         <div className="grid gap-6 sm:grid-cols-2">
           <div className="flex flex-col gap-3">
-            <span className="text-xs font-semibold uppercase tracking-[0.28em] text-foreground/70">
+            <label htmlFor="referralCode" className="text-xs font-semibold uppercase tracking-[0.28em] text-foreground/70">
               Your Referral Code
-            </span>
-            <code className="rounded-2xl border-2 border-accent/40 bg-background/40 px-5 py-4 text-base font-bold uppercase tracking-[0.2em] text-foreground">
-              {referralCode}
-            </code>
+            </label>
+            <input
+              id="referralCode"
+              name="referralCode"
+              type="text"
+              readOnly
+              value={referralCode}
+              className="rounded-2xl border-2 border-accent/40 bg-background/40 px-5 py-4 text-base font-bold uppercase tracking-[0.2em] text-foreground"
+            />
           </div>
 
           <div className="flex flex-col gap-3">
@@ -471,13 +476,13 @@ export function ReferralsCard({
         </div>
 
         <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-[0.28em] text-foreground/70">
-              Your Referral Link
-            </span>
-          </div>
+          <label htmlFor="referralLink" className="text-xs font-semibold uppercase tracking-[0.28em] text-foreground/70">
+            Your Referral Link
+          </label>
           <div className="flex items-center gap-3">
             <input
+              id="referralLink"
+              name="referralLink"
               type="text"
               readOnly
               value={shareLink}
