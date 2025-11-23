@@ -511,48 +511,54 @@ export default function AdminSettingsPage() {
 
       {/* Email Alerts */}
       <div>
-        <label className="block text-sm font-semibold text-white mb-3">
+        <div className="block text-sm font-semibold text-white mb-3">
           Email Alert Preferences
-        </label>
+        </div>
         <div className="space-y-3">
           {[
             { key: "newSignups", label: "New client sign-ups" },
             { key: "planRequests", label: "Plan update requests" },
             { key: "payments", label: "Payments received" },
-          ].map((alert) => (
-            <label
-              key={alert.key}
-              className="flex items-center justify-between p-4 rounded-lg border border-neutral-800 bg-neutral-800/30 cursor-pointer hover:bg-neutral-800/50 transition-colors"
-            >
-              <span className="text-sm font-medium text-white">
-                {alert.label}
-              </span>
-              <button
-              onClick={() => {
-                const currentValue = settings.emailAlerts?.[alert.key as keyof typeof settings.emailAlerts] ?? false;
-                const newValue = !currentValue;
-                const parent = settings.emailAlerts || {};
-                updateField("emailAlerts", {
-                  ...parent,
-                  [alert.key]: newValue,
-                });
-              }}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  settings.emailAlerts?.[alert.key as keyof typeof settings.emailAlerts]
-                    ? "bg-[#D7263D]"
-                    : "bg-neutral-700"
-                }`}
+          ].map((alert) => {
+            const toggleId = `emailAlert-${alert.key}`;
+            return (
+              <div
+                key={alert.key}
+                className="flex items-center justify-between p-4 rounded-lg border border-neutral-800 bg-neutral-800/30 cursor-pointer hover:bg-neutral-800/50 transition-colors"
               >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                <label htmlFor={toggleId} className="text-sm font-medium text-white cursor-pointer flex-1">
+                  {alert.label}
+                </label>
+                <button
+                  id={toggleId}
+                  type="button"
+                  aria-label={`Toggle ${alert.label}`}
+                  onClick={() => {
+                    const currentValue = settings.emailAlerts?.[alert.key as keyof typeof settings.emailAlerts] ?? false;
+                    const newValue = !currentValue;
+                    const parent = settings.emailAlerts || {};
+                    updateField("emailAlerts", {
+                      ...parent,
+                      [alert.key]: newValue,
+                    });
+                  }}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                     settings.emailAlerts?.[alert.key as keyof typeof settings.emailAlerts]
-                      ? "translate-x-6"
-                      : "translate-x-1"
+                      ? "bg-[#D7263D]"
+                      : "bg-neutral-700"
                   }`}
-                />
-              </button>
-            </label>
-          ))}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      settings.emailAlerts?.[alert.key as keyof typeof settings.emailAlerts]
+                        ? "translate-x-6"
+                        : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
       </SettingsFormSection>
@@ -627,16 +633,21 @@ export default function AdminSettingsPage() {
 
       {/* Tax Toggle */}
       <div>
-        <label className="block text-sm font-semibold text-white mb-3">
+        <div className="block text-sm font-semibold text-white mb-3">
           Tax/VAT Settings
-        </label>
+        </div>
         <div className="space-y-3">
-          <label className="flex items-center justify-between p-4 rounded-lg border border-neutral-800 bg-neutral-800/30 cursor-pointer hover:bg-neutral-800/50 transition-colors">
-            <span className="text-sm font-medium text-white">Enable Tax/VAT</span>
+          <div className="flex items-center justify-between p-4 rounded-lg border border-neutral-800 bg-neutral-800/30 cursor-pointer hover:bg-neutral-800/50 transition-colors">
+            <label htmlFor="taxEnabled" className="text-sm font-medium text-white cursor-pointer flex-1">
+              Enable Tax/VAT
+            </label>
             <button
+              id="taxEnabled"
+              type="button"
+              aria-label="Toggle Tax/VAT"
               onClick={() => {
-              updateField("taxEnabled", !settings.taxEnabled);
-            }}
+                updateField("taxEnabled", !settings.taxEnabled);
+              }}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                 settings.taxEnabled ? "bg-[#D7263D]" : "bg-neutral-700"
               }`}
@@ -647,7 +658,7 @@ export default function AdminSettingsPage() {
                 }`}
               />
             </button>
-          </label>
+          </div>
 
           {settings.taxEnabled && (
             <div className="pl-4">
@@ -702,19 +713,22 @@ export default function AdminSettingsPage() {
     >
       {/* Impersonation Toggle */}
       <div>
-        <label className="block text-sm font-semibold text-white mb-3">
+        <div className="block text-sm font-semibold text-white mb-3">
           Impersonation
-        </label>
-        <label className="flex items-center justify-between p-4 rounded-lg border border-neutral-800 bg-neutral-800/30 cursor-pointer hover:bg-neutral-800/50 transition-colors">
-          <div>
-            <span className="text-sm font-medium text-white block">
+        </div>
+        <div className="flex items-center justify-between p-4 rounded-lg border border-neutral-800 bg-neutral-800/30 cursor-pointer hover:bg-neutral-800/50 transition-colors">
+          <div className="flex-1">
+            <label htmlFor="impersonationEnabled" className="text-sm font-medium text-white block cursor-pointer">
               Enable Admin Impersonation
-            </span>
-            <span className="text-xs text-neutral-400 mt-1">
+            </label>
+            <span className="text-xs text-neutral-400 mt-1 block">
               Allow admins to view the app as other users
             </span>
           </div>
           <button
+            id="impersonationEnabled"
+            type="button"
+            aria-label="Toggle Admin Impersonation"
             onClick={() => {
               updateField("impersonationEnabled", !settings.impersonationEnabled);
             }}
@@ -728,7 +742,7 @@ export default function AdminSettingsPage() {
               }`}
             />
           </button>
-        </label>
+        </div>
       </div>
 
       {/* Session Timeout */}
