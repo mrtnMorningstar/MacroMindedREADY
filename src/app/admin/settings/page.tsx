@@ -55,6 +55,7 @@ export default function AdminSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const hasShownErrorRef = useRef(false);
+  const lastSavedSettingsRef = useRef<AdminSettings>({}); // Track last saved state
 
   // Load settings from Firestore (one-time load, no real-time listener to avoid errors)
   useEffect(() => {
@@ -75,7 +76,7 @@ export default function AdminSettingsPage() {
           } as AdminSettings);
         } else {
           // Initialize with defaults if document doesn't exist
-          setSettings({
+          const defaultSettings: AdminSettings = {
             brandName: "MacroMinded",
             accentColor: "#D7263D",
             timezone: "America/New_York",
@@ -90,7 +91,10 @@ export default function AdminSettingsPage() {
             taxRate: 0,
             impersonationEnabled: true,
             sessionTimeout: 24,
-          });
+          };
+          setSettings(defaultSettings);
+          settingsRef.current = defaultSettings;
+          lastSavedSettingsRef.current = defaultSettings; // Initialize last saved state
         }
         setLoading(false);
       } catch (error: any) {
@@ -146,8 +150,8 @@ export default function AdminSettingsPage() {
 
   const saveSettings = useCallback(
     async (updates: Partial<AdminSettings>) => {
-      // DEBUG: Log to see if this is being called unexpectedly
-      console.log("🔒 saveSettings called - this should ONLY happen when Save button is clicked", updates);
+      // DEBUG: Log full stack trace to see what's calling this
+      console.trace("🔒 saveSettings called - this should ONLY happen when Save button is clicked", updates);
       
       if (!user) {
         toast.error("You must be logged in to update settings");
@@ -160,15 +164,36 @@ export default function AdminSettingsPage() {
         return;
       }
 
-      // Check if any value actually changed
-      const hasChanges = Object.keys(updates).some(
-        (key) => updates[key as keyof AdminSettings] !== settingsRef.current[key as keyof AdminSettings]
-      );
+      // Check if this is a full save (all settings) vs partial update
+      // Full save means user clicked Save button - compare against last SAVED state
+      const isFullSave = Object.keys(updates).length > 5; // Full settings has many keys
+      
+      if (isFullSave) {
+        // Full save from Save button - compare against last saved state
+        const hasChanges = Object.keys(updates).some(
+          (key) => {
+            const newVal = updates[key as keyof AdminSettings];
+            const oldVal = lastSavedSettingsRef.current[key as keyof AdminSettings];
+            return JSON.stringify(newVal) !== JSON.stringify(oldVal);
+          }
+        );
+        
+        if (!hasChanges) {
+          console.warn("⚠️ Full save called but no changes from last saved state - ignoring");
+          toast.info("No changes to save");
+          return;
+        }
+        console.log("✅ Full save has changes - proceeding");
+      } else {
+        // Partial update - should not happen with manual save button, but check anyway
+        const hasChanges = Object.keys(updates).some(
+          (key) => updates[key as keyof AdminSettings] !== lastSavedSettingsRef.current[key as keyof AdminSettings]
+        );
 
-      if (!hasChanges) {
-        // No actual changes, don't save
-        console.warn("⚠️ saveSettings called but no actual changes detected - ignoring");
-        return;
+        if (!hasChanges) {
+          console.warn("⚠️ Partial save called but no actual changes detected - ignoring");
+          return;
+        }
       }
 
       console.log("✅ saveSettings proceeding with save");
@@ -199,6 +224,8 @@ export default function AdminSettingsPage() {
         }
 
         toast.success("Settings saved successfully");
+        // Update last saved state after successful save
+        lastSavedSettingsRef.current = mergedSettings;
       } catch (error) {
         console.error("Failed to save settings:", error);
         toast.error(error instanceof Error ? error.message : "Failed to save settings");
@@ -226,9 +253,11 @@ export default function AdminSettingsPage() {
     []
   );
 
-  // Save a specific field to Firestore (called on blur or immediate action)
+  // Save a specific field to Firestore (NOT USED - only Save button saves now)
+  // Kept for potential future use but not called anywhere
   const saveField = useCallback(
     (key: string, value: any) => {
+      console.warn("⚠️ saveField called - this should not happen with manual save button", key, value);
       // Only save if the value actually changed from current ref
       const currentValue = settingsRef.current[key as keyof AdminSettings];
       if (value !== currentValue) {
@@ -238,9 +267,11 @@ export default function AdminSettingsPage() {
     [saveSettings]
   );
 
-  // Update nested field (e.g., emailAlerts.newSignups)
+  // Update nested field (e.g., emailAlerts.newSignups) - NOT USED, toggles use updateField now
+  // Kept for potential future use but not called anywhere
   const updateNestedField = useCallback(
     (parentKey: string, childKey: string, value: any) => {
+      console.warn("⚠️ updateNestedField called - this should not happen", parentKey, childKey, value);
       const parent = settings[parentKey as keyof AdminSettings];
       const parentValue = parent && typeof parent === "object" && !Array.isArray(parent)
         ? parent
@@ -339,8 +370,11 @@ export default function AdminSettingsPage() {
 
   // Save all current settings - only called explicitly by button click
   const handleSaveAll = useCallback(() => {
+    console.log("💾 Save button clicked - saving all settings");
     // Use ref to get latest settings without dependency
     const currentSettings = settingsRef.current;
+    // Only save if there are actual changes from the last saved state
+    // We'll pass the full settings object, and saveSettings will check for changes
     saveSettings(currentSettings);
   }, [saveSettings]);
 
