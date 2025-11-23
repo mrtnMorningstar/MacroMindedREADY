@@ -648,9 +648,9 @@ export default function AdminSettingsPage() {
     >
       {/* Stripe Status */}
       <div>
-        <label className="block text-sm font-semibold text-white mb-2">
+        <div className="block text-sm font-semibold text-white mb-2">
           Stripe API Status
-        </label>
+        </div>
         <div className="flex items-center gap-3 p-4 rounded-lg border border-neutral-800 bg-neutral-800/30">
           {process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? (
             <>
@@ -678,9 +678,9 @@ export default function AdminSettingsPage() {
 
       {/* Webhook Last Success */}
       <div>
-        <label className="block text-sm font-semibold text-white mb-2">
+        <div className="block text-sm font-semibold text-white mb-2">
           Last Webhook Success
-        </label>
+        </div>
         <div className="flex items-center gap-2 p-4 rounded-lg border border-neutral-800 bg-neutral-800/30">
           <ClockIcon className="h-5 w-5 text-neutral-400 flex-shrink-0" />
           <p className="text-sm text-neutral-300">
@@ -720,10 +720,12 @@ export default function AdminSettingsPage() {
 
           {settings.taxEnabled && (
             <div className="pl-4">
-              <label className="block text-sm font-semibold text-white mb-2">
+              <label htmlFor="taxRate" className="block text-sm font-semibold text-white mb-2">
                 Tax Rate (%)
               </label>
               <input
+                id="taxRate"
+                name="taxRate"
                 type="number"
                 min="0"
                 max="100"
@@ -843,9 +845,9 @@ export default function AdminSettingsPage() {
 
       {/* Impersonation Logs */}
       <div>
-        <label className="block text-sm font-semibold text-white mb-3">
+        <div className="block text-sm font-semibold text-white mb-3">
           Recent Impersonation Activity
-        </label>
+        </div>
         {loadingLogs ? (
           <div className="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -925,9 +927,9 @@ export default function AdminSettingsPage() {
       >
         {/* Backup/Export */}
         <div>
-          <label className="block text-sm font-semibold text-white mb-2">
+          <div className="block text-sm font-semibold text-white mb-2">
             Data Export
-          </label>
+          </div>
           <div className="p-4 rounded-lg border border-neutral-800 bg-neutral-800/30">
             <div className="flex items-center justify-between mb-3">
               <div>
@@ -956,9 +958,9 @@ export default function AdminSettingsPage() {
 
         {/* Delete Test Data */}
         <div>
-          <label className="block text-sm font-semibold text-white mb-2">
+          <div className="block text-sm font-semibold text-white mb-2">
             Test Data Management
-          </label>
+          </div>
           <div className="p-4 rounded-lg border border-red-500/50 bg-red-500/10">
             <div className="flex items-center justify-between">
               <div>
