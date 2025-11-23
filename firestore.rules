@@ -238,6 +238,49 @@ service cloud.firestore {
     }
 
     // ============================================
+    // ADMIN SETTINGS COLLECTION
+    // ============================================
+
+    match /adminSettings/{settingsId} {
+      // Read: only admins can read admin settings
+      allow read: if isAdmin();
+
+      // Create: only admins can create admin settings
+      allow create: if isAdmin();
+
+      // Update: only admins can update admin settings
+      allow update: if isAdmin();
+
+      // Delete: only admins can delete admin settings
+      allow delete: if isAdmin();
+    }
+
+    // Allow admins to list all admin settings
+    match /adminSettings {
+      allow list: if isAdmin();
+    }
+
+    // ============================================
+    // ADMIN ACTIVITY COLLECTION (for impersonation logs)
+    // ============================================
+
+    match /adminActivity/{activityId} {
+      // Read: only admins can read admin activity logs
+      allow read: if isAdmin();
+
+      // Create: only admins can create activity logs
+      allow create: if isAdmin();
+
+      // Update/Delete: prevent modification/deletion of activity logs
+      allow update, delete: if false;
+    }
+
+    // Allow admins to list admin activity
+    match /adminActivity {
+      allow list: if isAdmin();
+    }
+
+    // ============================================
     // DENY ALL OTHER COLLECTIONS
     // ============================================
 
