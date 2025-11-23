@@ -325,12 +325,18 @@ export default function AdminSettingsPage() {
     return d.toLocaleString();
   };
 
+  // Save all current settings
+  const handleSaveAll = useCallback(() => {
+    saveSettings(settings);
+  }, [settings, saveSettings]);
+
   // General Settings Tab
   const GeneralSettings = () => (
-    <SettingsFormSection
-      title="General Settings"
-      description="Configure basic application settings and branding"
-    >
+    <>
+      <SettingsFormSection
+        title="General Settings"
+        description="Configure basic application settings and branding"
+      >
       {/* Brand Name */}
       <div>
         <label className="block text-sm font-semibold text-white mb-2">
@@ -340,7 +346,11 @@ export default function AdminSettingsPage() {
           type="text"
           value={settings.brandName || "MacroMinded"}
           onChange={(e) => updateField("brandName", e.target.value)}
-          onBlur={(e) => saveField("brandName", e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+            }
+          }}
           className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:border-[#D7263D] focus:outline-none transition-all"
           placeholder="MacroMinded"
         />
@@ -362,7 +372,11 @@ export default function AdminSettingsPage() {
             type="text"
             value={settings.accentColor || "#D7263D"}
             onChange={(e) => updateField("accentColor", e.target.value)}
-            onBlur={(e) => saveField("accentColor", e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+              }
+            }}
             className="flex-1 rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white font-mono focus:border-[#D7263D] focus:outline-none transition-all"
             placeholder="#D7263D"
           />
@@ -376,10 +390,7 @@ export default function AdminSettingsPage() {
         </label>
         <select
           value={settings.timezone || "America/New_York"}
-          onChange={(e) => {
-            updateField("timezone", e.target.value);
-            saveField("timezone", e.target.value);
-          }}
+          onChange={(e) => updateField("timezone", e.target.value)}
           className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white focus:border-[#D7263D] focus:outline-none transition-all"
         >
           <option value="America/New_York">Eastern Time (ET)</option>
@@ -397,10 +408,7 @@ export default function AdminSettingsPage() {
         </label>
         <select
           value={settings.currency || "USD"}
-          onChange={(e) => {
-            updateField("currency", e.target.value);
-            saveField("currency", e.target.value);
-          }}
+          onChange={(e) => updateField("currency", e.target.value)}
           className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white focus:border-[#D7263D] focus:outline-none transition-all"
         >
           <option value="USD">USD ($)</option>
@@ -417,10 +425,7 @@ export default function AdminSettingsPage() {
         </label>
         <select
           value={settings.dateFormat || "MM/DD/YYYY"}
-          onChange={(e) => {
-            updateField("dateFormat", e.target.value);
-            saveField("dateFormat", e.target.value);
-          }}
+          onChange={(e) => updateField("dateFormat", e.target.value)}
           className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white focus:border-[#D7263D] focus:outline-none transition-all"
         >
           <option value="MM/DD/YYYY">MM/DD/YYYY</option>
@@ -428,15 +433,33 @@ export default function AdminSettingsPage() {
           <option value="YYYY-MM-DD">YYYY-MM-DD</option>
         </select>
       </div>
-    </SettingsFormSection>
+      </SettingsFormSection>
+      <div className="flex justify-end mt-6">
+        <button
+          onClick={handleSaveAll}
+          disabled={saving}
+          className="flex items-center gap-2 rounded-lg border border-[#D7263D] bg-[#D7263D] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {saving ? (
+            <>
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              Saving...
+            </>
+          ) : (
+            "Save Settings"
+          )}
+        </button>
+      </div>
+    </>
   );
 
   // Notifications Settings Tab
   const NotificationsSettings = () => (
-    <SettingsFormSection
-      title="Notification Settings"
-      description="Configure email alerts for admin notifications"
-    >
+    <>
+      <SettingsFormSection
+        title="Notification Settings"
+        description="Configure email alerts for admin notifications"
+      >
       {/* Admin Email */}
       <div>
         <label className="block text-sm font-semibold text-white mb-2">
@@ -446,23 +469,13 @@ export default function AdminSettingsPage() {
           type="email"
           value={settings.adminEmail || ""}
           onChange={(e) => {
-            // ONLY update local state - NEVER save on change
-            const newValue = e.target.value;
-            setSettings((prev) => ({ ...prev, adminEmail: newValue }));
-          }}
-          onBlur={(e) => {
-            // Only save on blur if value actually changed
-            const newValue = e.target.value;
-            const currentValue = settingsRef.current.adminEmail || "";
-            if (newValue !== currentValue && newValue.trim() !== "") {
-              saveSettings({ adminEmail: newValue });
-            }
+            // ONLY update local state - NEVER save automatically
+            updateField("adminEmail", e.target.value);
           }}
           onKeyDown={(e) => {
-            // Prevent Enter key from triggering any save behavior
+            // Prevent form submission on Enter
             if (e.key === "Enter") {
               e.preventDefault();
-              e.currentTarget.blur(); // This will trigger onBlur which handles save
             }
           }}
           className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:border-[#D7263D] focus:outline-none transition-all"
@@ -489,13 +502,15 @@ export default function AdminSettingsPage() {
                 {alert.label}
               </span>
               <button
-                onClick={() =>
-                  updateNestedField(
-                    "emailAlerts",
-                    alert.key,
-                    !settings.emailAlerts?.[alert.key as keyof typeof settings.emailAlerts]
-                  )
-                }
+              onClick={() => {
+                const currentValue = settings.emailAlerts?.[alert.key as keyof typeof settings.emailAlerts] ?? false;
+                const newValue = !currentValue;
+                const parent = settings.emailAlerts || {};
+                updateField("emailAlerts", {
+                  ...parent,
+                  [alert.key]: newValue,
+                });
+              }}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                   settings.emailAlerts?.[alert.key as keyof typeof settings.emailAlerts]
                     ? "bg-[#D7263D]"
@@ -514,12 +529,30 @@ export default function AdminSettingsPage() {
           ))}
         </div>
       </div>
-    </SettingsFormSection>
+      </SettingsFormSection>
+      <div className="flex justify-end mt-6">
+        <button
+          onClick={handleSaveAll}
+          disabled={saving}
+          className="flex items-center gap-2 rounded-lg border border-[#D7263D] bg-[#D7263D] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {saving ? (
+            <>
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              Saving...
+            </>
+          ) : (
+            "Save Settings"
+          )}
+        </button>
+      </div>
+    </>
   );
 
   // Payments Settings Tab
   const PaymentsSettings = () => (
-    <SettingsFormSection
+    <>
+      <SettingsFormSection
       title="Payment Settings"
       description="Configure payment processing and tax settings"
     >
@@ -576,9 +609,7 @@ export default function AdminSettingsPage() {
             <span className="text-sm font-medium text-white">Enable Tax/VAT</span>
             <button
               onClick={() => {
-              const newValue = !settings.taxEnabled;
-              updateField("taxEnabled", newValue);
-              saveField("taxEnabled", newValue);
+              updateField("taxEnabled", !settings.taxEnabled);
             }}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                 settings.taxEnabled ? "bg-[#D7263D]" : "bg-neutral-700"
@@ -604,7 +635,11 @@ export default function AdminSettingsPage() {
                 step="0.01"
                 value={settings.taxRate || 0}
                 onChange={(e) => updateField("taxRate", parseFloat(e.target.value) || 0)}
-                onBlur={(e) => saveField("taxRate", parseFloat(e.target.value) || 0)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                  }
+                }}
                 className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:border-[#D7263D] focus:outline-none transition-all"
                 placeholder="0.00"
               />
@@ -612,12 +647,30 @@ export default function AdminSettingsPage() {
           )}
         </div>
       </div>
-    </SettingsFormSection>
+      </SettingsFormSection>
+      <div className="flex justify-end mt-6">
+        <button
+          onClick={handleSaveAll}
+          disabled={saving}
+          className="flex items-center gap-2 rounded-lg border border-[#D7263D] bg-[#D7263D] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {saving ? (
+            <>
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              Saving...
+            </>
+          ) : (
+            "Save Settings"
+          )}
+        </button>
+      </div>
+    </>
   );
 
   // Security Settings Tab
   const SecuritySettings = () => (
-    <SettingsFormSection
+    <>
+      <SettingsFormSection
       title="Security Settings"
       description="Configure security features and access controls"
     >
@@ -637,9 +690,7 @@ export default function AdminSettingsPage() {
           </div>
           <button
             onClick={() => {
-              const newValue = !settings.impersonationEnabled;
-              updateField("impersonationEnabled", newValue);
-              saveField("impersonationEnabled", newValue);
+              updateField("impersonationEnabled", !settings.impersonationEnabled);
             }}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
               settings.impersonationEnabled ? "bg-[#D7263D]" : "bg-neutral-700"
@@ -665,7 +716,11 @@ export default function AdminSettingsPage() {
           max="168"
           value={settings.sessionTimeout || 24}
           onChange={(e) => updateField("sessionTimeout", parseInt(e.target.value) || 24)}
-          onBlur={(e) => saveField("sessionTimeout", parseInt(e.target.value) || 24)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+            }
+          }}
           className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:border-[#D7263D] focus:outline-none transition-all"
           placeholder="24"
         />
@@ -716,7 +771,24 @@ export default function AdminSettingsPage() {
           </div>
         )}
       </div>
-    </SettingsFormSection>
+      </SettingsFormSection>
+      <div className="flex justify-end mt-6">
+        <button
+          onClick={handleSaveAll}
+          disabled={saving}
+          className="flex items-center gap-2 rounded-lg border border-[#D7263D] bg-[#D7263D] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {saving ? (
+            <>
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              Saving...
+            </>
+          ) : (
+            "Save Settings"
+          )}
+        </button>
+      </div>
+    </>
   );
 
   // Data Management Settings Tab
