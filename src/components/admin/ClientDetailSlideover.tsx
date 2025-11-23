@@ -308,15 +308,16 @@ export default function ClientDetailSlideover({
             <div className="space-y-4">
               {/* Name */}
               <div>
-                <label htmlFor={editing === "name" ? "clientName" : undefined} className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
+                <div className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
                   Name
-                </label>
+                </div>
                 {editing === "name" ? (
                   <div className="flex gap-2">
                     <input
                       id="clientName"
                       name="clientName"
                       type="text"
+                      aria-label="Name"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       className="flex-1 rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white focus:border-[#D7263D] focus:outline-none"
@@ -352,15 +353,16 @@ export default function ClientDetailSlideover({
 
               {/* Email */}
               <div>
-                <label htmlFor={editing === "email" ? "clientEmail" : undefined} className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
+                <div className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
                   Email
-                </label>
+                </div>
                 {editing === "email" ? (
                   <div className="flex gap-2">
                     <input
                       id="clientEmail"
                       name="clientEmail"
                       type="email"
+                      aria-label="Email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       className="flex-1 rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white focus:border-[#D7263D] focus:outline-none"
@@ -393,14 +395,15 @@ export default function ClientDetailSlideover({
 
               {/* Package Tier */}
               <div>
-                <label htmlFor={editing === "packageTier" ? "clientPackageTier" : undefined} className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
+                <div className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
                   Package Tier
-                </label>
+                </div>
                 {editing === "packageTier" ? (
                   <div className="flex gap-2">
                     <select
                       id="clientPackageTier"
                       name="clientPackageTier"
+                      aria-label="Package Tier"
                       value={formData.packageTier}
                       onChange={(e) => setFormData({ ...formData, packageTier: e.target.value })}
                       className="flex-1 rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white focus:border-[#D7263D] focus:outline-none"
@@ -438,14 +441,15 @@ export default function ClientDetailSlideover({
 
               {/* Meal Plan Status */}
               <div>
-                <label htmlFor={editing === "mealPlanStatus" ? "clientMealPlanStatus" : undefined} className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
+                <div className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
                   Meal Plan Status
-                </label>
+                </div>
                 {editing === "mealPlanStatus" ? (
                   <div className="flex gap-2">
                     <select
                       id="clientMealPlanStatus"
                       name="clientMealPlanStatus"
+                      aria-label="Meal Plan Status"
                       value={formData.mealPlanStatus}
                       onChange={(e) => setFormData({ ...formData, mealPlanStatus: e.target.value })}
                       className="flex-1 rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2 text-sm text-white focus:border-[#D7263D] focus:outline-none"
@@ -492,15 +496,16 @@ export default function ClientDetailSlideover({
 
               {/* Referral Credits */}
               <div>
-                <label htmlFor={editing === "referralCredits" ? "clientReferralCredits" : undefined} className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
+                <div className="block text-xs uppercase tracking-wide text-neutral-500 mb-2">
                   Referral Credits
-                </label>
+                </div>
                 {editing === "referralCredits" ? (
                   <div className="flex gap-2">
                     <input
                       id="clientReferralCredits"
                       name="clientReferralCredits"
                       type="number"
+                      aria-label="Referral Credits"
                       value={formData.referralCredits}
                       onChange={(e) =>
                         setFormData({ ...formData, referralCredits: Number(e.target.value) })
