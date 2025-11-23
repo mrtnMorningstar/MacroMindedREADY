@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { db } from "@/lib/firebase";
-import { doc, onSnapshot, getDoc, collection, query, getDocs, orderBy, limit, where } from "firebase/firestore";
+import { doc, getDoc, collection, query, getDocs, orderBy, limit, where } from "firebase/firestore";
 import { useAppContext } from "@/context/AppContext";
 import { useToast } from "@/components/ui/Toast";
 import SettingsTabs from "@/components/admin/SettingsTabs";
@@ -54,17 +54,15 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const hasShownErrorRef = useRef(false);
 
-  // Load settings from Firestore
+  // Load settings from Firestore (one-time load, no real-time listener to avoid errors)
   useEffect(() => {
     let isMounted = true;
-    let unsubscribe: (() => void) | null = null;
 
     const loadSettings = async () => {
       try {
         const settingsRef = doc(db, "adminSettings", "global");
-        
-        // First, try to get the document once
         const snapshot = await getDoc(settingsRef);
 
         if (!isMounted) return;
@@ -95,31 +93,40 @@ export default function AdminSettingsPage() {
           });
         }
         setLoading(false);
-
-        // Then set up a listener only if document exists or after initial load
-        unsubscribe = onSnapshot(
-          settingsRef,
-          (snapshot) => {
-            if (!isMounted) return;
-            
-            if (snapshot.exists()) {
-              const data = snapshot.data();
-              setSettings({
-                ...data,
-                stripeWebhookLastSuccess: data.stripeWebhookLastSuccess?.toDate?.() || data.stripeWebhookLastSuccess,
-              } as AdminSettings);
-            }
-          },
-          (error) => {
-            if (!isMounted) return;
-            console.error("Error in settings listener:", error);
-            // Don't show toast for listener errors to avoid spam
-          }
-        );
-      } catch (error) {
+      } catch (error: any) {
         if (!isMounted) return;
-        console.error("Error loading settings:", error);
-        toast.error("Failed to load settings");
+        
+        // Always set defaults on error so page is still usable
+        setSettings({
+          brandName: "MacroMinded",
+          accentColor: "#D7263D",
+          timezone: "America/New_York",
+          currency: "USD",
+          dateFormat: "MM/DD/YYYY",
+          emailAlerts: {
+            newSignups: true,
+            planRequests: true,
+            payments: true,
+          },
+          taxEnabled: false,
+          taxRate: 0,
+          impersonationEnabled: true,
+          sessionTimeout: 24,
+        });
+
+        // Only show error once
+        if (!hasShownErrorRef.current) {
+          const errorCode = error?.code;
+          if (errorCode === "permission-denied") {
+            toast.error("Permission denied. You may not have access to admin settings.");
+          } else if (errorCode === "unavailable") {
+            toast.error("Firestore is unavailable. Please check your connection.");
+          } else {
+            console.error("Error loading settings:", error);
+            // Don't show toast for other errors - just use defaults
+          }
+          hasShownErrorRef.current = true;
+        }
         setLoading(false);
       }
     };
@@ -128,11 +135,8 @@ export default function AdminSettingsPage() {
 
     return () => {
       isMounted = false;
-      if (unsubscribe) {
-        unsubscribe();
-      }
     };
-  }, [toast]);
+  }, []); // Remove toast from dependencies to prevent re-runs
 
   // Save settings
   const saveSettings = useCallback(
