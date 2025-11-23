@@ -56,6 +56,7 @@ export default function AdminSettingsPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const hasShownErrorRef = useRef(false);
   const lastSavedSettingsRef = useRef<AdminSettings>({}); // Track last saved state
+  const settingsRef = useRef<AdminSettings>({}); // React ref to track current settings state
 
   // Load settings from Firestore (one-time load, no real-time listener to avoid errors)
   useEffect(() => {
@@ -63,17 +64,20 @@ export default function AdminSettingsPage() {
 
     const loadSettings = async () => {
       try {
-        const settingsRef = doc(db, "adminSettings", "global");
-        const snapshot = await getDoc(settingsRef);
+        const settingsDocRef = doc(db, "adminSettings", "global");
+        const snapshot = await getDoc(settingsDocRef);
 
         if (!isMounted) return;
 
         if (snapshot.exists()) {
           const data = snapshot.data();
-          setSettings({
+          const loadedSettings = {
             ...data,
             stripeWebhookLastSuccess: data.stripeWebhookLastSuccess?.toDate?.() || data.stripeWebhookLastSuccess,
-          } as AdminSettings);
+          } as AdminSettings;
+          setSettings(loadedSettings);
+          settingsRef.current = loadedSettings;
+          lastSavedSettingsRef.current = loadedSettings;
         } else {
           // Initialize with defaults if document doesn't exist
           const defaultSettings: AdminSettings = {
@@ -94,7 +98,7 @@ export default function AdminSettingsPage() {
           };
           setSettings(defaultSettings);
           settingsRef.current = defaultSettings;
-          lastSavedSettingsRef.current = defaultSettings; // Initialize last saved state
+          lastSavedSettingsRef.current = defaultSettings;
         }
         setLoading(false);
       } catch (error: any) {
@@ -142,8 +146,7 @@ export default function AdminSettingsPage() {
     };
   }, []); // Remove toast from dependencies to prevent re-runs
 
-  // Save settings - ref is used to always get latest settings without dependency
-  const settingsRef = useRef(settings);
+  // Update settingsRef whenever settings state changes
   useEffect(() => {
     settingsRef.current = settings;
   }, [settings]);
