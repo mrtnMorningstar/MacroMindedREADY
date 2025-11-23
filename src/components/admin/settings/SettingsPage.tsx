@@ -91,7 +91,8 @@ export default function SettingsPage() {
       }}
       onClick={(e) => {
         // Prevent any form submissions from bubbling
-        if ((e.target as HTMLElement).type === "submit") {
+        const target = e.target as HTMLElement;
+        if (target instanceof HTMLButtonElement && target.type === "submit") {
           e.preventDefault();
           e.stopPropagation();
         }
