@@ -146,6 +146,9 @@ export default function AdminSettingsPage() {
 
   const saveSettings = useCallback(
     async (updates: Partial<AdminSettings>) => {
+      // DEBUG: Log where saveSettings is being called from - REMOVE AFTER DEBUGGING
+      console.log("🔄 saveSettings called with:", Object.keys(updates), new Error().stack);
+      
       if (!user) {
         toast.error("You must be logged in to update settings");
         return;
@@ -209,7 +212,13 @@ export default function AdminSettingsPage() {
   const updateField = useCallback(
     (key: string, value: any) => {
       // ONLY update local state - never save
-      setSettings((prev) => ({ ...prev, [key]: value }));
+      // Make sure we're NOT calling saveSettings here
+      setSettings((prev) => {
+        const updated = { ...prev, [key]: value };
+        // Ensure settingsRef is updated too
+        settingsRef.current = updated;
+        return updated;
+      });
     },
     []
   );
@@ -470,7 +479,13 @@ export default function AdminSettingsPage() {
           value={settings.adminEmail || ""}
           onChange={(e) => {
             // ONLY update local state - NEVER save automatically
-            updateField("adminEmail", e.target.value);
+            const newValue = e.target.value;
+            console.log("📝 onChange fired for adminEmail:", newValue);
+            setSettings((prev) => {
+              const updated = { ...prev, adminEmail: newValue };
+              settingsRef.current = updated;
+              return updated;
+            });
           }}
           onKeyDown={(e) => {
             // Prevent form submission on Enter
