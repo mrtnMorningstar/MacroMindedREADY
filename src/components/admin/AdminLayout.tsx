@@ -9,7 +9,6 @@ import AdminSidebar from "./AdminSidebar";
 import AdminHeader from "./AdminHeader";
 import AdminContentWrapper from "./AdminContentWrapper";
 import ImpersonationBanner from "./ImpersonationBanner";
-import Navbar from "../Navbar";
 import { Bars3Icon } from "@heroicons/react/24/outline";
 
 type AdminLayoutProps = {
@@ -35,7 +34,7 @@ export default function AdminLayoutWrapper({ children }: AdminLayoutProps) {
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Sidebar state - always open on desktop
+  // Sidebar state - mobile overlay
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Check if impersonation banner is active
@@ -54,15 +53,19 @@ export default function AdminLayoutWrapper({ children }: AdminLayoutProps) {
     return () => clearInterval(interval);
   }, []);
 
-  // Ensure sidebar is open on desktop
+  // Close sidebar on mobile when route changes
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
+
+  // Close sidebar on desktop resize
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1024) {
-        setSidebarOpen(false); // Desktop sidebar is always visible (not "open" state)
+        setSidebarOpen(false);
       }
     };
     
-    handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
@@ -72,19 +75,12 @@ export default function AdminLayoutWrapper({ children }: AdminLayoutProps) {
     [pathname]
   );
 
-  // Calculate top offset for sidebar and content
-  // Navbar height: 80px (h-20), ImpersonationBanner: 48px if active
-  const topOffset = hasImpersonationBanner ? 128 : 80; // 80px navbar + 48px banner, or just 80px navbar
-
   return (
     <div className="flex min-h-screen w-full flex-col bg-black text-white">
       <ImpersonationBanner />
       
-      {/* Navbar */}
-      <Navbar />
-      
       <div className="flex flex-1 overflow-hidden">
-        {/* Desktop Sidebar - Always visible, positioned below navbar */}
+        {/* Desktop Sidebar - Fixed 256px width */}
         <AdminSidebar
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
@@ -92,24 +88,22 @@ export default function AdminLayoutWrapper({ children }: AdminLayoutProps) {
         />
 
         {/* Main Content Area */}
-        <div className={`flex flex-col flex-1 min-w-0 overflow-hidden lg:ml-64`}>
+        <div className="flex flex-col flex-1 min-w-0 overflow-hidden lg:ml-64">
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden fixed left-4 top-24 z-50 p-2 rounded-lg bg-neutral-900/80 backdrop-blur border border-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors"
+            aria-label="Open menu"
+          >
+            <Bars3Icon className="h-6 w-6" />
+          </button>
+          
           {/* Top Header */}
-          <div className="relative">
-            {/* Mobile Menu Button - inside header area */}
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden absolute left-4 top-1/2 -translate-y-1/2 z-50 p-2 rounded-lg bg-neutral-900/80 backdrop-blur border border-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors"
-              aria-label="Open menu"
-            >
-              <Bars3Icon className="h-6 w-6" />
-            </button>
-            
-            <AdminHeader
-              title={pageTitle}
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-            />
-          </div>
+          <AdminHeader
+            title={pageTitle}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+          />
 
           {/* Content Wrapper */}
           <AdminContentWrapper>{children}</AdminContentWrapper>

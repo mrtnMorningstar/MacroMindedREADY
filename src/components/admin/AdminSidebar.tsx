@@ -141,15 +141,15 @@ export default function AdminSidebar({
         )}
       </AnimatePresence>
 
-      {/* Desktop Sidebar - Always visible, positioned below navbar */}
-      <aside className={`hidden lg:flex fixed left-0 z-40 w-64 flex-col border-r border-neutral-800 bg-neutral-900 ${
+      {/* Desktop Sidebar - Fixed 256px width */}
+      <aside className={`hidden lg:flex fixed left-0 top-0 z-40 w-64 h-screen flex-col border-r border-neutral-800 bg-neutral-950 ${
         hasImpersonationBanner 
-          ? `top-[128px] h-[calc(100vh-128px)]` 
-          : `top-20 h-[calc(100vh-80px)]`
+          ? `pt-[48px]` 
+          : `pt-0`
       }`}>
-        <div className="flex h-full flex-col">
+        <div className="flex h-full flex-col overflow-hidden">
           {/* Brand Header */}
-          <div className="border-b border-neutral-800 px-6 py-6">
+          <div className="border-b border-neutral-800 px-6 py-6 flex-shrink-0">
             <h2 className="text-xl font-bold uppercase tracking-[0.15em] text-white font-display">
               MacroMinded
             </h2>
@@ -159,7 +159,7 @@ export default function AdminSidebar({
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto px-4 py-6">
+          <nav className="flex-1 overflow-y-auto px-4 py-6 scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-transparent">
             <div className="space-y-1">
               {navLinks.map((link) => {
                 const active = isActive(link.href);
