@@ -182,8 +182,16 @@ export default function AdminSettingsPage() {
     [user, settings, toast]
   );
 
-  // Update individual field
+  // Update local state only (don't save immediately)
   const updateField = useCallback(
+    (key: string, value: any) => {
+      setSettings((prev) => ({ ...prev, [key]: value }));
+    },
+    []
+  );
+
+  // Save a specific field to Firestore (called on blur)
+  const saveField = useCallback(
     (key: string, value: any) => {
       saveSettings({ [key]: value });
     },
@@ -304,7 +312,7 @@ export default function AdminSettingsPage() {
           type="text"
           value={settings.brandName || "MacroMinded"}
           onChange={(e) => updateField("brandName", e.target.value)}
-          onBlur={() => saveSettings({ brandName: settings.brandName })}
+          onBlur={(e) => saveField("brandName", e.target.value)}
           className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:border-[#D7263D] focus:outline-none transition-all"
           placeholder="MacroMinded"
         />
@@ -326,6 +334,7 @@ export default function AdminSettingsPage() {
             type="text"
             value={settings.accentColor || "#D7263D"}
             onChange={(e) => updateField("accentColor", e.target.value)}
+            onBlur={(e) => saveField("accentColor", e.target.value)}
             className="flex-1 rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white font-mono focus:border-[#D7263D] focus:outline-none transition-all"
             placeholder="#D7263D"
           />
@@ -339,7 +348,10 @@ export default function AdminSettingsPage() {
         </label>
         <select
           value={settings.timezone || "America/New_York"}
-          onChange={(e) => updateField("timezone", e.target.value)}
+          onChange={(e) => {
+            updateField("timezone", e.target.value);
+            saveField("timezone", e.target.value);
+          }}
           className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white focus:border-[#D7263D] focus:outline-none transition-all"
         >
           <option value="America/New_York">Eastern Time (ET)</option>
@@ -357,7 +369,10 @@ export default function AdminSettingsPage() {
         </label>
         <select
           value={settings.currency || "USD"}
-          onChange={(e) => updateField("currency", e.target.value)}
+          onChange={(e) => {
+            updateField("currency", e.target.value);
+            saveField("currency", e.target.value);
+          }}
           className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white focus:border-[#D7263D] focus:outline-none transition-all"
         >
           <option value="USD">USD ($)</option>
@@ -374,7 +389,10 @@ export default function AdminSettingsPage() {
         </label>
         <select
           value={settings.dateFormat || "MM/DD/YYYY"}
-          onChange={(e) => updateField("dateFormat", e.target.value)}
+          onChange={(e) => {
+            updateField("dateFormat", e.target.value);
+            saveField("dateFormat", e.target.value);
+          }}
           className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white focus:border-[#D7263D] focus:outline-none transition-all"
         >
           <option value="MM/DD/YYYY">MM/DD/YYYY</option>
@@ -400,7 +418,7 @@ export default function AdminSettingsPage() {
           type="email"
           value={settings.adminEmail || ""}
           onChange={(e) => updateField("adminEmail", e.target.value)}
-          onBlur={() => saveSettings({ adminEmail: settings.adminEmail })}
+          onBlur={(e) => saveField("adminEmail", e.target.value)}
           className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:border-[#D7263D] focus:outline-none transition-all"
           placeholder="admin@macrominded.com"
         />
@@ -511,7 +529,11 @@ export default function AdminSettingsPage() {
           <label className="flex items-center justify-between p-4 rounded-lg border border-neutral-800 bg-neutral-800/30 cursor-pointer hover:bg-neutral-800/50 transition-colors">
             <span className="text-sm font-medium text-white">Enable Tax/VAT</span>
             <button
-              onClick={() => updateField("taxEnabled", !settings.taxEnabled)}
+              onClick={() => {
+              const newValue = !settings.taxEnabled;
+              updateField("taxEnabled", newValue);
+              saveField("taxEnabled", newValue);
+            }}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                 settings.taxEnabled ? "bg-[#D7263D]" : "bg-neutral-700"
               }`}
@@ -536,7 +558,7 @@ export default function AdminSettingsPage() {
                 step="0.01"
                 value={settings.taxRate || 0}
                 onChange={(e) => updateField("taxRate", parseFloat(e.target.value) || 0)}
-                onBlur={() => saveSettings({ taxRate: settings.taxRate })}
+                onBlur={(e) => saveField("taxRate", parseFloat(e.target.value) || 0)}
                 className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:border-[#D7263D] focus:outline-none transition-all"
                 placeholder="0.00"
               />
@@ -568,9 +590,11 @@ export default function AdminSettingsPage() {
             </span>
           </div>
           <button
-            onClick={() =>
-              updateField("impersonationEnabled", !settings.impersonationEnabled)
-            }
+            onClick={() => {
+              const newValue = !settings.impersonationEnabled;
+              updateField("impersonationEnabled", newValue);
+              saveField("impersonationEnabled", newValue);
+            }}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
               settings.impersonationEnabled ? "bg-[#D7263D]" : "bg-neutral-700"
             }`}
@@ -595,7 +619,7 @@ export default function AdminSettingsPage() {
           max="168"
           value={settings.sessionTimeout || 24}
           onChange={(e) => updateField("sessionTimeout", parseInt(e.target.value) || 24)}
-          onBlur={() => saveSettings({ sessionTimeout: settings.sessionTimeout })}
+          onBlur={(e) => saveField("sessionTimeout", parseInt(e.target.value) || 24)}
           className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:border-[#D7263D] focus:outline-none transition-all"
           placeholder="24"
         />
