@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { db } from "@/lib/firebase";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, getDoc, collection, query, getDocs, orderBy, limit, where } from "firebase/firestore";
 import { useAppContext } from "@/context/AppContext";
 import { useToast } from "@/components/ui/Toast";
 import SettingsTabs from "@/components/admin/SettingsTabs";
@@ -16,7 +16,6 @@ import {
   ArrowDownTrayIcon,
 } from "@heroicons/react/24/outline";
 import AppModal from "@/components/ui/AppModal";
-import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
 
 type AdminSettings = {
   brandName?: string;
@@ -58,12 +57,18 @@ export default function AdminSettingsPage() {
 
   // Load settings from Firestore
   useEffect(() => {
-    const settingsRef = doc(db, "adminSettings", "global");
-    
-    // Use onSnapshot for real-time updates
-    const unsubscribe = onSnapshot(
-      settingsRef,
-      (snapshot) => {
+    let isMounted = true;
+    let unsubscribe: (() => void) | null = null;
+
+    const loadSettings = async () => {
+      try {
+        const settingsRef = doc(db, "adminSettings", "global");
+        
+        // First, try to get the document once
+        const snapshot = await getDoc(settingsRef);
+
+        if (!isMounted) return;
+
         if (snapshot.exists()) {
           const data = snapshot.data();
           setSettings({
@@ -90,15 +95,43 @@ export default function AdminSettingsPage() {
           });
         }
         setLoading(false);
-      },
-      (error) => {
+
+        // Then set up a listener only if document exists or after initial load
+        unsubscribe = onSnapshot(
+          settingsRef,
+          (snapshot) => {
+            if (!isMounted) return;
+            
+            if (snapshot.exists()) {
+              const data = snapshot.data();
+              setSettings({
+                ...data,
+                stripeWebhookLastSuccess: data.stripeWebhookLastSuccess?.toDate?.() || data.stripeWebhookLastSuccess,
+              } as AdminSettings);
+            }
+          },
+          (error) => {
+            if (!isMounted) return;
+            console.error("Error in settings listener:", error);
+            // Don't show toast for listener errors to avoid spam
+          }
+        );
+      } catch (error) {
+        if (!isMounted) return;
         console.error("Error loading settings:", error);
         toast.error("Failed to load settings");
         setLoading(false);
       }
-    );
+    };
 
-    return () => unsubscribe();
+    loadSettings();
+
+    return () => {
+      isMounted = false;
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, [toast]);
 
   // Save settings
@@ -170,19 +203,80 @@ export default function AdminSettingsPage() {
     [settings, saveSettings]
   );
 
-  // Load impersonation logs for Security tab
-  const filterFn = useMemo(() => (doc: any) => doc.action === "impersonate", []);
-  const {
-    data: impersonationLogs,
-    loading: loadingLogs,
-  } = usePaginatedQuery<any>({
-    db,
-    collectionName: "adminActivity",
-    pageSize: 10,
-    orderByField: "timestamp",
-    orderByDirection: "desc",
-    filterFn,
-  });
+  // Load impersonation logs for Security tab (only when Security tab is active)
+  const [impersonationLogs, setImpersonationLogs] = useState<any[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+
+  useEffect(() => {
+    if (activeTab !== "security") {
+      setImpersonationLogs([]);
+      return;
+    }
+
+    let isMounted = true;
+    const loadLogs = async () => {
+      setLoadingLogs(true);
+      try {
+        // Try to query with filters - if index doesn't exist, fall back to simple query
+        let q;
+        try {
+          q = query(
+            collection(db, "adminActivity"),
+            where("action", "==", "impersonate"),
+            orderBy("timestamp", "desc"),
+            limit(10)
+          );
+        } catch (indexError) {
+          // Index might not exist - try without orderBy
+          console.warn("Firestore index may not exist, querying without orderBy:", indexError);
+          q = query(
+            collection(db, "adminActivity"),
+            where("action", "==", "impersonate"),
+            limit(10)
+          );
+        }
+        
+        const snapshot = await getDocs(q);
+        
+        if (!isMounted) return;
+        
+        const logs: any[] = [];
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          logs.push({ 
+            id: doc.id, 
+            ...data,
+            timestamp: data.timestamp?.toDate?.() || data.timestamp
+          });
+        });
+        
+        // Sort manually if we couldn't use orderBy
+        logs.sort((a, b) => {
+          const aTime = a.timestamp?.getTime?.() || 0;
+          const bTime = b.timestamp?.getTime?.() || 0;
+          return bTime - aTime;
+        });
+        
+        setImpersonationLogs(logs.slice(0, 10));
+      } catch (error: any) {
+        if (!isMounted) return;
+        // Collection might not exist or query might fail - that's okay
+        if (error?.code !== "failed-precondition" && error?.code !== "not-found") {
+          console.error("Error loading impersonation logs:", error);
+        }
+        setImpersonationLogs([]);
+      } finally {
+        if (isMounted) {
+          setLoadingLogs(false);
+        }
+      }
+    };
+
+    loadLogs();
+    return () => {
+      isMounted = false;
+    };
+  }, [activeTab, db]);
 
   // Format webhook date
   const formatWebhookDate = (date: Date | string | undefined) => {
