@@ -1,26 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-
-// Debounce utility
-function useDebounce<T extends (...args: any[]) => any>(
-  callback: T,
-  delay: number
-): T {
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  return useCallback(
-    ((...args: any[]) => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      timeoutRef.current = setTimeout(() => {
-        callback(...args);
-      }, delay);
-    }) as T,
-    [callback, delay]
-  );
-}
 import { motion, AnimatePresence } from "framer-motion";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, query, getDocs, orderBy, limit, where } from "firebase/firestore";
@@ -158,7 +138,12 @@ export default function AdminSettingsPage() {
     };
   }, []); // Remove toast from dependencies to prevent re-runs
 
-  // Save settings
+  // Save settings - ref is used to always get latest settings without dependency
+  const settingsRef = useRef(settings);
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
+
   const saveSettings = useCallback(
     async (updates: Partial<AdminSettings>) => {
       if (!user) {
@@ -166,44 +151,44 @@ export default function AdminSettingsPage() {
         return;
       }
 
+      // Only save if there are actual updates
+      if (Object.keys(updates).length === 0) {
+        return;
+      }
+
       setSaving(true);
+      
+      // Update local state immediately
+      const mergedSettings = { ...settingsRef.current, ...updates };
+      setSettings(mergedSettings);
+
       try {
         const idToken = await user.getIdToken();
 
-        // Get current settings state
-        setSettings((currentSettings) => {
-          const mergedSettings = { ...currentSettings, ...updates };
-          
-          // Save to Firestore
-          fetch("/api/admin/update-settings", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${idToken}`,
-            },
-            body: JSON.stringify({
-              settings: mergedSettings,
-            }),
-          })
-            .then(async (response) => {
-              const data = await response.json();
-              if (!response.ok) {
-                throw new Error(data.error || "Failed to update settings");
-              }
-              toast.success("Settings saved successfully");
-              setSaving(false);
-            })
-            .catch((error) => {
-              console.error("Failed to save settings:", error);
-              toast.error(error instanceof Error ? error.message : "Failed to save settings");
-              setSaving(false);
-            });
-          
-          return mergedSettings;
+        const response = await fetch("/api/admin/update-settings", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            settings: mergedSettings,
+          }),
         });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to update settings");
+        }
+
+        toast.success("Settings saved successfully");
       } catch (error) {
         console.error("Failed to save settings:", error);
         toast.error(error instanceof Error ? error.message : "Failed to save settings");
+        // Revert on error
+        setSettings(settingsRef.current);
+      } finally {
         setSaving(false);
       }
     },
@@ -218,15 +203,12 @@ export default function AdminSettingsPage() {
     []
   );
 
-  // Debounced save function to prevent rapid saves
-  const debouncedSaveSettings = useDebounce(saveSettings, 500);
-
-  // Save a specific field to Firestore (called on blur)
+  // Save a specific field to Firestore (called on blur or immediate action)
   const saveField = useCallback(
     (key: string, value: any) => {
-      debouncedSaveSettings({ [key]: value });
+      saveSettings({ [key]: value });
     },
-    [debouncedSaveSettings]
+    [saveSettings]
   );
 
   // Update nested field (e.g., emailAlerts.newSignups)
