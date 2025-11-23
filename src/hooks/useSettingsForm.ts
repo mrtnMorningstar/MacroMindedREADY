@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/Toast";
 
 export type AdminSettings = {
   brandName?: string;
+  logoURL?: string;
   accentColor?: string;
   timezone?: string;
   currency?: string;
@@ -20,6 +21,12 @@ export type AdminSettings = {
   };
   taxEnabled?: boolean;
   taxRate?: number;
+  defaultPricing?: {
+    basic?: number;
+    pro?: number;
+    elite?: number;
+  };
+  twoFactorEnabled?: boolean;
   impersonationEnabled?: boolean;
   sessionTimeout?: number;
   stripeWebhookLastSuccess?: Date | string;
@@ -27,6 +34,7 @@ export type AdminSettings = {
 
 const DEFAULT_SETTINGS: AdminSettings = {
   brandName: "MacroMinded",
+  logoURL: "",
   accentColor: "#D7263D",
   timezone: "America/New_York",
   currency: "USD",
@@ -38,6 +46,12 @@ const DEFAULT_SETTINGS: AdminSettings = {
   },
   taxEnabled: false,
   taxRate: 0,
+  defaultPricing: {
+    basic: 0,
+    pro: 0,
+    elite: 0,
+  },
+  twoFactorEnabled: false,
   impersonationEnabled: true,
   sessionTimeout: 24,
 };
@@ -73,6 +87,10 @@ export function useSettingsForm() {
             emailAlerts: {
               ...DEFAULT_SETTINGS.emailAlerts,
               ...data.emailAlerts,
+            },
+            defaultPricing: {
+              ...DEFAULT_SETTINGS.defaultPricing,
+              ...data.defaultPricing,
             },
             stripeWebhookLastSuccess: data.stripeWebhookLastSuccess?.toDate?.() || data.stripeWebhookLastSuccess,
           } as AdminSettings;

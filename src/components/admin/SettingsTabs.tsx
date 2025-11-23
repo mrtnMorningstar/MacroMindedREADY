@@ -3,15 +3,11 @@
 import { motion } from "framer-motion";
 import {
   Cog6ToothIcon,
-  BellIcon,
-  CreditCardIcon,
   ShieldCheckIcon,
   ArchiveBoxIcon,
 } from "@heroicons/react/24/outline";
 import {
   Cog6ToothIcon as Cog6ToothIconSolid,
-  BellIcon as BellIconSolid,
-  CreditCardIcon as CreditCardIconSolid,
   ShieldCheckIcon as ShieldCheckIconSolid,
   ArchiveBoxIcon as ArchiveBoxIconSolid,
 } from "@heroicons/react/24/solid";
@@ -25,26 +21,14 @@ type SettingsTab = {
 
 const tabs: SettingsTab[] = [
   {
-    id: "general",
-    label: "General",
+    id: "platform",
+    label: "Platform Settings",
     icon: Cog6ToothIcon,
     iconSolid: Cog6ToothIconSolid,
   },
   {
-    id: "notifications",
-    label: "Notifications",
-    icon: BellIcon,
-    iconSolid: BellIconSolid,
-  },
-  {
-    id: "payments",
-    label: "Payments",
-    icon: CreditCardIcon,
-    iconSolid: CreditCardIconSolid,
-  },
-  {
-    id: "security",
-    label: "Security",
+    id: "admin",
+    label: "Admin Controls",
     icon: ShieldCheckIcon,
     iconSolid: ShieldCheckIconSolid,
   },
@@ -90,4 +74,3 @@ export default function SettingsTabs({ activeTab, onTabChange }: SettingsTabsPro
     </div>
   );
 }
-

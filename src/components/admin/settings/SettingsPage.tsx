@@ -4,13 +4,11 @@ import { useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { useSettingsForm } from "@/hooks/useSettingsForm";
 import SettingsTabs from "@/components/admin/SettingsTabs";
-import GeneralSettings from "./GeneralSettings";
-import NotificationsSettings from "./NotificationsSettings";
-import PaymentsSettings from "./PaymentsSettings";
-import SecuritySettings from "./SecuritySettings";
+import PlatformSettings from "./PlatformSettings";
+import AdminControlsSettings from "./AdminControlsSettings";
 import DataManagementSettings from "./DataManagementSettings";
 
-type TabType = "general" | "notifications" | "payments" | "security" | "data";
+type TabType = "platform" | "admin" | "data";
 
 const tabContentVariants: Variants = {
   initial: {
@@ -37,7 +35,7 @@ export default function SettingsPage() {
     saveSettings,
   } = useSettingsForm();
 
-  const [activeTab, setActiveTab] = useState<TabType>("general");
+  const [activeTab, setActiveTab] = useState<TabType>("platform");
   const settingsRef = useRef(settings);
 
   // Keep ref in sync with settings
@@ -45,13 +43,7 @@ export default function SettingsPage() {
 
   // Handle tab change with type validation
   const handleTabChange = useCallback((tabId: string) => {
-    const validTabs: TabType[] = [
-      "general",
-      "notifications",
-      "payments",
-      "security",
-      "data",
-    ];
+    const validTabs: TabType[] = ["platform", "admin", "data"];
     if (validTabs.includes(tabId as TabType)) {
       setActiveTab(tabId as TabType);
     }
@@ -109,8 +101,8 @@ export default function SettingsPage() {
             }}
             className="w-full"
           >
-            {activeTab === "general" && (
-              <GeneralSettings
+            {activeTab === "platform" && (
+              <PlatformSettings
                 settings={settings}
                 saving={saving}
                 onUpdate={updateField}
@@ -118,26 +110,8 @@ export default function SettingsPage() {
               />
             )}
 
-            {activeTab === "notifications" && (
-              <NotificationsSettings
-                settings={settings}
-                saving={saving}
-                onUpdate={updateField}
-                onSave={handleSaveAll}
-              />
-            )}
-
-            {activeTab === "payments" && (
-              <PaymentsSettings
-                settings={settings}
-                saving={saving}
-                onUpdate={updateField}
-                onSave={handleSaveAll}
-              />
-            )}
-
-            {activeTab === "security" && (
-              <SecuritySettings
+            {activeTab === "admin" && (
+              <AdminControlsSettings
                 settings={settings}
                 saving={saving}
                 activeTab={activeTab}
@@ -155,4 +129,3 @@ export default function SettingsPage() {
     </form>
   );
 }
-
