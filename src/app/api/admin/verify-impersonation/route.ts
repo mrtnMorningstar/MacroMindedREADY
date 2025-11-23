@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
 
   if (!token || typeof token !== "string") {
     const redirectUrl = new URL(redirect, request.url);
+    redirectUrl.searchParams.delete("impersonate"); // Remove impersonate param
     redirectUrl.searchParams.set("error", "invalid_impersonation_token");
     return NextResponse.redirect(redirectUrl);
   }
@@ -27,12 +28,15 @@ export async function GET(request: NextRequest) {
     
     if (!result.success) {
       const redirectUrl = new URL(redirect, request.url);
+      redirectUrl.searchParams.delete("impersonate"); // Remove impersonate param
       redirectUrl.searchParams.set("error", result.error || "invalid_token");
       return NextResponse.redirect(redirectUrl);
     }
 
-    // Create redirect URL without impersonate query param
+    // Create redirect URL and strip impersonate/error params to prevent redirect loop
     const redirectUrl = new URL(redirect, request.url);
+    redirectUrl.searchParams.delete("impersonate");
+    redirectUrl.searchParams.delete("error");
     
     // Create response with redirect
     const response = NextResponse.redirect(redirectUrl);
@@ -57,6 +61,7 @@ export async function GET(request: NextRequest) {
     console.error("Error in verify-impersonation API:", error);
     
     const redirectUrl = new URL(redirect, request.url);
+    redirectUrl.searchParams.delete("impersonate"); // Remove impersonate param
     redirectUrl.searchParams.set("error", "impersonation_error");
     return NextResponse.redirect(redirectUrl);
   }

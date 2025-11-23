@@ -24,7 +24,18 @@ export async function middleware(request: NextRequest) {
     // The API route will handle verification and cookie setting
     const apiUrl = new URL("/api/admin/verify-impersonation", request.url);
     apiUrl.searchParams.set("token", impersonateToken);
-    apiUrl.searchParams.set("redirect", pathname + request.nextUrl.search);
+    
+    // Build redirect path without the impersonate param to prevent redirect loop
+    const cleanSearchParams = new URLSearchParams();
+    searchParams.forEach((value, key) => {
+      if (key !== "impersonate" && key !== "error") {
+        cleanSearchParams.set(key, value);
+      }
+    });
+    
+    // Build redirect path: pathname + cleaned search params
+    const redirectPath = pathname + (cleanSearchParams.toString() ? `?${cleanSearchParams.toString()}` : "");
+    apiUrl.searchParams.set("redirect", redirectPath);
     return NextResponse.redirect(apiUrl);
   }
 
