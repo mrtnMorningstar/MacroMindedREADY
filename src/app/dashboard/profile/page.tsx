@@ -85,7 +85,22 @@ export default function ProfilePage() {
             <div className="rounded-xl border border-neutral-800 bg-neutral-800/30 p-6 text-center">
               <p className="text-xs text-neutral-500 mb-2">BMI Calculator</p>
               <p className="text-2xl font-bold text-[#D7263D]">
-                {profile.bmi ? profile.bmi.toFixed(1) : "—"}
+                {(() => {
+                  // Calculate BMI from weight and height if available
+                  const weightStr = profile.weight;
+                  const heightStr = profile.height;
+                  if (weightStr && heightStr) {
+                    const weight = parseFloat(weightStr);
+                    const height = parseFloat(heightStr);
+                    if (!isNaN(weight) && !isNaN(height) && height > 0) {
+                      // BMI = weight (kg) / height (m)^2
+                      const heightInMeters = height / 100;
+                      const bmi = weight / (heightInMeters * heightInMeters);
+                      return bmi.toFixed(1);
+                    }
+                  }
+                  return "—";
+                })()}
               </p>
             </div>
           </div>
