@@ -22,6 +22,7 @@ import { useAppContext } from "@/context/AppContext";
 import { progressSteps, type MealPlanStatusType } from "@/types/dashboard";
 import { MealPlanStatus } from "@/types/status";
 import DashboardCard from "@/components/dashboard/DashboardCard";
+import { parseFirestoreDate } from "@/lib/utils/date";
 
 export default function PlanPage() {
   const { data, loading, error, isUnlocked } = useAppContext();
@@ -38,12 +39,7 @@ export default function PlanPage() {
   const estimatedDeliveryDate = useMemo(() => {
     if (status === MealPlanStatus.DELIVERED || !data?.purchaseDate) return null;
     
-    const purchaseDate = data.purchaseDate?.toDate
-      ? data.purchaseDate.toDate()
-      : data.purchaseDate instanceof Date
-      ? data.purchaseDate
-      : null;
-    
+    const purchaseDate = parseFirestoreDate(data.purchaseDate);
     if (!purchaseDate) return null;
     
     const daysToAdd = data.packageTier === "Elite" ? 1 : data.packageTier === "Pro" ? 3 : 5;
