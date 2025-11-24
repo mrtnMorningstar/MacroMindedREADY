@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef, type ReactNode } from "react";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -62,6 +62,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userDoc, setUserDoc] = useState<UserDoc | null>(null);
   const [isUserAdmin, setIsUserAdmin] = useState(false);
+  const previousUserRef = useRef<User | null>(null);
   
   // Dashboard state
   const [purchase, setPurchase] = useState<any>(null);
@@ -176,19 +177,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Handle Firebase Auth state changes
   useEffect(() => {
+    let initialized = false;
+
     const unsubscribe = onAuthStateChanged(auth, (u) => {
-      if (!u && user) {
-        // User was logged in but now logged out - session expired
-        setSessionExpired(true);
-      } else {
-        setSessionExpired(false);
-      }
+      if (!initialized) initialized = true;
+
+      const previousUser = previousUserRef.current;
+      previousUserRef.current = u;
+      
       setUser(u);
+      // Session expired if we had a user before but now don't
+      setSessionExpired(!u && !!previousUser);
       setLoadingAuth(false);
     });
 
     return () => unsubscribe();
-  }, [user]);
+  }, []);
 
   // Load user document and dashboard data when user is defined
   useEffect(() => {
