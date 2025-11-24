@@ -85,33 +85,23 @@ export function RequireProfileCompletion({
     void checkProfile();
   }, [user, userDoc, loadingAuth, loadingUserDoc, requiredFields, hasInitiallyChecked]);
 
-  // If we have a user, always render children (even during checks) to prevent black screen
-  if (user) {
-    // Only show full-screen loader if we're doing initial check and haven't checked before
-    if (!hasInitiallyChecked && (loadingAuth || loadingUserDoc || checkingProfile)) {
-      return <FullScreenLoader />;
-    }
-    
-    // Always render children to prevent black screen - banner overlays if needed
-    return (
-      <>
-        {showBanner && !isComplete && missingFields.length > 0 && (
-          <ProfileIncompleteBanner
-            missingFields={missingFields}
-            onComplete={() => router.push(redirectTo)}
-          />
-        )}
-        {children}
-      </>
-    );
-  }
+  // Always render children first to ensure layout structure is visible
+  // Show banner overlay if profile incomplete
+  // Show loader overlay only during initial check when we haven't checked before
+  const showLoader = !user && (loadingAuth || loadingUserDoc);
+  const showInitialLoader = user && !hasInitiallyChecked && (loadingAuth || loadingUserDoc || checkingProfile);
 
-  // Show loader only if no user
-  if (loadingAuth || loadingUserDoc || !user) {
-    return <FullScreenLoader />;
-  }
-
-  // Default: render children
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      {showBanner && user && !isComplete && missingFields.length > 0 && (
+        <ProfileIncompleteBanner
+          missingFields={missingFields}
+          onComplete={() => router.push(redirectTo)}
+        />
+      )}
+      {(showLoader || showInitialLoader) && <FullScreenLoader />}
+    </>
+  );
 }
 

@@ -2,11 +2,9 @@
 
 import { type ReactNode, useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
 import { Bars3Icon } from "@heroicons/react/24/outline";
 
 import { RequireAuth, RequireProfileCompletion } from "@/components/guards";
-import { useAppContext } from "@/context/AppContext";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 
 export default function DashboardLayout({
@@ -37,7 +35,7 @@ export default function DashboardLayout({
   return (
     <RequireAuth>
       <RequireProfileCompletion>
-        {/* Always render the layout structure to prevent black screen */}
+        {/* Always render the layout structure immediately to prevent black screen */}
         <div className="flex min-h-screen w-full flex-col bg-black text-white">
           <div className="flex flex-1 overflow-hidden">
             {/* Sidebar */}

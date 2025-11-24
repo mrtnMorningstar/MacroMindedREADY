@@ -14,7 +14,8 @@ type RequireAuthProps = {
  * Protected route wrapper that ensures user is authenticated.
  * - Waits for Firebase Auth and Firestore userDoc to finish loading
  * - Redirects to /login if not authenticated
- * - If user exists, always renders children (even during brief loading states) to prevent black screen
+ * - Always renders children structure first, then shows loader overlay if needed
+ * - This prevents black screen by ensuring layout is visible immediately
  */
 export function RequireAuth({ children, redirectTo = "/login" }: RequireAuthProps) {
   const { user, loadingAuth, loadingUserDoc } = useAppContext();
@@ -42,22 +43,15 @@ export function RequireAuth({ children, redirectTo = "/login" }: RequireAuthProp
     }
   }, [user, loadingAuth, loadingUserDoc, router, redirectTo]);
 
-  // If we have a user, always render children to prevent black screen during navigation
-  if (user) {
-    return <>{children}</>;
-  }
+  // Always render children first to ensure layout structure is visible
+  // Then show loader overlay if needed (prevents black screen)
+  const showLoader = (!user && (loadingAuth || loadingUserDoc)) || (hasUserRef.current && !loadingAuth && !loadingUserDoc && !user);
 
-  // If we've had a user before but lost it, show loader (session expired)
-  if (hasUserRef.current && !loadingAuth && !loadingUserDoc) {
-    return <FullScreenLoader />;
-  }
-
-  // Show loader if we're loading or don't have a user
-  if (loadingAuth || loadingUserDoc || !user) {
-    return <FullScreenLoader />;
-  }
-
-  // Default: render children (shouldn't reach here)
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      {showLoader && <FullScreenLoader />}
+    </>
+  );
 }
 

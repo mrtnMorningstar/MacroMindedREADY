@@ -85,23 +85,16 @@ export function RequireWizard({
     void checkWizardCompletion();
   }, [user, userDoc, loadingAuth, loadingUserDoc, router, redirectTo, hasInitiallyChecked]);
 
-  // If we have a user, always render children (even during checks) to prevent black screen
-  if (user) {
-    // Only show full-screen loader if we're doing initial check and haven't checked before
-    if (!hasInitiallyChecked && (loadingAuth || loadingUserDoc || checkingWizard)) {
-      return <FullScreenLoader />;
-    }
-    
-    // Always render children during navigation (prevents black screen)
-    return <>{children}</>;
-  }
+  // Always render children first to ensure layout structure is visible
+  // Show loader overlay only during initial checks
+  const showLoader = !user && (loadingAuth || loadingUserDoc);
+  const showInitialLoader = user && !hasInitiallyChecked && (loadingAuth || loadingUserDoc || checkingWizard);
 
-  // Show loader only if no user
-  if (loadingAuth || loadingUserDoc || !user) {
-    return <FullScreenLoader />;
-  }
-
-  // Default: render children
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      {(showLoader || showInitialLoader) && <FullScreenLoader />}
+    </>
+  );
 }
 
