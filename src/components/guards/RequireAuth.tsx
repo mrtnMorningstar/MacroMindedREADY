@@ -12,23 +12,15 @@ type RequireAuthProps = {
 
 /**
  * Protected route wrapper that ensures user is authenticated.
- * - Waits for Firebase Auth and Firestore userDoc to finish loading
- * - Redirects to /login if not authenticated
- * - Always renders children structure first, then shows loader overlay if needed
- * - This prevents black screen by ensuring layout is visible immediately
+ * - Waits for Firebase Auth and Firestore userDoc to finish loading before rendering
+ * - Shows FullScreenLoader immediately on first load to prevent black screen
+ * - Redirects to /login if not authenticated after loading completes
+ * - Renders children only when a valid user is loaded
  */
 export function RequireAuth({ children, redirectTo = "/login" }: RequireAuthProps) {
   const { user, loadingAuth, loadingUserDoc } = useAppContext();
   const router = useRouter();
   const redirectingRef = useRef(false);
-  const hasUserRef = useRef(!!user);
-
-  // Track if we've ever had a user (for navigation resilience)
-  useEffect(() => {
-    if (user) {
-      hasUserRef.current = true;
-    }
-  }, [user]);
 
   useEffect(() => {
     // Only redirect after loading is complete
@@ -37,21 +29,23 @@ export function RequireAuth({ children, redirectTo = "/login" }: RequireAuthProp
     // Prevent multiple redirects
     if (redirectingRef.current) return;
 
-    if (!user && hasUserRef.current === false) {
+    if (!user) {
       redirectingRef.current = true;
       router.replace(redirectTo);
     }
   }, [user, loadingAuth, loadingUserDoc, router, redirectTo]);
 
-  // Always render children first to ensure layout structure is visible
-  // Then show loader overlay only when truly needed (when no user and still loading)
-  const showLoader = !user && (loadingAuth || loadingUserDoc);
+  // Show loader immediately while auth is loading (prevents black screen)
+  if (loadingAuth || loadingUserDoc) {
+    return <FullScreenLoader />;
+  }
 
-  return (
-    <>
-      {children}
-      {showLoader && <FullScreenLoader />}
-    </>
-  );
+  // Redirect unauthenticated users (return null during redirect)
+  if (!user) {
+    return null;
+  }
+
+  // Render children only when user is authenticated and loading is complete
+  return <>{children}</>;
 }
 
