@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { useAppContext } from "@/context/AppContext";
 import { getImpersonationFromCookie } from "@/lib/impersonation";
 import AdminSidebar from "./AdminSidebar";
-import AdminHeader from "./AdminHeader";
 import AdminContentWrapper from "./AdminContentWrapper";
 import ImpersonationBanner from "./ImpersonationBanner";
 import Navbar from "../Navbar";
@@ -14,18 +13,6 @@ import { Bars3Icon } from "@heroicons/react/24/outline";
 
 type AdminLayoutProps = {
   children: React.ReactNode;
-};
-
-// Page titles for the top bar
-const pageTitles: Record<string, string> = {
-  "/admin": "Dashboard",
-  "/admin/clients": "Clients",
-  "/admin/sales": "Revenue",
-  "/admin/referrals": "Referrals",
-  "/admin/plan-requests": "Plan Requests",
-  "/admin/recipes": "Recipes",
-  "/admin/manage-admins": "Manage Admins",
-  "/admin/settings": "Settings",
 };
 
 export default function AdminLayoutWrapper({ children }: AdminLayoutProps) {
@@ -68,11 +55,6 @@ export default function AdminLayoutWrapper({ children }: AdminLayoutProps) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const pageTitle = useMemo(
-    () => pageTitles[pathname] || "Admin Panel",
-    [pathname]
-  );
-
   return (
     <div className="flex min-h-screen w-full flex-col bg-black text-white">
       <Navbar />
@@ -96,11 +78,6 @@ export default function AdminLayoutWrapper({ children }: AdminLayoutProps) {
           >
             <Bars3Icon className="h-6 w-6" />
           </button>
-          
-          {/* Top Header */}
-          <AdminHeader
-            title={pageTitle}
-          />
 
           {/* Content Wrapper */}
           <AdminContentWrapper>{children}</AdminContentWrapper>
