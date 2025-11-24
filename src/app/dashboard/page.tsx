@@ -83,40 +83,8 @@ export default function DashboardOverviewPage() {
     checkUpdateRequests();
   }, [user?.uid]);
 
-  // Handle loading state - guards handle auth, but we need to wait for data
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px] w-full">
-        <div className="text-center">
-          <div className="h-8 w-8 border-2 border-[#D7263D] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-sm text-neutral-400">Loading dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Handle error state
-  if (error) {
-    return (
-      <DashboardCard className="text-center">
-        <h3 className="text-xl font-bold text-white mb-2">Something went wrong</h3>
-        <p className="text-sm text-neutral-400 mb-4">
-          We couldn't load your dashboard. Try refreshing or logging in again.
-        </p>
-        <button
-          onClick={() => window.location.reload()}
-          className="rounded-xl border border-[#D7263D] bg-[#D7263D] px-6 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
-        >
-          Refresh Page
-        </button>
-      </DashboardCard>
-    );
-  }
-
-  // Show locked dashboard preview if user is authenticated but has no package
-  if (!isUnlocked || !data?.packageTier) {
-    return <LockedDashboard />;
-  }
+  // Always render content - show different states inline instead of blocking
+  // This ensures something is always visible instead of black screen
 
   const handleSubmitPlanUpdateRequest = async () => {
     if (!user?.uid || !requestText.trim()) {
@@ -165,6 +133,63 @@ export default function DashboardOverviewPage() {
   return (
     <RequireWizard>
       <div className="flex flex-col gap-8">
+        {/* Show error banner if there's an error */}
+        {error && (
+          <DashboardCard className="text-center border-[#D7263D]/50">
+            <h3 className="text-xl font-bold text-white mb-2">Something went wrong</h3>
+            <p className="text-sm text-neutral-400 mb-4">
+              We couldn't load your dashboard. Try refreshing or logging in again.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded-xl border border-[#D7263D] bg-[#D7263D] px-6 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
+            >
+              Refresh Page
+            </button>
+          </DashboardCard>
+        )}
+
+        {/* Always show something visible - prevent black screen */}
+        {/* Show loading indicator inline while data loads */}
+        {loading && !data && !error && (
+          <div className="flex flex-col gap-4">
+            <header className="flex flex-col gap-2">
+              <h1 className="text-3xl font-bold text-white font-display tracking-tight">
+                Loading...
+              </h1>
+              <p className="text-sm text-neutral-400">
+                Preparing your dashboard...
+              </p>
+            </header>
+            <div className="flex items-center justify-center min-h-[400px] w-full">
+              <div className="text-center">
+                <div className="h-8 w-8 border-2 border-[#D7263D] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                <p className="text-sm text-neutral-400">Loading dashboard...</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Show locked dashboard if user is authenticated but has no package */}
+        {!loading && (!isUnlocked || !data?.packageTier) && !error && <LockedDashboard />}
+
+        {/* Fallback: Show placeholder if nothing else matches (shouldn't happen, but prevents black screen) */}
+        {!loading && !error && isUnlocked && data?.packageTier === undefined && (
+          <div className="flex flex-col gap-4">
+            <header className="flex flex-col gap-2">
+              <h1 className="text-3xl font-bold text-white font-display tracking-tight">
+                Welcome
+              </h1>
+              <p className="text-sm text-neutral-400">
+                Please wait while we load your dashboard...
+              </p>
+            </header>
+          </div>
+        )}
+
+        {/* Show dashboard content if we have data and are unlocked */}
+        {!loading && isUnlocked && data?.packageTier && !error && (
+          <>
         {toastMessage && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
