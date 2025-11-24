@@ -32,13 +32,14 @@ export default function DashboardLayout({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Always render the layout structure immediately to prevent black screen
+  // Use inline styles to ensure visibility from the start
   return (
-    <RequireAuth>
-      <RequireProfileCompletion>
-        {/* Always render the layout structure immediately to prevent black screen */}
-        <div className="flex min-h-screen w-full flex-col bg-black text-white">
+    <div className="flex min-h-screen w-full flex-col bg-black text-white">
+      <RequireAuth>
+        <RequireProfileCompletion>
           <div className="flex flex-1 overflow-hidden">
-            {/* Sidebar */}
+            {/* Sidebar - Always render */}
             <DashboardSidebar
               isOpen={sidebarOpen}
               onClose={() => setSidebarOpen(false)}
@@ -63,8 +64,8 @@ export default function DashboardLayout({
               </main>
             </div>
           </div>
-        </div>
-      </RequireProfileCompletion>
-    </RequireAuth>
+        </RequireProfileCompletion>
+      </RequireAuth>
+    </div>
   );
 }

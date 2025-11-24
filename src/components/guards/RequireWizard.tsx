@@ -86,14 +86,14 @@ export function RequireWizard({
   }, [user, userDoc, loadingAuth, loadingUserDoc, router, redirectTo, hasInitiallyChecked]);
 
   // Always render children first to ensure layout structure is visible
-  // Show loader overlay only during initial checks
+  // Only show loader if we don't have a user yet (auth is still loading)
+  // Once user exists, let the page handle its own loading states
   const showLoader = !user && (loadingAuth || loadingUserDoc);
-  const showInitialLoader = user && !hasInitiallyChecked && (loadingAuth || loadingUserDoc || checkingWizard);
 
   return (
     <>
       {children}
-      {(showLoader || showInitialLoader) && <FullScreenLoader />}
+      {showLoader && <FullScreenLoader />}
     </>
   );
 }

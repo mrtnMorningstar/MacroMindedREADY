@@ -86,7 +86,7 @@ export default function DashboardOverviewPage() {
   // Handle loading state - guards handle auth, but we need to wait for data
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center min-h-[400px] w-full">
         <div className="text-center">
           <div className="h-8 w-8 border-2 border-[#D7263D] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-sm text-neutral-400">Loading dashboard...</p>

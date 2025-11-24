@@ -2,7 +2,17 @@
 
 export default function FullScreenLoader() {
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black text-white">
+    <div 
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black text-white"
+      style={{ 
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 100,
+      }}
+    >
       <div className="flex flex-col items-center gap-6">
         <div className="relative">
           <div className="h-16 w-16 animate-spin rounded-full border-4 border-[#D7263D]/30 border-t-transparent"></div>

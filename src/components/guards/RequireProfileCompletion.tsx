@@ -87,9 +87,8 @@ export function RequireProfileCompletion({
 
   // Always render children first to ensure layout structure is visible
   // Show banner overlay if profile incomplete
-  // Show loader overlay only during initial check when we haven't checked before
+  // Only show loader during initial auth load, not during profile checks
   const showLoader = !user && (loadingAuth || loadingUserDoc);
-  const showInitialLoader = user && !hasInitiallyChecked && (loadingAuth || loadingUserDoc || checkingProfile);
 
   return (
     <>
@@ -100,7 +99,7 @@ export function RequireProfileCompletion({
           onComplete={() => router.push(redirectTo)}
         />
       )}
-      {(showLoader || showInitialLoader) && <FullScreenLoader />}
+      {showLoader && <FullScreenLoader />}
     </>
   );
 }

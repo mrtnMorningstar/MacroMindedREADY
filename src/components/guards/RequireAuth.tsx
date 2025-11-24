@@ -44,8 +44,8 @@ export function RequireAuth({ children, redirectTo = "/login" }: RequireAuthProp
   }, [user, loadingAuth, loadingUserDoc, router, redirectTo]);
 
   // Always render children first to ensure layout structure is visible
-  // Then show loader overlay if needed (prevents black screen)
-  const showLoader = (!user && (loadingAuth || loadingUserDoc)) || (hasUserRef.current && !loadingAuth && !loadingUserDoc && !user);
+  // Then show loader overlay only when truly needed
+  const showLoader = !user && (loadingAuth || loadingUserDoc);
 
   return (
     <>
