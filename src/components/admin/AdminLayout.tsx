@@ -31,9 +31,6 @@ const pageTitles: Record<string, string> = {
 export default function AdminLayoutWrapper({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const { user } = useAppContext();
-
-  // Search state
-  const [searchQuery, setSearchQuery] = useState("");
   
   // Sidebar state - mobile overlay
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -103,8 +100,6 @@ export default function AdminLayoutWrapper({ children }: AdminLayoutProps) {
           {/* Top Header */}
           <AdminHeader
             title={pageTitle}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
           />
 
           {/* Content Wrapper */}
