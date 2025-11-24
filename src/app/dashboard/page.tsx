@@ -33,11 +33,6 @@ export default function DashboardOverviewPage() {
   const { user, data, loading, error, isUnlocked, signOutAndRedirect } =
     useAppContext();
 
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const status: MealPlanStatusType = useMemo(() => {
     if (!data || !data.mealPlanStatus) return MealPlanStatus.NOT_STARTED;
@@ -167,18 +162,6 @@ export default function DashboardOverviewPage() {
   // Get first name from displayName
   const firstName = user?.displayName?.split(" ")[0] ?? "Athlete";
 
-  // Don't render until mounted to prevent hydration issues
-  if (!mounted) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="h-8 w-8 border-2 border-[#D7263D] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-sm text-neutral-400">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <RequireWizard>
       <div className="flex flex-col gap-8">
@@ -194,18 +177,14 @@ export default function DashboardOverviewPage() {
         )}
 
         {/* Personalized Welcome Header */}
-        <motion.header
-          initial={mounted ? { opacity: 0, y: -10 } : false}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col gap-2"
-        >
+        <header className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold text-white font-display tracking-tight">
             Welcome back, {firstName}
           </h1>
           <p className="text-sm text-neutral-400">
             Here's what's happening with your plan today.
           </p>
-        </motion.header>
+        </header>
 
         {/* Main Dashboard Grid */}
         <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

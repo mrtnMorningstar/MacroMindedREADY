@@ -82,6 +82,7 @@ export function RequireProfileCompletion({
     return <FullScreenLoader />;
   }
 
+  // Always render children to prevent black screen - banner overlays if needed
   return (
     <>
       {showBanner && !isComplete && missingFields.length > 0 && (

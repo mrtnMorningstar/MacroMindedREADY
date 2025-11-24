@@ -16,12 +16,6 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  // Prevent hydration issues
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Close sidebar on mobile when route changes
   useEffect(() => {
@@ -30,8 +24,6 @@ export default function DashboardLayout({
 
   // Close sidebar on desktop resize
   useEffect(() => {
-    if (!mounted) return;
-    
     const handleResize = () => {
       if (window.innerWidth >= 1024) {
         setSidebarOpen(false);
@@ -40,11 +32,12 @@ export default function DashboardLayout({
     
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [mounted]);
+  }, []);
 
   return (
     <RequireAuth>
       <RequireProfileCompletion>
+        {/* Always render the layout structure to prevent black screen */}
         <div className="flex min-h-screen w-full flex-col bg-black text-white">
           <div className="flex flex-1 overflow-hidden">
             {/* Sidebar */}
@@ -56,27 +49,18 @@ export default function DashboardLayout({
             {/* Main Content Area */}
             <div className="flex flex-col flex-1 min-w-0 overflow-hidden lg:ml-64">
               {/* Mobile Menu Button */}
-              {mounted && (
-                <button
-                  onClick={() => setSidebarOpen(true)}
-                  className="lg:hidden fixed left-4 top-24 z-50 p-2 rounded-lg bg-neutral-900/80 backdrop-blur border border-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors"
-                  aria-label="Open menu"
-                >
-                  <Bars3Icon className="h-6 w-6" />
-                </button>
-              )}
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="lg:hidden fixed left-4 top-24 z-50 p-2 rounded-lg bg-neutral-900/80 backdrop-blur border border-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors"
+                aria-label="Open menu"
+              >
+                <Bars3Icon className="h-6 w-6" />
+              </button>
 
-              {/* Content Wrapper */}
-              <main className="flex-1 overflow-y-auto bg-black">
+              {/* Content Wrapper - Always render to prevent black screen */}
+              <main className="flex-1 overflow-y-auto bg-black min-h-0">
                 <div className="max-w-full px-6 py-8">
-                  <motion.div
-                    initial={mounted ? { y: 20, opacity: 0 } : false}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: -20, opacity: 0 }}
-                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    {children}
-                  </motion.div>
+                  {children}
                 </div>
               </main>
             </div>

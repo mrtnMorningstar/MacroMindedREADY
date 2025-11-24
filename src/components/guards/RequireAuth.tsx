@@ -39,6 +39,7 @@ export function RequireAuth({ children, redirectTo = "/login" }: RequireAuthProp
     return <FullScreenLoader />;
   }
 
-  return <>{children}</>;
+  // Always render children - don't wrap in fragment that might cause remounting
+  return children as React.ReactElement;
 }
 

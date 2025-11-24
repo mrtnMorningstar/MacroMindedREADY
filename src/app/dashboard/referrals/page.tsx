@@ -104,15 +104,18 @@ export default function ReferralsPage() {
           
           <div className="space-y-4">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500 mb-2 block">
+              <label htmlFor="referralLinkPage" className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500 mb-2 block">
                 Referral Link
               </label>
               <div className="flex items-center gap-2">
                 <input
+                  id="referralLinkPage"
+                  name="referralLinkPage"
                   type="text"
                   readOnly
                   value={referralLink}
                   className="flex-1 rounded-xl border border-neutral-800 bg-neutral-800/50 px-4 py-3 text-sm text-white"
+                  aria-label="Referral link"
                 />
                 <motion.button
                   whileHover={{ scale: 1.05 }}

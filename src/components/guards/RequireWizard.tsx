@@ -67,12 +67,27 @@ export function RequireWizard({
     void checkWizardCompletion();
   }, [user, userDoc, loadingAuth, loadingUserDoc, router, redirectTo]);
 
+  // Show loader while checking, but ensure we don't flash black screen
   if (loadingAuth || loadingUserDoc || checkingWizard) {
-    return <FullScreenLoader />;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-black">
+        <div className="text-center">
+          <div className="h-8 w-8 border-2 border-[#D7263D] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm text-neutral-400">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!user) {
-    return <FullScreenLoader />;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-black">
+        <div className="text-center">
+          <div className="h-8 w-8 border-2 border-[#D7263D] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm text-neutral-400">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;

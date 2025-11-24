@@ -44,15 +44,18 @@ export default function ReferralsCard({
       {referralCode ? (
         <div className="space-y-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500 mb-2">
+            <label htmlFor="referralCode" className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500 mb-2 block">
               Your Referral Code
-            </p>
+            </label>
             <div className="flex items-center gap-2">
               <input
+                id="referralCode"
+                name="referralCode"
                 type="text"
                 readOnly
                 value={referralCode}
                 className="flex-1 rounded-xl border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm font-mono text-white"
+                aria-label="Referral code"
               />
             </div>
           </div>
@@ -66,15 +69,18 @@ export default function ReferralsCard({
           </div>
 
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500 mb-2">
+            <label htmlFor="referralLink" className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500 mb-2 block">
               Share Link
-            </p>
+            </label>
             <div className="flex items-center gap-2">
               <input
+                id="referralLink"
+                name="referralLink"
                 type="text"
                 readOnly
                 value={referralLink || ""}
                 className="flex-1 rounded-xl border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white truncate"
+                aria-label="Referral link"
               />
               <motion.button
                 whileHover={{ scale: 1.05 }}
