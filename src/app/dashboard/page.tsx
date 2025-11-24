@@ -33,6 +33,12 @@ export default function DashboardOverviewPage() {
   const { user, data, loading, error, isUnlocked, signOutAndRedirect } =
     useAppContext();
 
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const status: MealPlanStatusType = useMemo(() => {
     if (!data || !data.mealPlanStatus) return MealPlanStatus.NOT_STARTED;
     return progressSteps.includes(data.mealPlanStatus as MealPlanStatusType)
@@ -82,11 +88,19 @@ export default function DashboardOverviewPage() {
     checkUpdateRequests();
   }, [user?.uid]);
 
-  // Show loader while Firebase Auth and Firestore are loading
-  if (loading || !user) {
-    return <FullScreenLoader />;
+  // Handle loading state - guards handle auth, but we need to wait for data
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="h-8 w-8 border-2 border-[#D7263D] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm text-neutral-400">Loading dashboard...</p>
+        </div>
+      </div>
+    );
   }
 
+  // Handle error state
   if (error) {
     return (
       <DashboardCard className="text-center">
@@ -153,6 +167,18 @@ export default function DashboardOverviewPage() {
   // Get first name from displayName
   const firstName = user?.displayName?.split(" ")[0] ?? "Athlete";
 
+  // Don't render until mounted to prevent hydration issues
+  if (!mounted) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="h-8 w-8 border-2 border-[#D7263D] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm text-neutral-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <RequireWizard>
       <div className="flex flex-col gap-8">
@@ -169,7 +195,7 @@ export default function DashboardOverviewPage() {
 
         {/* Personalized Welcome Header */}
         <motion.header
-          initial={{ opacity: 0, y: -10 }}
+          initial={mounted ? { opacity: 0, y: -10 } : false}
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col gap-2"
         >
