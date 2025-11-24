@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { LinkIcon, CheckIcon } from "@heroicons/react/24/outline";
+import { LinkIcon, CheckIcon, GiftIcon } from "@heroicons/react/24/outline";
+import DashboardCard from "./DashboardCard";
 
 type ReferralsCardProps = {
   referralCode: string | null;
@@ -34,83 +35,85 @@ export default function ReferralsCard({
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.3 }}
-      className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6 shadow-sm"
-    >
-      <h3 className="text-xl font-semibold text-white mb-4">Referrals</h3>
+    <DashboardCard delay={0.3} className="border-[#D7263D]/30">
+      <div className="flex items-start justify-between mb-4">
+        <h3 className="text-lg font-bold text-white font-display">Referrals Summary</h3>
+        <GiftIcon className="h-6 w-6 text-[#D7263D]" />
+      </div>
 
       {referralCode ? (
         <div className="space-y-4">
           <div>
-            <p className="text-sm uppercase tracking-wide text-neutral-400 mb-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500 mb-2">
               Your Referral Code
             </p>
             <div className="flex items-center gap-2">
-              <code className="flex-1 rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-3 text-lg font-mono font-bold text-white">
-                {referralCode}
-              </code>
+              <input
+                type="text"
+                readOnly
+                value={referralCode}
+                className="flex-1 rounded-xl border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm font-mono text-white"
+              />
             </div>
           </div>
 
           <div>
-            <button
-              onClick={handleCopyLink}
-              className="w-full flex items-center justify-center gap-2 rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-3 text-sm font-semibold text-neutral-200 transition hover:bg-neutral-700"
-            >
-              <AnimatePresence mode="wait">
-                {copied ? (
-                  <motion.div
-                    key="check"
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0, opacity: 0 }}
-                    className="flex items-center gap-2"
-                  >
-                    <CheckIcon className="h-5 w-5 text-[#D7263D]" />
-                    <span className="text-[#D7263D]">Copied!</span>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="link"
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0, opacity: 0 }}
-                    className="flex items-center gap-2"
-                  >
-                    <LinkIcon className="h-5 w-5" />
-                    <span>Copy Referral Link</span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </button>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500 mb-2">
+              Credits Earned
+            </p>
+            <p className="text-3xl font-bold text-[#D7263D]">{referralCredits}</p>
+            <p className="text-xs text-neutral-400 mt-1">Available for plan revisions</p>
           </div>
 
-          <div className="rounded-lg border border-neutral-800 bg-neutral-800/30 p-4">
-            <p className="text-xs text-neutral-400 mb-3">
-              Every successful referral gives you 1 credit. Credits can be used for plan
-              tweaks or discounts.
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500 mb-2">
+              Share Link
             </p>
-            <div className="flex items-center justify-between">
-              <span className="text-sm uppercase tracking-wide text-neutral-400">
-                Your Credits
-              </span>
-              <span className="rounded-full bg-[#D7263D] px-4 py-2 text-lg font-bold text-white">
-                {referralCredits}
-              </span>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                readOnly
+                value={referralLink || ""}
+                className="flex-1 rounded-xl border border-neutral-800 bg-neutral-800/50 px-4 py-2.5 text-sm text-white truncate"
+              />
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleCopyLink}
+                className="rounded-xl border border-[#D7263D] bg-[#D7263D] p-2.5 text-white transition hover:bg-[#D7263D]/90"
+                aria-label="Copy referral link"
+              >
+                <AnimatePresence mode="wait">
+                  {copied ? (
+                    <motion.div
+                      key="check"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                    >
+                      <CheckIcon className="h-5 w-5" />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="link"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                    >
+                      <LinkIcon className="h-5 w-5" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.button>
             </div>
           </div>
         </div>
       ) : (
-        <div className="text-center py-4">
-          <p className="text-sm text-neutral-400">
-            Your referral code is being generated...
-          </p>
+        <div className="text-center py-8">
+          <GiftIcon className="h-12 w-12 text-neutral-600 mx-auto mb-3" />
+          <p className="text-sm text-neutral-400">Referral code coming soon</p>
         </div>
       )}
-    </motion.div>
+    </DashboardCard>
   );
 }
-

@@ -1,5 +1,15 @@
 "use client";
 
+import { useMemo } from "react";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import {
+  CheckCircleIcon,
+  ClockIcon,
+  ArrowDownTrayIcon,
+  CalendarDaysIcon,
+  DocumentTextIcon,
+} from "@heroicons/react/24/outline";
 import {
   LockedDashboardScreen,
   MealPlanSection,
@@ -11,6 +21,7 @@ import MealPlanStatusCard from "@/components/status/MealPlanStatusCard";
 import { useAppContext } from "@/context/AppContext";
 import { progressSteps, type MealPlanStatusType } from "@/types/dashboard";
 import { MealPlanStatus } from "@/types/status";
+import DashboardCard from "@/components/dashboard/DashboardCard";
 
 export default function PlanPage() {
   const { data, loading, error, isUnlocked } = useAppContext();
@@ -23,15 +34,42 @@ export default function PlanPage() {
   const statusIndex = progressSteps.indexOf(status);
   const { daysSinceDelivery } = useDeliveryMeta(data?.mealPlanDeliveredAt ?? null);
 
+  // Calculate estimated delivery date
+  const estimatedDeliveryDate = useMemo(() => {
+    if (status === MealPlanStatus.DELIVERED || !data?.purchaseDate) return null;
+    
+    const purchaseDate = data.purchaseDate?.toDate
+      ? data.purchaseDate.toDate()
+      : data.purchaseDate instanceof Date
+      ? data.purchaseDate
+      : null;
+    
+    if (!purchaseDate) return null;
+    
+    const daysToAdd = data.packageTier === "Elite" ? 1 : data.packageTier === "Pro" ? 3 : 5;
+    const estimated = new Date(purchaseDate);
+    estimated.setDate(estimated.getDate() + daysToAdd);
+    
+    // Skip weekends
+    while (estimated.getDay() === 0 || estimated.getDay() === 6) {
+      estimated.setDate(estimated.getDate() + 1);
+    }
+    
+    return estimated;
+  }, [status, data?.purchaseDate, data?.packageTier]);
+
   if (loading) {
     return <MealPlanSkeleton />;
   }
 
   if (error) {
     return (
-      <div className="rounded-3xl border border-accent/40 bg-muted/70 px-6 py-6 text-center text-xs font-semibold uppercase tracking-[0.3em] text-accent">
-        {error}
-      </div>
+      <DashboardCard>
+        <div className="text-center py-8">
+          <h3 className="text-xl font-bold text-white mb-2">Error</h3>
+          <p className="text-sm text-neutral-400">{error}</p>
+        </div>
+      </DashboardCard>
     );
   }
 
@@ -40,38 +78,71 @@ export default function PlanPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-foreground/60">
-            Meal Plan
-          </p>
-          <h1 className="text-2xl font-bold uppercase tracking-[0.22em] text-foreground">
-            Access your latest delivery
-          </h1>
-          <p className="text-[0.75rem] uppercase tracking-[0.3em] text-foreground/50">
-            Download files, review delivery status, and request updates.
-          </p>
-        </div>
+    <div className="flex flex-col gap-8">
+      {/* Page Header */}
+      <motion.header
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col gap-2"
+      >
+        <h1 className="text-3xl font-bold text-white font-display tracking-tight">
+          Meal Plan
+        </h1>
+        <p className="text-sm text-neutral-400">
+          Track your plan delivery status and access your meals
+        </p>
+      </motion.header>
 
-        <MealPlanStatusCard
-          status={status}
-          packageTier={data?.packageTier ?? null}
-          showDownload={status === MealPlanStatus.DELIVERED}
-          fileUrl={data?.mealPlanFileURL}
-        />
+      {/* Status Card */}
+      <MealPlanStatusCard
+        status={status}
+        packageTier={data?.packageTier ?? null}
+        showDownload={status === MealPlanStatus.DELIVERED}
+        fileUrl={data?.mealPlanFileURL}
+      />
 
-        <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+      {/* Main Content Grid */}
+      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+        {/* Plan Details Section */}
+        <DashboardCard delay={0.2}>
+          <h2 className="text-xl font-bold text-white mb-6 font-display">Plan Details</h2>
+          
           <MealPlanSection
             status={status}
             fileUrl={data?.mealPlanFileURL}
             imageUrls={data?.mealPlanImageURLs}
-            daysSinceDelivery={daysSinceDelivery}
+            daysSinceDelivery={daysSinceDelivery ?? null}
             groceryListUrl={data?.groceryListURL}
             packageTier={data?.packageTier ?? null}
           />
+
+          {/* Estimated Delivery */}
+          {estimatedDeliveryDate && status !== MealPlanStatus.DELIVERED && (
+            <div className="mt-6 pt-6 border-t border-neutral-800">
+              <div className="flex items-center gap-3 text-sm">
+                <CalendarDaysIcon className="h-5 w-5 text-[#D7263D]" />
+                <div>
+                  <p className="text-neutral-400">Estimated Delivery</p>
+                  <p className="text-white font-semibold">
+                    {estimatedDeliveryDate.toLocaleDateString("en-US", {
+                      weekday: "long",
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </DashboardCard>
+
+        {/* Progress Timeline */}
+        <DashboardCard delay={0.3}>
+          <h2 className="text-xl font-bold text-white mb-6 font-display">Progress Timeline</h2>
           <ProgressTracker statusIndex={statusIndex} />
-        </div>
+        </DashboardCard>
       </div>
+    </div>
   );
 }
-

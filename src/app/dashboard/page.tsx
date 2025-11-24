@@ -2,14 +2,20 @@
 
 import Link from "next/link";
 import { useMemo, useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { query, where, getDocs, collection } from "firebase/firestore";
+import {
+  ClipboardDocumentCheckIcon,
+  CalendarDaysIcon,
+  UserCircleIcon,
+  GiftIcon,
+  SparklesIcon,
+  PhoneIcon,
+  ArrowRightIcon,
+} from "@heroicons/react/24/outline";
 
 import LockedDashboard from "@/components/dashboard/LockedDashboard";
-import MealPlanStatusCard from "@/components/dashboard/MealPlanStatusCard";
-import PlanTimelineCard from "@/components/dashboard/PlanTimelineCard";
-import MacrosOverviewCard from "@/components/dashboard/MacrosOverviewCard";
-import ReferralsCard from "@/components/dashboard/ReferralsCard";
-import RecipesPreviewCard from "@/components/dashboard/RecipesPreviewCard";
+import DashboardCard from "@/components/dashboard/DashboardCard";
 import { RequireWizard } from "@/components/guards";
 import FullScreenLoader from "@/components/FullScreenLoader";
 import { useAppContext } from "@/context/AppContext";
@@ -17,6 +23,11 @@ import { db } from "@/lib/firebase";
 import { parseFirestoreDate } from "@/lib/utils/date";
 import { progressSteps, type MealPlanStatusType } from "@/types/dashboard";
 import { MealPlanStatus } from "@/types/status";
+import MealPlanStatusCard from "@/components/dashboard/MealPlanStatusCard";
+import MacrosOverviewCard from "@/components/dashboard/MacrosOverviewCard";
+import ReferralsCard from "@/components/dashboard/ReferralsCard";
+import RecipesPreviewCard from "@/components/dashboard/RecipesPreviewCard";
+import PlanTimelineCard from "@/components/dashboard/PlanTimelineCard";
 
 export default function DashboardOverviewPage() {
   const { user, data, loading, error, isUnlocked, signOutAndRedirect } =
@@ -78,18 +89,18 @@ export default function DashboardOverviewPage() {
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-8 text-center">
-        <h3 className="text-xl font-semibold text-white mb-2">Something went wrong</h3>
+      <DashboardCard className="text-center">
+        <h3 className="text-xl font-bold text-white mb-2">Something went wrong</h3>
         <p className="text-sm text-neutral-400 mb-4">
           We couldn't load your dashboard. Try refreshing or logging in again.
         </p>
         <button
           onClick={() => window.location.reload()}
-          className="rounded-lg bg-[#D7263D] px-6 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
+          className="rounded-xl border border-[#D7263D] bg-[#D7263D] px-6 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
         >
           Refresh Page
         </button>
-      </div>
+      </DashboardCard>
     );
   }
 
@@ -106,10 +117,7 @@ export default function DashboardOverviewPage() {
     setRequestSubmitting(true);
     setRequestError(null);
     try {
-      // Get ID token for authentication
       const idToken = await user.getIdToken();
-
-      // Call secure API route
       const response = await fetch("/api/user/create-plan-update-request", {
         method: "POST",
         headers: {
@@ -149,24 +157,33 @@ export default function DashboardOverviewPage() {
     <RequireWizard>
       <div className="flex flex-col gap-8">
         {toastMessage && (
-          <div className="fixed bottom-6 right-6 z-40 rounded-2xl border border-[#D7263D]/40 bg-neutral-900 px-6 py-3 text-sm font-semibold text-[#D7263D] shadow-[0_0_40px_-20px_rgba(215,38,61,0.6)]">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed bottom-6 right-6 z-40 rounded-2xl border border-[#D7263D]/40 bg-neutral-900 px-6 py-3 text-sm font-semibold text-[#D7263D] shadow-[0_0_40px_-20px_rgba(215,38,61,0.6)]"
+          >
             {toastMessage}
-          </div>
+          </motion.div>
         )}
 
-        {/* Header Section */}
-        <header className="flex flex-col gap-2">
-          <h1 className="text-3xl font-semibold text-white sm:text-4xl">
+        {/* Personalized Welcome Header */}
+        <motion.header
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col gap-2"
+        >
+          <h1 className="text-3xl font-bold text-white font-display tracking-tight">
             Welcome back, {firstName}
           </h1>
           <p className="text-sm text-neutral-400">
             Here's what's happening with your plan today.
           </p>
-        </header>
+        </motion.header>
 
         {/* Main Dashboard Grid */}
         <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {/* Meal Plan Status Card */}
+          {/* Meal Plan Progress Card */}
           <MealPlanStatusCard
             mealPlanStatus={status}
             mealPlanDeliveredAt={mealPlanDeliveredAt}
@@ -175,7 +192,10 @@ export default function DashboardOverviewPage() {
             imageUrls={data?.mealPlanImageURLs}
           />
 
-          {/* Plan Delivery Timeline Card */}
+          {/* Daily Targets Card */}
+          <MacrosOverviewCard estimatedMacros={data?.estimatedMacros ?? null} />
+
+          {/* Progress Tracker Card */}
           <PlanTimelineCard
             accountCreatedAt={accountCreatedAt}
             purchaseDate={purchaseDate}
@@ -183,25 +203,107 @@ export default function DashboardOverviewPage() {
             mealPlanDeliveredAt={mealPlanDeliveredAt}
           />
 
-          {/* Macros Overview Card */}
-          <MacrosOverviewCard estimatedMacros={data?.estimatedMacros ?? null} />
-
-          {/* Referrals Card */}
+          {/* Referrals Summary Card */}
           <ReferralsCard
             referralCode={data?.referralCode ?? null}
             referralCredits={data?.referralCredits ?? 0}
           />
 
-          {/* Recipe Library Preview Card */}
+          {/* Recipe Library Card */}
           <RecipesPreviewCard />
+
+          {/* Coach Contact Card */}
+          <DashboardCard delay={0.5}>
+            <div className="flex items-start justify-between mb-4">
+              <h3 className="text-lg font-bold text-white font-display">Coach Contact</h3>
+              <PhoneIcon className="h-6 w-6 text-[#D7263D]" />
+            </div>
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500 mb-1">
+                  Email
+                </p>
+                <a
+                  href="mailto:support@macrominded.net"
+                  className="text-sm text-[#D7263D] hover:text-[#D7263D]/80 transition-colors"
+                >
+                  support@macrominded.net
+                </a>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500 mb-1">
+                  Response Time
+                </p>
+                <p className="text-sm text-neutral-300">24 hours on weekdays</p>
+              </div>
+              <Link
+                href="/dashboard/support"
+                className="inline-flex items-center gap-2 text-sm font-semibold text-[#D7263D] hover:text-[#D7263D]/80 transition-colors group"
+              >
+                Visit Support
+                <ArrowRightIcon className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
+          </DashboardCard>
+        </section>
+
+        {/* Quick Actions Section */}
+        <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <Link href="/dashboard/plan">
+            <DashboardCard delay={0.6} className="cursor-pointer hover:border-[#D7263D]/30">
+              <div className="flex items-center gap-3">
+                <ClipboardDocumentCheckIcon className="h-6 w-6 text-[#D7263D]" />
+                <div>
+                  <p className="text-sm font-semibold text-white">View Meal Plan</p>
+                  <p className="text-xs text-neutral-400">Access your plan</p>
+                </div>
+              </div>
+            </DashboardCard>
+          </Link>
+
+          <Link href="/dashboard/profile">
+            <DashboardCard delay={0.65} className="cursor-pointer hover:border-[#D7263D]/30">
+              <div className="flex items-center gap-3">
+                <UserCircleIcon className="h-6 w-6 text-[#D7263D]" />
+                <div>
+                  <p className="text-sm font-semibold text-white">Update Profile</p>
+                  <p className="text-xs text-neutral-400">Manage goals</p>
+                </div>
+              </div>
+            </DashboardCard>
+          </Link>
+
+          <Link href="/dashboard/referrals">
+            <DashboardCard delay={0.7} className="cursor-pointer hover:border-[#D7263D]/30">
+              <div className="flex items-center gap-3">
+                <GiftIcon className="h-6 w-6 text-[#D7263D]" />
+                <div>
+                  <p className="text-sm font-semibold text-white">Share Referrals</p>
+                  <p className="text-xs text-neutral-400">Earn credits</p>
+                </div>
+              </div>
+            </DashboardCard>
+          </Link>
+
+          <Link href="/dashboard/support">
+            <DashboardCard delay={0.75} className="cursor-pointer hover:border-[#D7263D]/30">
+              <div className="flex items-center gap-3">
+                <PhoneIcon className="h-6 w-6 text-[#D7263D]" />
+                <div>
+                  <p className="text-sm font-semibold text-white">Get Support</p>
+                  <p className="text-xs text-neutral-400">Contact coach</p>
+                </div>
+              </div>
+            </DashboardCard>
+          </Link>
         </section>
 
         {/* Plan Update Request Section (if delivered) */}
         {status === MealPlanStatus.DELIVERED && (
-          <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6 shadow-sm">
+          <DashboardCard delay={0.8}>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h3 className="text-xl font-semibold text-white mb-1">Need an adjustment?</h3>
+                <h3 className="text-xl font-bold text-white mb-1 font-display">Need an adjustment?</h3>
                 <p className="text-sm text-neutral-400">
                   Request a plan update and your coach will follow up.
                 </p>
@@ -213,19 +315,24 @@ export default function DashboardOverviewPage() {
                   setRequestError(null);
                   setShowRequestModal(true);
                 }}
-                className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90"
+                className="rounded-xl border border-[#D7263D] bg-[#D7263D] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 hover:shadow-[0_0_20px_-10px_rgba(215,38,61,0.5)]"
               >
                 Request Plan Update
               </button>
             </div>
-          </div>
+          </DashboardCard>
         )}
 
         {/* Plan Update Request Modal */}
         {showRequestModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm">
-            <div className="w-full max-w-lg rounded-2xl border border-neutral-800 bg-neutral-900 px-8 py-8 shadow-lg">
-              <h3 className="text-xl font-semibold text-white mb-2">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-lg rounded-2xl border border-neutral-800 bg-gradient-to-br from-neutral-900 to-neutral-950 px-8 py-8 shadow-2xl"
+            >
+              <h3 className="text-xl font-bold text-white mb-2 font-display">
                 Tell us what needs to change
               </h3>
               <p className="text-sm text-neutral-400 mb-5">
@@ -235,7 +342,7 @@ export default function DashboardOverviewPage() {
                 value={requestText}
                 onChange={(event) => setRequestText(event.target.value)}
                 rows={6}
-                className="w-full rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-3 text-sm text-white placeholder:text-neutral-500 focus:border-[#D7263D] focus:outline-none"
+                className="w-full rounded-xl border border-neutral-800 bg-neutral-800/50 px-4 py-3 text-sm text-white placeholder:text-neutral-500 focus:border-[#D7263D] focus:outline-none focus:ring-2 focus:ring-[#D7263D]/20 transition-all"
                 placeholder="Example: Increase carbs on training days, swap meal 2 for a quick option..."
               />
               {requestError && (
@@ -250,7 +357,7 @@ export default function DashboardOverviewPage() {
                     setShowRequestModal(false);
                     setRequestError(null);
                   }}
-                  className="rounded-lg border border-neutral-700 bg-neutral-800 px-5 py-2 text-sm font-semibold text-neutral-200 transition hover:bg-neutral-700"
+                  className="rounded-xl border border-neutral-700 bg-neutral-800 px-5 py-2 text-sm font-semibold text-neutral-200 transition hover:bg-neutral-700"
                 >
                   Cancel
                 </button>
@@ -258,12 +365,12 @@ export default function DashboardOverviewPage() {
                   type="button"
                   onClick={handleSubmitPlanUpdateRequest}
                   disabled={requestSubmitting}
-                  className="rounded-lg border border-[#D7263D] bg-[#D7263D] px-6 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-xl border border-[#D7263D] bg-[#D7263D] px-6 py-2 text-sm font-semibold text-white transition hover:bg-[#D7263D]/90 hover:shadow-[0_0_20px_-10px_rgba(215,38,61,0.5)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {requestSubmitting ? "Sending..." : "Submit Request"}
                 </button>
               </div>
-            </div>
+            </motion.div>
           </div>
         )}
       </div>

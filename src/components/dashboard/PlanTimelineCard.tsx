@@ -10,6 +10,7 @@ import {
 } from "@heroicons/react/24/solid";
 import type { MealPlanStatusType } from "@/types/dashboard";
 import { MealPlanStatus } from "@/types/status";
+import DashboardCard from "./DashboardCard";
 
 type PlanTimelineCardProps = {
   accountCreatedAt: Date | null;
@@ -64,13 +65,8 @@ export default function PlanTimelineCard({
   ];
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.1 }}
-      className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6 shadow-sm"
-    >
-      <h3 className="text-xl font-semibold text-white mb-6">Plan Delivery Timeline</h3>
+    <DashboardCard delay={0.2}>
+      <h3 className="text-lg font-bold text-white mb-6 font-display">Progress Tracker</h3>
       
       <div className="space-y-4">
         {steps.map((step, index) => {
@@ -83,7 +79,7 @@ export default function PlanTimelineCard({
               {/* Timeline Line */}
               {!isLast && (
                 <div
-                  className={`absolute left-5 top-12 h-full w-0.5 ${
+                  className={`absolute left-5 top-12 h-full w-0.5 transition-colors duration-300 ${
                     isActive ? "bg-[#D7263D]" : "bg-neutral-700"
                   }`}
                   style={{ height: "calc(100% + 1rem)" }}
@@ -92,9 +88,9 @@ export default function PlanTimelineCard({
 
               {/* Icon */}
               <div
-                className={`relative z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-2 transition ${
+                className={`relative z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all duration-300 ${
                   isActive
-                    ? "border-[#D7263D] bg-[#D7263D]/20 scale-110"
+                    ? "border-[#D7263D] bg-[#D7263D]/20 scale-110 shadow-[0_0_15px_rgba(215,38,61,0.5)]"
                     : "border-neutral-700 bg-neutral-800"
                 }`}
               >
@@ -109,7 +105,7 @@ export default function PlanTimelineCard({
               <div className="flex-1 pt-1">
                 <div className="flex items-center justify-between">
                   <p
-                    className={`text-sm font-semibold ${
+                    className={`text-sm font-semibold transition-colors ${
                       isActive ? "text-white" : "text-neutral-400"
                     }`}
                   >
@@ -130,7 +126,6 @@ export default function PlanTimelineCard({
           );
         })}
       </div>
-    </motion.div>
+    </DashboardCard>
   );
 }
-
