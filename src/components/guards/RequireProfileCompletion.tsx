@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAppContext } from "@/context/AppContext";
 import { doc, getDoc } from "firebase/firestore";
@@ -28,6 +28,8 @@ export function RequireProfileCompletion({
   const [checkingProfile, setCheckingProfile] = useState(true);
   const [profile, setProfile] = useState<Record<string, any> | null>(null);
   const [isComplete, setIsComplete] = useState(false);
+  const [hasInitiallyChecked, setHasInitiallyChecked] = useState(false);
+  const redirectingRef = useRef(false);
 
   const missingFields = useMemo(() => {
     if (!profile) return requiredFields;
@@ -35,7 +37,13 @@ export function RequireProfileCompletion({
   }, [profile, requiredFields]);
 
   useEffect(() => {
-    if (loadingAuth || loadingUserDoc || !user) return;
+    if (loadingAuth || loadingUserDoc || !user) {
+      // If we've already checked before and user exists, don't reset state during navigation
+      if (hasInitiallyChecked && user) {
+        return;
+      }
+      return;
+    }
 
     // Use userDoc from context if available, otherwise fetch
     if (userDoc?.profile) {
@@ -46,6 +54,7 @@ export function RequireProfileCompletion({
       );
       setIsComplete(hasAllFields);
       setCheckingProfile(false);
+      setHasInitiallyChecked(true);
       return;
     }
 
@@ -63,36 +72,46 @@ export function RequireProfileCompletion({
         );
 
         setIsComplete(hasAllFields);
+        setHasInitiallyChecked(true);
       } catch (error) {
         console.error("Failed to check profile:", error);
         setIsComplete(false);
+        setHasInitiallyChecked(true);
       } finally {
         setCheckingProfile(false);
       }
     };
 
     void checkProfile();
-  }, [user, userDoc, loadingAuth, loadingUserDoc, requiredFields]);
+  }, [user, userDoc, loadingAuth, loadingUserDoc, requiredFields, hasInitiallyChecked]);
 
-  if (loadingAuth || loadingUserDoc || checkingProfile) {
+  // If we have a user, always render children (even during checks) to prevent black screen
+  if (user) {
+    // Only show full-screen loader if we're doing initial check and haven't checked before
+    if (!hasInitiallyChecked && (loadingAuth || loadingUserDoc || checkingProfile)) {
+      return <FullScreenLoader />;
+    }
+    
+    // Always render children to prevent black screen - banner overlays if needed
+    return (
+      <>
+        {showBanner && !isComplete && missingFields.length > 0 && (
+          <ProfileIncompleteBanner
+            missingFields={missingFields}
+            onComplete={() => router.push(redirectTo)}
+          />
+        )}
+        {children}
+      </>
+    );
+  }
+
+  // Show loader only if no user
+  if (loadingAuth || loadingUserDoc || !user) {
     return <FullScreenLoader />;
   }
 
-  if (!user) {
-    return <FullScreenLoader />;
-  }
-
-  // Always render children to prevent black screen - banner overlays if needed
-  return (
-    <>
-      {showBanner && !isComplete && missingFields.length > 0 && (
-        <ProfileIncompleteBanner
-          missingFields={missingFields}
-          onComplete={() => router.push(redirectTo)}
-        />
-      )}
-      {children}
-    </>
-  );
+  // Default: render children
+  return <>{children}</>;
 }
 
