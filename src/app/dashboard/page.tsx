@@ -403,6 +403,8 @@ export default function DashboardOverviewPage() {
             </motion.div>
           </div>
         )}
+          </>
+        )}
       </div>
     </RequireWizard>
   );
