@@ -4,6 +4,7 @@ import { type ReactNode, useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Bars3Icon } from "@heroicons/react/24/outline";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
+import { useAppContext } from "@/context/AppContext";
 
 type DashboardShellProps = {
   children: ReactNode;
@@ -12,6 +13,7 @@ type DashboardShellProps = {
 export default function DashboardShell({ children }: DashboardShellProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, loadingAuth, loadingUserDoc } = useAppContext();
 
   // Close sidebar on mobile when route changes
   useEffect(() => {
@@ -30,8 +32,11 @@ export default function DashboardShell({ children }: DashboardShellProps) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Debug logging
+  console.log("DashboardShell render", { user: !!user, sidebarVisible: true, loadingAuth, loadingUserDoc });
+
   return (
-    <div className="flex min-h-screen w-full flex-col bg-black text-white">
+    <div className="flex min-h-screen w-full flex-col bg-neutral-900 text-white">
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar - Always visible */}
         <DashboardSidebar
@@ -50,8 +55,15 @@ export default function DashboardShell({ children }: DashboardShellProps) {
             <Bars3Icon className="h-6 w-6" />
           </button>
 
+          {/* Debug Overlay */}
+          <div className="fixed bottom-2 right-2 z-[9999] bg-neutral-900/80 text-xs text-white p-2 rounded border border-neutral-800">
+            <p>loadingAuth: {String(loadingAuth)}</p>
+            <p>loadingUserDoc: {String(loadingUserDoc)}</p>
+            <p>hasUser: {String(!!user)}</p>
+          </div>
+
           {/* Content Wrapper */}
-          <main className="flex-1 overflow-y-auto bg-black min-h-0 relative">
+          <main className="flex-1 overflow-y-auto bg-neutral-900 min-h-0 relative">
             <div className="max-w-full px-6 py-8">
               {children}
             </div>

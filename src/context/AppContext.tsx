@@ -277,6 +277,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     ]
   );
 
+  // Debug logging to track state changes
+  console.log("AppContext debug", { 
+    user: !!user, 
+    loadingAuth, 
+    loadingUserDoc, 
+    loadingAdmin, 
+    hasData: !!data, 
+    isUnlocked 
+  });
+
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 

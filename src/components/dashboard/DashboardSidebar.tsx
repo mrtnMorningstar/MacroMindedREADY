@@ -83,14 +83,14 @@ export default function DashboardSidebar({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm lg:hidden"
+            className="fixed inset-0 z-40 bg-neutral-900/80 backdrop-blur-sm lg:hidden"
             onClick={onClose}
           />
         )}
       </AnimatePresence>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex fixed left-0 top-[80px] z-40 w-64 h-[calc(100vh-80px)] flex-col border-r border-neutral-800/50 bg-gradient-to-b from-neutral-950 to-black shadow-2xl">
+      <aside className="hidden lg:flex fixed left-0 top-[80px] z-40 w-64 h-[calc(100vh-80px)] flex-col border-r border-neutral-800/50 bg-gradient-to-b from-neutral-950 to-neutral-900 shadow-2xl">
         <div className="flex h-full flex-col overflow-hidden">
           {/* Brand Header */}
           <div className="border-b border-neutral-800/50 px-6 py-6 flex-shrink-0 bg-gradient-to-r from-neutral-900/50 to-transparent">
@@ -196,7 +196,7 @@ export default function DashboardSidebar({
           x: isOpen ? 0 : "-100%",
         }}
         transition={{ type: "spring", damping: 30, stiffness: 300 }}
-        className="lg:hidden fixed left-0 top-[80px] z-50 h-[calc(100vh-80px)] w-64 border-r border-neutral-800 bg-gradient-to-b from-neutral-950 to-black shadow-2xl"
+        className="lg:hidden fixed left-0 top-[80px] z-50 h-[calc(100vh-80px)] w-64 border-r border-neutral-800 bg-gradient-to-b from-neutral-950 to-neutral-900 shadow-2xl"
       >
         <div className="flex h-full flex-col">
           {/* Mobile Header */}
