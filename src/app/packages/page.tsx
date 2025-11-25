@@ -14,7 +14,8 @@ import PackageListSkeleton from "@/components/skeletons/PackageListSkeleton";
 import Link from "next/link";
 
 type PlanTier = {
-  name: "Basic" | "Pro" | "Elite";
+  name: "Essential" | "Professional" | "Premium";
+  stripeName: "Basic" | "Pro" | "Elite"; // Keep Stripe plan names for API compatibility
   turnaround: string;
   benefits: string[];
   accent: string;
@@ -22,45 +23,51 @@ type PlanTier = {
   price: string;
 };
 
-type PlanConfig = Record<PlanTier["name"], PlanTier>;
+type PlanConfig = Record<PlanTier["stripeName"], PlanTier>;
 
 const planConfig: PlanConfig = {
   Basic: {
-    name: "Basic",
-    turnaround: "Delivery: 5 Business Days",
-    description: "Perfect for beginners wanting a budget-friendly custom plan.",
+    name: "Essential",
+    stripeName: "Basic",
+    turnaround: "Delivery: 3-5 Business Days",
+    description: "Comprehensive meal planning solution designed for individuals starting their nutrition journey.",
     benefits: [
-      "Delivery: 5 business days",
-      "Full customized meal plan",
-      "Dashboard access",
-      "Recipe Library access",
+      "Delivery within 3-5 business days",
+      "Access to personal dashboard",
+      "1 meal plan update included",
+      "Weekly shopping list",
+      "Fully customized meal plan",
     ],
     accent: "from-accent/30 via-accent/15 to-transparent",
     price: "$69",
   },
   Pro: {
-    name: "Pro",
-    turnaround: "Delivery: 3 Business Days",
+    name: "Professional",
+    stripeName: "Pro",
+    turnaround: "Delivery: 24-48 Hours",
     description:
-      "Faster delivery, more personalization, and priority support.",
+      "Enhanced service with expedited delivery and comprehensive support for serious nutrition goals.",
     benefits: [
-      "Delivery: 3 business days",
-      "Priority in queue",
-      "Dashboard access",
-      "Recipe Library access",
+      "Delivery within 24-48 hours",
+      "Everything in Essential plan",
+      "Access to Recipe Library",
+      "Priority email support",
+      "2 meal plan updates included",
     ],
     accent: "from-accent/50 via-accent/20 to-transparent",
     price: "$99",
   },
   Elite: {
-    name: "Elite",
-    turnaround: "Delivery: 1 Business Day",
-    description: "The best package for people who want results ASAP.",
+    name: "Premium",
+    stripeName: "Elite",
+    turnaround: "Delivery: 24 Hours",
+    description: "Premium tier offering maximum personalization, fastest delivery, and unparalleled support.",
     benefits: [
-      "Delivery: 1 business day",
-      "Priority support",
-      "All Pro features",
-      "Fastest response times",
+      "Express delivery within 24 hours",
+      "Everything in Professional plan",
+      "3 meal plan updates included",
+      "Priority support access",
+      "Exclusive premium features",
     ],
     accent: "from-accent/70 via-accent/35 to-transparent",
     price: "$149",
@@ -72,9 +79,9 @@ const cards = Object.values(planConfig);
 function PackagesPageContent() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const [savingTier, setSavingTier] = useState<PlanTier["name"] | null>(null);
+  const [savingTier, setSavingTier] = useState<PlanTier["stripeName"] | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
-  const [currentTier, setCurrentTier] = useState<PlanTier["name"] | null>(null);
+  const [currentTier, setCurrentTier] = useState<PlanTier["stripeName"] | null>(null);
   const [showRedirectModal, setShowRedirectModal] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -112,7 +119,7 @@ function PackagesPageContent() {
           return;
         }
 
-        const tier = snapshot.data()?.packageTier as PlanTier["name"] | undefined;
+        const tier = snapshot.data()?.packageTier as PlanTier["stripeName"] | undefined;
         if (isMounted) {
           setCurrentTier(tier ?? null);
         }
@@ -129,7 +136,7 @@ function PackagesPageContent() {
   }, [currentUser]);
 
   const handleSelect = useCallback(
-    async (tier: PlanTier["name"]) => {
+    async (tier: PlanTier["stripeName"]) => {
       setFeedback(null);
 
       if (!currentUser) {
@@ -232,11 +239,11 @@ function PackagesPageContent() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="grid gap-8 sm:grid-cols-3"
         >
-          {cards.map(({ name, turnaround, benefits, accent, description, price }, index) => {
-            const isSaving = savingTier === name;
+          {cards.map(({ name, stripeName, turnaround, benefits, accent, description, price }, index) => {
+            const isSaving = savingTier === stripeName;
             const isCurrentSelection =
-              !checkingAuth && currentTier === name;
-            const isPopular = name === "Pro";
+              !checkingAuth && currentTier === stripeName;
+            const isPopular = stripeName === "Pro";
 
             return (
               <motion.article
@@ -277,8 +284,8 @@ function PackagesPageContent() {
                       </h2>
                     </div>
                     
-                    {/* Price Section */}
-                    <div className="flex items-baseline gap-2">
+                    {/* Price Section - Centered */}
+                    <div className="flex items-baseline justify-center gap-2">
                       <span className="text-4xl font-bold tracking-tight text-white">
                         {price}
                       </span>
@@ -323,7 +330,7 @@ function PackagesPageContent() {
                   {/* CTA Button */}
                   <motion.button
                     whileTap={{ scale: 0.97 }}
-                    onClick={() => handleSelect(name)}
+                    onClick={() => handleSelect(stripeName)}
                     disabled={isSaving}
                     className={`mt-auto inline-flex items-center justify-center rounded-xl px-6 py-4 text-sm font-bold uppercase tracking-wide transition-all ${
                       isSaving
