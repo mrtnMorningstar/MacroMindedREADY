@@ -10,6 +10,14 @@ export function RequireAuth({ children, redirectTo = "/login" }: Props) {
   const { user, loadingAuth, loadingUserDoc } = useAppContext();
   const router = useRouter();
   const redirected = useRef(false);
+  const hasAuthenticatedOnce = useRef(false);
+
+  // Track if we've successfully authenticated once (user exists)
+  useEffect(() => {
+    if (user) {
+      hasAuthenticatedOnce.current = true;
+    }
+  }, [user]);
 
   // Redirect only after loading resolves
   useEffect(() => {
@@ -21,7 +29,14 @@ export function RequireAuth({ children, redirectTo = "/login" }: Props) {
     }
   }, [user, loadingAuth, loadingUserDoc, router, redirectTo]);
 
-  // During loading, show placeholder to prevent black screen
+  // Optimistic rendering: if we've authenticated before, render immediately during navigation
+  // Only block on the very first load
+  if (hasAuthenticatedOnce.current || user) {
+    // User exists or has authenticated before - render children immediately (don't block on navigation)
+    return <>{children}</>;
+  }
+
+  // First load - show loading or redirect
   if (loadingAuth || loadingUserDoc) {
     return (
       <div className="flex items-center justify-center min-h-[400px] w-full">
@@ -32,6 +47,7 @@ export function RequireAuth({ children, redirectTo = "/login" }: Props) {
       </div>
     );
   }
+  
   if (!user) return <div />; // during redirect
   return <>{children}</>;
 }
