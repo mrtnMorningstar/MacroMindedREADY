@@ -2,30 +2,10 @@
 
 export default function FullScreenLoader() {
   return (
-    <div 
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black text-white"
-      style={{ 
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 100,
-      }}
-    >
-      <div className="flex flex-col items-center gap-6">
-        <div className="relative">
-          <div className="h-16 w-16 animate-spin rounded-full border-4 border-[#D7263D]/30 border-t-transparent"></div>
-          <div className="absolute inset-0 h-16 w-16 animate-spin rounded-full border-4 border-transparent border-t-[#D7263D]"></div>
-        </div>
-        <div className="text-center">
-          <h2 className="text-2xl font-bold uppercase tracking-[0.3em] text-white mb-2 font-display">
-            MacroMinded
-          </h2>
-          <p className="text-sm uppercase tracking-[0.2em] text-neutral-400">
-            Loading your experience...
-          </p>
-        </div>
+    <div className="fixed inset-0 z-[9999] grid place-items-center bg-black/70 backdrop-blur-sm">
+      <div className="flex flex-col items-center gap-3">
+        <div className="h-10 w-10 rounded-full border-2 border-[#D7263D] border-t-transparent animate-spin" />
+        <p className="text-sm text-neutral-300">Loading…</p>
       </div>
     </div>
   );

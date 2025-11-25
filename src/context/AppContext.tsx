@@ -177,21 +177,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Handle Firebase Auth state changes
   useEffect(() => {
-    let initialized = false;
+    // show loader until first auth callback fires
+    setLoadingAuth(true);
 
     const unsubscribe = onAuthStateChanged(auth, (u) => {
-      if (!initialized) initialized = true;
-
       const previousUser = previousUserRef.current;
-      previousUserRef.current = u;
+      previousUserRef.current = u ?? null;
       
-      setUser(u);
-      // Session expired if we had a user before but now don't
+      setUser(u ?? null);
+      // sessionExpired only if we had a user and lost it later
       setSessionExpired(!u && !!previousUser);
       setLoadingAuth(false);
     });
 
     return () => unsubscribe();
+    // IMPORTANT: do not depend on `user` here to avoid re-subscribing
   }, []);
 
   // Load user document and dashboard data when user is defined
