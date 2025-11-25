@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAppContext } from "@/context/AppContext";
-import FullScreenLoader from "../FullScreenLoader";
 
 export function RequireWizard({ children }: { children: React.ReactNode }) {
   const { user, userDoc, loadingAuth, loadingUserDoc } = useAppContext();
@@ -20,8 +19,9 @@ export function RequireWizard({ children }: { children: React.ReactNode }) {
     }
   }, [loadingAuth, loadingUserDoc, user, needsWizard, router, pathname]);
 
-  if (loadingAuth || loadingUserDoc) return <FullScreenLoader />;
-  if (needsWizard && !pathname?.startsWith("/macro-wizard")) return null;
+  // During loading, return empty div (layout overlay handles visual loading)
+  if (loadingAuth || loadingUserDoc) return <div />;
+  if (needsWizard && !pathname?.startsWith("/macro-wizard")) return <div />;
   return <>{children}</>;
 }
 

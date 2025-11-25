@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAppContext } from "@/context/AppContext";
-import FullScreenLoader from "../FullScreenLoader";
 
 type Props = { children: React.ReactNode; redirectTo?: string };
 
@@ -22,8 +21,9 @@ export function RequireAuth({ children, redirectTo = "/login" }: Props) {
     }
   }, [user, loadingAuth, loadingUserDoc, router, redirectTo]);
 
-  if (loadingAuth || loadingUserDoc) return <FullScreenLoader />;
-  if (!user) return null; // during redirect
+  // During loading, return empty div (layout overlay handles visual loading)
+  if (loadingAuth || loadingUserDoc) return <div />;
+  if (!user) return <div />; // during redirect
   return <>{children}</>;
 }
 
