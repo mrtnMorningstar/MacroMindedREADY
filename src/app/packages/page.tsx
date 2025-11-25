@@ -20,7 +20,6 @@ type PlanTier = {
   accent: string;
   description: string;
   price: string;
-  originalPrice?: string;
 };
 
 type PlanConfig = Record<PlanTier["name"], PlanTier>;
@@ -37,8 +36,7 @@ const planConfig: PlanConfig = {
       "Recipe Library access",
     ],
     accent: "from-accent/30 via-accent/15 to-transparent",
-    price: "$149",
-    originalPrice: "$199",
+    price: "$69",
   },
   Pro: {
     name: "Pro",
@@ -52,8 +50,7 @@ const planConfig: PlanConfig = {
       "Recipe Library access",
     ],
     accent: "from-accent/50 via-accent/20 to-transparent",
-    price: "$249",
-    originalPrice: "$329",
+    price: "$99",
   },
   Elite: {
     name: "Elite",
@@ -66,8 +63,7 @@ const planConfig: PlanConfig = {
       "Fastest response times",
     ],
     accent: "from-accent/70 via-accent/35 to-transparent",
-    price: "$399",
-    originalPrice: "$549",
+    price: "$149",
   },
 };
 
@@ -234,79 +230,160 @@ function PackagesPageContent() {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="grid gap-6 sm:grid-cols-3"
+          className="grid gap-8 sm:grid-cols-3"
         >
-          {cards.map(({ name, turnaround, benefits, accent, description, price, originalPrice }) => {
+          {cards.map(({ name, turnaround, benefits, accent, description, price, originalPrice }, index) => {
             const isSaving = savingTier === name;
             const isCurrentSelection =
               !checkingAuth && currentTier === name;
+            const isPopular = name === "Pro";
 
             return (
               <motion.article
                 key={name}
-                whileHover={{ y: -12, scale: 1.01 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-                className="relative overflow-hidden rounded-3xl border border-border/70 bg-muted/80 px-8 py-10 text-left shadow-[0_0_80px_-40px_rgba(215,38,61,0.6)]"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                whileHover={{ y: -8, scale: 1.02 }}
+                className={`relative flex flex-col overflow-hidden rounded-2xl border ${
+                  isPopular
+                    ? "border-[#D7263D]/50 bg-gradient-to-br from-neutral-900 via-neutral-900 to-neutral-950 shadow-[0_0_60px_-20px_rgba(215,38,61,0.8)] ring-2 ring-[#D7263D]/30"
+                    : "border-neutral-800/50 bg-gradient-to-br from-neutral-900 to-neutral-950 shadow-xl"
+                }`}
               >
+                {/* Background gradient accent */}
                 <div
-                  className={`pointer-events-none absolute inset-x-0 -top-1/3 h-56 bg-gradient-to-b ${accent} opacity-60 blur-3xl`}
+                  className={`pointer-events-none absolute inset-x-0 top-0 h-64 bg-gradient-to-b ${accent} opacity-20 blur-3xl`}
                 />
-                <div className="relative flex flex-col gap-6">
-                  <header className="flex flex-col gap-2">
-                    <span className="font-display text-sm uppercase tracking-[0.45em] text-accent">
-                      {name} Plan
+
+                {/* Popular badge */}
+                {isPopular && (
+                  <div className="absolute right-4 top-4 z-10">
+                    <span className="inline-flex items-center rounded-full bg-[#D7263D] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white shadow-lg">
+                      Most Popular
                     </span>
-                    <h2 className="text-sm uppercase tracking-[0.32em] text-foreground/70">
-                      {turnaround}
-                    </h2>
-                    <div className="flex items-baseline gap-3">
-                      <p className="text-3xl font-semibold tracking-[0.18em] text-foreground">
+                  </div>
+                )}
+
+                <div className="relative flex flex-col flex-1 p-8">
+                  {/* Header Section */}
+                  <header className="mb-6 flex flex-col gap-3 border-b border-neutral-800/50 pb-6">
+                    <div>
+                      <span className="font-display text-xs uppercase tracking-[0.4em] text-neutral-400">
+                        {name} Plan
+                      </span>
+                      <h2 className="mt-2 font-display text-2xl font-bold uppercase tracking-tight text-white">
+                        {name}
+                      </h2>
+                    </div>
+                    
+                    {/* Price Section */}
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-4xl font-bold tracking-tight text-white">
                         {price}
-                      </p>
+                      </span>
                       {originalPrice && (
-                        <span className="text-sm uppercase tracking-[0.3em] text-foreground/40 line-through">
+                        <span className="text-sm font-medium text-neutral-500 line-through">
                           {originalPrice}
                         </span>
                       )}
                     </div>
-                    <span className="text-xs uppercase tracking-[0.3em] text-accent/80">
-                      Limited time discount
-                    </span>
+
+                    {/* Turnaround */}
+                    <p className="text-sm font-medium text-[#D7263D]">
+                      {turnaround}
+                    </p>
                   </header>
 
-                  <p className="text-xs uppercase tracking-[0.28em] text-foreground/60">
+                  {/* Description */}
+                  <p className="mb-6 text-sm leading-relaxed text-neutral-400">
                     {description}
                   </p>
 
-                  <ul className="flex flex-col gap-3">
+                  {/* Benefits List */}
+                  <ul className="mb-8 flex flex-1 flex-col gap-4">
                     {benefits.map((benefit) => (
                       <li
                         key={benefit}
-                        className="flex items-start gap-3 text-xs uppercase tracking-[0.28em] text-foreground/80"
+                        className="flex items-start gap-3 text-sm text-neutral-300"
                       >
-                        <span className="mt-[3px] inline-flex h-2 w-2 flex-none rounded-full bg-accent" />
-                        <span>{benefit}</span>
+                        <svg
+                          className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#D7263D]"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2.5}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                        <span className="leading-relaxed">{benefit}</span>
                       </li>
                     ))}
                   </ul>
 
+                  {/* CTA Button */}
                   <motion.button
-                    whileTap={{ scale: 0.98 }}
+                    whileTap={{ scale: 0.97 }}
                     onClick={() => handleSelect(name)}
                     disabled={isSaving}
-                    className={`mt-4 inline-flex items-center justify-center rounded-full border px-6 py-3 text-xs font-semibold uppercase tracking-[0.32em] transition ${
+                    className={`mt-auto inline-flex items-center justify-center rounded-xl px-6 py-4 text-sm font-bold uppercase tracking-wide transition-all ${
                       isSaving
-                        ? "cursor-wait border-accent/40 bg-accent/40 text-background/70"
-                        : "border-accent bg-accent text-background hover:border-foreground hover:bg-transparent hover:text-accent"
+                        ? "cursor-wait bg-neutral-800 text-neutral-500"
+                        : isPopular
+                        ? "bg-[#D7263D] text-white shadow-[0_0_30px_-10px_rgba(215,38,61,0.6)] hover:bg-[#D7263D]/90 hover:shadow-[0_0_40px_-10px_rgba(215,38,61,0.8)]"
+                        : "border-2 border-neutral-700 bg-transparent text-white hover:border-[#D7263D] hover:bg-[#D7263D]/10"
                     }`}
                   >
-                    {isSaving ? "Saving..." : "Select Plan"}
+                    {isSaving ? (
+                      <span className="flex items-center gap-2">
+                        <svg
+                          className="h-4 w-4 animate-spin"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        Processing...
+                      </span>
+                    ) : (
+                      "Select Plan"
+                    )}
                   </motion.button>
 
+                  {/* Current Selection Badge */}
                   {isCurrentSelection && (
-                    <span className="text-[0.6rem] uppercase tracking-[0.4em] text-foreground/50">
-                      Currently selected
-                    </span>
+                    <div className="mt-4 text-center">
+                      <span className="inline-flex items-center gap-2 rounded-full bg-[#D7263D]/20 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-[#D7263D]">
+                        <svg
+                          className="h-4 w-4"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        Currently Selected
+                      </span>
+                    </div>
                   )}
                 </div>
               </motion.article>
