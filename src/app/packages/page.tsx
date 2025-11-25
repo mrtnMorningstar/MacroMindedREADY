@@ -232,7 +232,7 @@ function PackagesPageContent() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="grid gap-8 sm:grid-cols-3"
         >
-          {cards.map(({ name, turnaround, benefits, accent, description, price, originalPrice }, index) => {
+          {cards.map(({ name, turnaround, benefits, accent, description, price }, index) => {
             const isSaving = savingTier === name;
             const isCurrentSelection =
               !checkingAuth && currentTier === name;
@@ -282,11 +282,6 @@ function PackagesPageContent() {
                       <span className="text-4xl font-bold tracking-tight text-white">
                         {price}
                       </span>
-                      {originalPrice && (
-                        <span className="text-sm font-medium text-neutral-500 line-through">
-                          {originalPrice}
-                        </span>
-                      )}
                     </div>
 
                     {/* Turnaround */}
