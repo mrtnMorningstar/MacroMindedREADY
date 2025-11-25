@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -11,7 +10,6 @@ import {
   GiftIcon,
   ChatBubbleLeftRightIcon,
   XMarkIcon,
-  Bars3Icon,
 } from "@heroicons/react/24/outline";
 import {
   HomeIcon as HomeIconSolid,
@@ -20,6 +18,7 @@ import {
   GiftIcon as GiftIconSolid,
   ChatBubbleLeftRightIcon as ChatBubbleLeftRightIconSolid,
 } from "@heroicons/react/24/solid";
+import { useAppContext } from "@/context/AppContext";
 
 type DashboardSidebarProps = {
   isOpen: boolean;
@@ -64,6 +63,8 @@ export default function DashboardSidebar({
   onClose,
 }: DashboardSidebarProps) {
   const pathname = usePathname();
+  const { loadingAuth, loadingUserDoc } = useAppContext();
+  const loading = loadingAuth || loadingUserDoc;
 
   const isActive = (href: string) => {
     if (href === "/dashboard") {
@@ -113,60 +114,76 @@ export default function DashboardSidebar({
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto px-3 py-6 scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-transparent">
             <div className="space-y-1">
-              {navLinks.map((link, index) => {
-                const active = isActive(link.href);
-                const Icon = active ? link.iconSolid : link.icon;
-
-                return (
-                  <motion.div
-                    key={link.href}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                  >
-                    <Link
-                      href={link.href}
-                      className="group relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200"
+              {loading ? (
+                // Skeleton placeholders while loading
+                <>
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-3 rounded-xl px-4 py-3"
                     >
-                      {/* Active Indicator */}
-                      {active && (
-                        <motion.div
-                          layoutId="activeDashboardIndicator"
-                          className="absolute left-0 top-0 h-full w-1.5 rounded-r-full bg-[#D7263D] shadow-[0_0_15px_rgba(215,38,61,0.8)]"
-                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                        />
-                      )}
+                      <div className="h-5 w-5 rounded bg-neutral-800 animate-pulse" />
+                      <div className={`h-4 rounded bg-neutral-800 animate-pulse ${i === 1 ? 'w-3/4' : i === 2 ? 'w-2/3' : i === 3 ? 'w-1/2' : i === 4 ? 'w-5/6' : 'w-4/5'}`} />
+                    </div>
+                  ))}
+                </>
+              ) : (
+                // Actual navigation links
+                navLinks.map((link, index) => {
+                  const active = isActive(link.href);
+                  const Icon = active ? link.iconSolid : link.icon;
 
-                      {/* Background highlight */}
-                      <div
-                        className={`absolute inset-0 rounded-xl transition-all duration-200 ${
-                          active
-                            ? "bg-gradient-to-r from-[#D7263D]/20 via-[#D7263D]/10 to-transparent shadow-[0_0_30px_-15px_rgba(215,38,61,0.6)]"
-                            : "bg-transparent group-hover:bg-neutral-800/40"
-                        }`}
-                      />
-
-                      {/* Icon and Label */}
-                      <Icon
-                        className={`relative h-5 w-5 flex-shrink-0 transition-all duration-200 ${
-                          active
-                            ? "text-[#D7263D] drop-shadow-[0_0_8px_rgba(215,38,61,0.6)]"
-                            : "text-neutral-400 group-hover:text-white group-hover:scale-110"
-                        }`}
-                      />
-                      <span
-                        className={`relative transition-all duration-200 ${
-                          active
-                            ? "text-[#D7263D] font-bold"
-                            : "text-neutral-400 group-hover:text-white"
-                        }`}
+                  return (
+                    <motion.div
+                      key={link.href}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <Link
+                        href={link.href}
+                        className="group relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200"
                       >
-                        {link.label}
-                      </span>
-                    </Link>
-                  </motion.div>
-                );
-              })}
+                        {/* Active Indicator */}
+                        {active && (
+                          <motion.div
+                            layoutId="activeDashboardIndicator"
+                            className="absolute left-0 top-0 h-full w-1.5 rounded-r-full bg-[#D7263D] shadow-[0_0_15px_rgba(215,38,61,0.8)]"
+                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                          />
+                        )}
+
+                        {/* Background highlight */}
+                        <div
+                          className={`absolute inset-0 rounded-xl transition-all duration-200 ${
+                            active
+                              ? "bg-gradient-to-r from-[#D7263D]/20 via-[#D7263D]/10 to-transparent shadow-[0_0_30px_-15px_rgba(215,38,61,0.6)]"
+                              : "bg-transparent group-hover:bg-neutral-800/40"
+                          }`}
+                        />
+
+                        {/* Icon and Label */}
+                        <Icon
+                          className={`relative h-5 w-5 flex-shrink-0 transition-all duration-200 ${
+                            active
+                              ? "text-[#D7263D] drop-shadow-[0_0_8px_rgba(215,38,61,0.6)]"
+                              : "text-neutral-400 group-hover:text-white group-hover:scale-110"
+                          }`}
+                        />
+                        <span
+                          className={`relative transition-all duration-200 ${
+                            active
+                              ? "text-[#D7263D] font-bold"
+                              : "text-neutral-400 group-hover:text-white"
+                          }`}
+                        >
+                          {link.label}
+                        </span>
+                      </Link>
+                    </motion.div>
+                  );
+                })
+              )}
             </div>
           </nav>
         </div>
@@ -204,33 +221,49 @@ export default function DashboardSidebar({
           {/* Mobile Navigation */}
           <nav className="flex-1 overflow-y-auto px-3 py-6">
             <div className="space-y-1">
-              {navLinks.map((link) => {
-                const active = isActive(link.href);
-                const Icon = active ? link.iconSolid : link.icon;
+              {loading ? (
+                // Skeleton placeholders while loading
+                <>
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-3 rounded-xl px-4 py-3"
+                    >
+                      <div className="h-5 w-5 rounded bg-neutral-800 animate-pulse" />
+                      <div className={`h-4 rounded bg-neutral-800 animate-pulse ${i === 1 ? 'w-3/4' : i === 2 ? 'w-2/3' : i === 3 ? 'w-1/2' : i === 4 ? 'w-5/6' : 'w-4/5'}`} />
+                    </div>
+                  ))}
+                </>
+              ) : (
+                // Actual navigation links
+                navLinks.map((link) => {
+                  const active = isActive(link.href);
+                  const Icon = active ? link.iconSolid : link.icon;
 
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={onClose}
-                    className={`group relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${
-                      active
-                        ? "bg-gradient-to-r from-[#D7263D]/20 via-[#D7263D]/10 to-transparent text-[#D7263D]"
-                        : "text-neutral-400 hover:bg-neutral-800/40 hover:text-white"
-                    }`}
-                  >
-                    {active && (
-                      <motion.div
-                        layoutId="activeDashboardIndicatorMobile"
-                        className="absolute left-0 top-0 h-full w-1.5 rounded-r-full bg-[#D7263D]"
-                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      />
-                    )}
-                    <Icon className="h-5 w-5" />
-                    <span>{link.label}</span>
-                  </Link>
-                );
-              })}
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={onClose}
+                      className={`group relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${
+                        active
+                          ? "bg-gradient-to-r from-[#D7263D]/20 via-[#D7263D]/10 to-transparent text-[#D7263D]"
+                          : "text-neutral-400 hover:bg-neutral-800/40 hover:text-white"
+                      }`}
+                    >
+                      {active && (
+                        <motion.div
+                          layoutId="activeDashboardIndicatorMobile"
+                          className="absolute left-0 top-0 h-full w-1.5 rounded-r-full bg-[#D7263D]"
+                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                        />
+                      )}
+                      <Icon className="h-5 w-5" />
+                      <span>{link.label}</span>
+                    </Link>
+                  );
+                })
+              )}
             </div>
           </nav>
         </div>
