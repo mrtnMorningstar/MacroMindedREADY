@@ -89,8 +89,8 @@ export default function DashboardSidebar({
         )}
       </AnimatePresence>
 
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex fixed left-0 top-[80px] z-40 w-64 h-[calc(100vh-80px)] flex-col border-r border-neutral-800/50 bg-gradient-to-b from-neutral-950 to-neutral-900 shadow-2xl">
+      {/* Desktop Sidebar - Always visible */}
+      <aside className="hidden lg:flex fixed left-0 top-[80px] z-40 w-64 h-[calc(100vh-80px)] flex-col border-r border-neutral-800/50 bg-gradient-to-b from-neutral-950 to-neutral-900 shadow-2xl" style={{ minHeight: 'calc(100vh - 80px)' }}>
         <div className="flex h-full flex-col overflow-hidden">
           {/* Brand Header */}
           <div className="border-b border-neutral-800/50 px-6 py-6 flex-shrink-0 bg-gradient-to-r from-neutral-900/50 to-transparent">

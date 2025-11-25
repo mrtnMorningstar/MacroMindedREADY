@@ -23,23 +23,22 @@ export function RequireAuth({ children, redirectTo = "/login" }: Props) {
   useEffect(() => {
     if (loadingAuth || loadingUserDoc) return;
     if (redirected.current) return;
-    if (!user) {
+    if (!user && !hasAuthenticatedOnce.current) {
       redirected.current = true;
       router.replace(redirectTo);
     }
   }, [user, loadingAuth, loadingUserDoc, router, redirectTo]);
 
-  // Optimistic rendering: if we've authenticated before, render immediately during navigation
-  // Only block on the very first load
+  // CRITICAL: Once authenticated, NEVER block - always render children immediately
+  // This ensures navigation never causes black screens
   if (hasAuthenticatedOnce.current || user) {
-    // User exists or has authenticated before - render children immediately (don't block on navigation)
     return <>{children}</>;
   }
 
-  // First load - show loading or redirect
+  // First load - show loading only if no user yet
   if (loadingAuth || loadingUserDoc) {
     return (
-      <div className="flex items-center justify-center min-h-[400px] w-full">
+      <div className="flex items-center justify-center min-h-[400px] w-full bg-neutral-900">
         <div className="text-center">
           <div className="h-8 w-8 border-2 border-[#D7263D] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-sm text-neutral-400">Loading...</p>
@@ -48,7 +47,14 @@ export function RequireAuth({ children, redirectTo = "/login" }: Props) {
     );
   }
   
-  if (!user) return <div />; // during redirect
-  return <>{children}</>;
+  // No user and not loading - will redirect
+  return (
+    <div className="flex items-center justify-center min-h-[400px] w-full bg-neutral-900">
+      <div className="text-center">
+        <div className="h-8 w-8 border-2 border-[#D7263D] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-sm text-neutral-400">Redirecting...</p>
+      </div>
+    </div>
+  );
 }
 

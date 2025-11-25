@@ -128,6 +128,7 @@ export default function DashboardOverviewPage() {
   // Get first name from displayName
   const firstName = user?.displayName?.split(" ")[0] ?? "Athlete";
 
+  // Always render something visible - prevent black screen
   return (
     <div className="flex flex-col gap-8">
         {/* Show error banner if there's an error */}
@@ -146,7 +147,6 @@ export default function DashboardOverviewPage() {
           </DashboardCard>
         )}
 
-        {/* Always show something visible - prevent black screen */}
         {/* Show loading indicator inline while data loads */}
         {loading && !data && !error && (
           <div className="flex flex-col gap-4">
@@ -169,20 +169,6 @@ export default function DashboardOverviewPage() {
 
         {/* Show locked dashboard if user is authenticated but has no package */}
         {!loading && (!isUnlocked || !data?.packageTier) && !error && <LockedDashboard />}
-
-        {/* Fallback: Show placeholder if nothing else matches (shouldn't happen, but prevents black screen) */}
-        {!loading && !error && isUnlocked && data?.packageTier === undefined && (
-          <div className="flex flex-col gap-4">
-            <header className="flex flex-col gap-2">
-              <h1 className="text-3xl font-bold text-white font-display tracking-tight">
-                Welcome
-              </h1>
-              <p className="text-sm text-neutral-400">
-                Please wait while we load your dashboard...
-              </p>
-            </header>
-          </div>
-        )}
 
         {/* Show dashboard content if we have data and are unlocked */}
         {!loading && isUnlocked && data?.packageTier && !error && (
@@ -401,6 +387,26 @@ export default function DashboardOverviewPage() {
           </div>
         )}
           </>
+        )}
+
+        {/* Fallback: Always show something to prevent black screen */}
+        {!loading && !error && !isUnlocked && !data && (
+          <div className="flex flex-col gap-4">
+            <header className="flex flex-col gap-2">
+              <h1 className="text-3xl font-bold text-white font-display tracking-tight">
+                Welcome
+              </h1>
+              <p className="text-sm text-neutral-400">
+                Please wait while we load your dashboard...
+              </p>
+            </header>
+            <div className="flex items-center justify-center min-h-[400px] w-full">
+              <div className="text-center">
+                <div className="h-8 w-8 border-2 border-[#D7263D] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                <p className="text-sm text-neutral-400">Loading...</p>
+              </div>
+            </div>
+          </div>
         )}
     </div>
   );

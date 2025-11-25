@@ -6,11 +6,13 @@ import DashboardShell from "@/components/layouts/DashboardShell";
 import { useAppContext } from "@/context/AppContext";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { loadingAuth, loadingUserDoc, user } = useAppContext();
+  const { loadingAuth, user } = useAppContext();
   
   // Only show overlay on very first load (before we have a user)
   const isFirstLoad = loadingAuth && !user;
   
+  // CRITICAL: DashboardShell MUST always render - sidebar depends on it
+  // Guards only wrap content inside the shell
   return (
     <DashboardShell
       loadingOverlay={
@@ -21,9 +23,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         ) : null
       }
     >
-      {/* Always render children - guards handle their own loading states */}
+      {/* Guards wrap content only - shell structure always visible */}
       <RequireAuth>
-        <RequireWizard>{children}</RequireWizard>
+        <RequireWizard>
+          {children}
+        </RequireWizard>
       </RequireAuth>
     </DashboardShell>
   );

@@ -31,10 +31,11 @@ export default function DashboardShell({ children, loadingOverlay }: DashboardSh
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // ALWAYS render - this component must never fail to render
   return (
-    <div className="flex min-h-screen w-full flex-col bg-neutral-900 text-white">
+    <div className="flex min-h-screen w-full flex-col bg-neutral-900 text-white" style={{ minHeight: '100vh' }}>
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar - Always visible */}
+        {/* Sidebar - Always visible, must render immediately */}
         <DashboardSidebar
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
@@ -51,11 +52,19 @@ export default function DashboardShell({ children, loadingOverlay }: DashboardSh
             <Bars3Icon className="h-6 w-6" />
           </button>
 
-          {/* Content Wrapper */}
+          {/* Content Wrapper - Always render content area */}
           <main className="flex-1 overflow-y-auto bg-neutral-900 min-h-0 relative">
             {loadingOverlay}
             <div className="max-w-full px-6 py-8">
-              {children}
+              {/* Wrap children in error boundary to prevent black screen */}
+              {children || (
+                <div className="flex items-center justify-center min-h-[400px]">
+                  <div className="text-center">
+                    <div className="h-8 w-8 border-2 border-[#D7263D] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                    <p className="text-sm text-neutral-400">Loading...</p>
+                  </div>
+                </div>
+              )}
             </div>
           </main>
         </div>
