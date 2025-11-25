@@ -21,8 +21,17 @@ export function RequireAuth({ children, redirectTo = "/login" }: Props) {
     }
   }, [user, loadingAuth, loadingUserDoc, router, redirectTo]);
 
-  // During loading, return empty div (layout overlay handles visual loading)
-  if (loadingAuth || loadingUserDoc) return <div />;
+  // During loading, show placeholder to prevent black screen
+  if (loadingAuth || loadingUserDoc) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px] w-full">
+        <div className="text-center">
+          <div className="h-8 w-8 border-2 border-[#D7263D] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm text-neutral-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
   if (!user) return <div />; // during redirect
   return <>{children}</>;
 }

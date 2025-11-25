@@ -7,9 +7,10 @@ import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 
 type DashboardShellProps = {
   children: ReactNode;
+  loadingOverlay?: ReactNode;
 };
 
-export default function DashboardShell({ children }: DashboardShellProps) {
+export default function DashboardShell({ children, loadingOverlay }: DashboardShellProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -52,6 +53,7 @@ export default function DashboardShell({ children }: DashboardShellProps) {
 
           {/* Content Wrapper */}
           <main className="flex-1 overflow-y-auto bg-neutral-900 min-h-0 relative">
+            {loadingOverlay}
             <div className="max-w-full px-6 py-8">
               {children}
             </div>

@@ -16,8 +16,6 @@ import {
 
 import LockedDashboard from "@/components/dashboard/LockedDashboard";
 import DashboardCard from "@/components/dashboard/DashboardCard";
-import { RequireWizard } from "@/components/guards";
-import FullScreenLoader from "@/components/FullScreenLoader";
 import { useAppContext } from "@/context/AppContext";
 import { db } from "@/lib/firebase";
 import { parseFirestoreDate } from "@/lib/utils/date";
@@ -131,8 +129,7 @@ export default function DashboardOverviewPage() {
   const firstName = user?.displayName?.split(" ")[0] ?? "Athlete";
 
   return (
-    <RequireWizard>
-      <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8">
         {/* Show error banner if there's an error */}
         {error && (
           <DashboardCard className="text-center border-[#D7263D]/50">
@@ -405,7 +402,6 @@ export default function DashboardOverviewPage() {
         )}
           </>
         )}
-      </div>
-    </RequireWizard>
+    </div>
   );
 }
