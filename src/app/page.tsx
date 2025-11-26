@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { motion, type Variants } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 
 const heroEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
@@ -130,6 +132,99 @@ const packages = [
     highlight: false,
   },
 ];
+
+const homepageFAQs = [
+  {
+    question: "How does MacroMinded work?",
+    answer: "Choose your plan (Essential, Professional, or Premium), complete the macro wizard with your goals and stats, and our nutrition experts design your personalized meal plan. You'll receive it via email and in your dashboard within the delivery timeframe you selected.",
+  },
+  {
+    question: "What's included in my meal plan?",
+    answer: "Every plan includes precise daily macro targets, a complete meal plan (breakfast, lunch, dinner, snacks, pre/post-workout), high-protein recipes optimized for your goals, macro breakdowns for every meal, meal prep instructions, and access to our Recipe Library with 200+ macro-friendly recipes.",
+  },
+  {
+    question: "How long does it take to receive my meal plan?",
+    answer: "Essential plans: 3-5 business days. Professional plans: 24-48 hours. Premium plans: 24 hours. Your coach will notify you via email as soon as your plan is ready.",
+  },
+  {
+    question: "Can you accommodate dietary restrictions?",
+    answer: "Yes! During the macro wizard, you'll provide your dietary restrictions, allergies, food preferences, and dislikes. Our coaches design your meal plan around these requirements to ensure it fits your lifestyle.",
+  },
+  {
+    question: "What if I need to change my plan after receiving it?",
+    answer: "All plans include meal plan updates. Essential includes 1 update, Professional includes 2, and Premium includes 3. You can request changes anytime through your dashboard, and your coach will adjust your plan accordingly.",
+  },
+  {
+    question: "Do I get access to the Recipe Library?",
+    answer: "Yes! Professional and Premium plans include full access to our Recipe Library with 200+ high-protein, macro-friendly recipes. You can search by macros, meal type, dietary preferences, and more.",
+  },
+  {
+    question: "Is there a money-back guarantee?",
+    answer: "We're committed to your success. If you're not satisfied with your meal plan, contact us within 7 days of delivery for a full refund or plan revision.",
+  },
+  {
+    question: "Can I use referral credits?",
+    answer: "Yes! Refer friends and earn credits for every successful referral. Credits can be used for meal plan updates and other premium features. The more you refer, the more you save.",
+  },
+  {
+    question: "Do I need to download an app?",
+    answer: "No app required! Access everything through your personalized dashboard on any device. Your meal plan, recipes, progress tracking, and support are all in one place.",
+  },
+  {
+    question: "What makes MacroMinded different from other meal planning services?",
+    answer: "We're not AI-generated or cookie-cutter. Real nutrition experts design every plan specifically for you. We understand training, performance, and physique goals. Plus, you get direct access to your coach and a platform built for athletes who take their nutrition seriously.",
+  },
+];
+
+function FAQAccordion() {
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(0); // First FAQ open by default
+
+  return (
+    <div className="space-y-4">
+      {homepageFAQs.map((faq, index) => (
+        <motion.div
+          key={index}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.3 }}
+          variants={cardVariants}
+          custom={index * 0.1}
+          className="rounded-2xl border border-border/70 bg-muted/50 overflow-hidden shadow-[0_0_40px_-20px_rgba(215,38,61,0.3)] backdrop-blur"
+        >
+          <button
+            onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}
+            className="w-full flex items-center justify-between p-6 text-left hover:bg-muted/70 transition-colors group"
+            type="button"
+          >
+            <span className="text-base font-semibold uppercase tracking-[0.2em] text-foreground pr-6 group-hover:text-accent transition-colors">
+              {faq.question}
+            </span>
+            {expandedIndex === index ? (
+              <ChevronUpIcon className="h-5 w-5 text-accent flex-shrink-0" />
+            ) : (
+              <ChevronDownIcon className="h-5 w-5 text-foreground/60 flex-shrink-0 group-hover:text-accent transition-colors" />
+            )}
+          </button>
+          <AnimatePresence>
+            {expandedIndex === index && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="border-t border-border/50 bg-muted/30 overflow-hidden"
+              >
+                <p className="p-6 text-sm uppercase tracking-[0.25em] text-foreground/70 leading-relaxed">
+                  {faq.answer}
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
 
 export default function Home() {
   return (
@@ -410,6 +505,27 @@ export default function Home() {
               </motion.div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* FAQ SECTION */}
+      <section className="relative px-6 py-20">
+        <div className="mx-auto max-w-4xl">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={heroTextVariants}
+            className="mb-12 text-center"
+          >
+            <h2 className="text-3xl font-bold uppercase tracking-[0.2em] text-foreground sm:text-4xl">
+              Frequently Asked Questions
+            </h2>
+            <p className="mt-4 text-sm uppercase tracking-[0.32em] text-foreground/60">
+              Everything you need to know before getting started
+            </p>
+          </motion.div>
+          <FAQAccordion />
         </div>
       </section>
 
