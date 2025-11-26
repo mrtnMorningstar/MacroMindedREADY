@@ -77,57 +77,170 @@ macromindedready/
   - `RequirePackage` - Ensures user has purchased a package
 
 ### Client Dashboard (`/dashboard`)
-- **Overview Page** - Personalized welcome, meal plan status, daily targets, referrals summary
-- **Meal Plan Page** - Timeline view of plan delivery (In Queue → In Progress → Delivered)
-- **Profile Page** - User profile management, BMI calculator, macro goals
-- **Referrals Page** - Referral code sharing, credits earned, QR code placeholder
-- **Support Page** - FAQ accordion, contact information
+- **Overview Page** (`/dashboard`) - Personalized welcome header, modular grid layout with:
+  - Meal Plan Progress card
+  - Daily Targets (macro overview)
+  - Progress Tracker card
+  - Referrals Summary card
+  - Recipe Library preview card
+  - Coach Contact card
+  - Quick Action buttons
+- **Meal Plan Page** (`/dashboard/plan`) - Step timeline view (In Queue → In Progress → Delivered), progress bar animation, estimated delivery date, download zone, previous plans list
+- **Profile Page** (`/dashboard/profile`) - Two-column layout with profile info, goals/progress, BMI calculator, macro wheel charts (Recharts)
+- **Referrals Page** (`/dashboard/referrals`) - Referral summary stat cards (Total Referrals, Credits Earned), shareable referral link, QR code placeholder, leaderboard placeholder
+- **Support Page** (`/dashboard/support`) - FAQ accordion, contact information cards, emergency info, chat widget placeholder
+- **Locked Dashboard** - Preview shown when user hasn't purchased a package, encourages plan selection
 
 ### Admin Panel (`/admin`)
 - **Dashboard** - Overview statistics, recent clients, pending tasks, activity feed
-- **Clients** - List all users, view client details, impersonation feature
-- **Sales/Revenue** - Sales metrics and analytics
-- **Referrals** - Referral program management
-- **Plan Requests** - Manage meal plan update requests from clients
-- **Recipes** - Recipe library management
-- **Manage Admins** - Grant/revoke admin privileges
-- **Settings** - Platform settings (3 tabs: Platform Settings, Admin Controls, Data Management)
-- **Analytics** - Data visualization and metrics
+- **Clients** (`/admin/clients`) - Filterable list of all users with advanced filtering (all, needs-plan, delivered, in-progress), view client details in slideover, impersonation feature
+- **Users** (`/admin/users`) - Alternative user listing page with package tier filtering
+- **Requests** (`/admin/requests`) - Shows users with pending meal plans
+- **Plan Requests** (`/admin/plan-requests`) - Manage meal plan update requests from clients (different from /admin/requests)
+- **Plan Updates** (`/admin/updates`) - View and manage plan update requests, mark as handled
+- **Wizard** (`/admin/wizard`) - View and verify macro wizard completions for all users
+- **Sales/Revenue** (`/admin/sales`) - Sales metrics and analytics
+- **Referrals** (`/admin/referrals`) - Referral program management and statistics
+- **Recipes** (`/admin/recipes`) - Recipe library management (create, edit, delete recipes)
+- **Manage Admins** (`/admin/manage-admins`) - Grant/revoke admin privileges
+- **Settings** (`/admin/settings`) - Platform settings with 3 tabs:
+  - **Platform Settings** - General platform configuration
+  - **Admin Controls** - Admin-specific settings
+  - **Data Management** - Export and data management tools
+- **Analytics** (`/admin/analytics`) - Data visualization and metrics
 
 ### Macro Wizard (`/macro-wizard`)
-- Multi-step form to collect user health and dietary information
-- Calculates estimated daily macros (calories, protein, carbs, fats)
-- Stores data in Firestore user document
+- Multi-step form to collect user health and dietary information:
+  - Body stats (height, weight, age, gender)
+  - Activity level
+  - Goals (cut, bulk, maintenance/recomp)
+  - Dietary restrictions and preferences
+  - Food likes and dislikes
+- Calculates estimated daily macros (calories, protein, carbs, fats) based on inputs
+- Stores data in Firestore user document (`profile` object and `estimatedMacros`)
+- Sets `macroWizardCompleted: true` flag
 - Required before accessing dashboard content
+- Admin can verify wizard completions via `/admin/wizard`
 
 ### Payment Flow (`/packages`)
-- Package selection (Basic, Pro, Elite tiers)
-- Stripe Checkout integration
-- Webhook handler for payment confirmation
-- Purchase creation in Firestore
+- **Package Selection Page** (`/packages`) - Professional card-based UI with:
+  - Three professional tiers:
+    - **Essential** ($69) - Delivery within 3-5 business days, personal dashboard access, 1 meal plan update included, weekly shopping list, fully customized meal plan
+    - **Professional** ($99) - Delivery within 24-48 hours, includes all Essential features, recipe library access, priority email support, 2 meal plan updates included
+    - **Premium** ($149) - Express delivery within 24 hours, includes all Professional features, 3 meal plan updates included, priority support access, exclusive premium features
+  - Centered pricing display
+  - Gradient accents and hover animations
+  - "Most Popular" badge on Professional plan
+  - Current selection indicator
+- **Stripe Integration:**
+  - Uses Stripe Price IDs mapped in `src/lib/prices.ts`
+  - Internal Stripe names: Basic, Pro, Elite (display names are Essential, Professional, Premium)
+  - Secure checkout session creation via `/api/checkout`
+  - Webhook handler processes payment confirmation
+- **Post-Payment:**
+  - Purchase record created in Firestore `purchases` collection
+  - User document updated with `packageTier` and `purchaseDate`
+  - Referral credits processed if user was referred
+  - Redirects to `/packages/success` on success, `/packages/cancel` on cancel
+- **Success/Cancel Pages:**
+  - `/packages/success` - Confirmation page after successful payment
+  - `/packages/cancel` - Canceled payment page
+  - `/payment/success` - Alternative success route
+  - `/payment/cancel` - Alternative cancel route
 
 ### API Routes (`/api`)
-- **Admin APIs:**
-  - `/api/admin/setAdminRole` - Grant/revoke admin privileges
-  - `/api/admin/impersonate` - Generate impersonation tokens
-  - `/api/admin/verify-impersonation` - Verify and consume impersonation tokens
-  - `/api/admin/update-settings` - Update admin settings
-  - `/api/admin/send-reminder-email` - Send reminder emails to users
-- **User APIs:**
-  - `/api/user/create-user-document` - Create user document on registration
-  - `/api/user/submit-macro-wizard` - Submit macro wizard data
-  - `/api/user/create-plan-update-request` - Create plan update request
-- **Payment APIs:**
-  - `/api/checkout` - Create Stripe checkout session
-  - `/api/webhook` - Handle Stripe webhooks
-- **Other APIs:**
-  - `/api/mark-plan-delivered` - Mark meal plan as delivered
-  - `/api/notifications/meal-plan` - Send meal plan notifications
+
+#### Admin APIs
+- **`/api/admin/setAdminRole`** - Grant/revoke admin privileges via custom claims and Firestore role field
+- **`/api/admin/impersonate`** - Generate secure one-time impersonation tokens for admin user testing
+- **`/api/admin/verify-impersonation`** - Verify and consume impersonation tokens, set impersonation cookie
+- **`/api/admin/update-settings`** - Update platform settings stored in `adminSettings/global` Firestore document
+- **`/api/admin/send-reminder-email`** - Send reminder emails to users about their meal plan status
+
+#### User APIs
+- **`/api/user/create-user-document`** - Create user document on registration with referral code generation if referral link used
+- **`/api/user/submit-macro-wizard`** - Submit macro wizard data with validation, stores profile and estimatedMacros, sets macroWizardCompleted flag
+- **`/api/user/create-plan-update-request`** - Create plan update request (stored in `planUpdateRequests` collection, triggers admin notification)
+
+#### Payment APIs
+- **`/api/checkout`** - Create Stripe checkout session with authentication verification, validates plan tier, sets up success/cancel URLs
+- **`/api/webhook`** - Main Stripe webhook handler for `checkout.session.completed` events
+  - Updates user document with package tier and purchase date
+  - Processes referral credits (increments referrer's `referralCredits` field)
+  - Sets meal plan status to NOT_STARTED
+- **`/api/webhook/stripe`** - Additional Stripe webhook route (may handle other Stripe events)
+
+#### Meal Plan APIs
+- **`/api/mark-plan-delivered`** - Admin-only route to mark meal plan as delivered
+  - Updates user document with delivery status and URLs
+  - Uploads meal plan files to Firebase Storage
+  - Sends delivery email notification to user
+- **`/api/notifications/meal-plan`** - Send meal plan-related notifications
+
+### Additional Pages
+
+#### Public Pages
+- **Homepage** (`/`) - Landing page with:
+  - Hero section with animated background gradients
+  - Features showcase (Macro-Perfect Plans, Recipe Library, Progress Tracking, Expert Coaching)
+  - Workflow steps (Pick Your Speed, Share Your Stats, Get Your Plan)
+  - Deliverables list (10 key features)
+  - Dashboard features preview
+  - Package overview cards (Basic, Pro, Elite with delivery times)
+  - Call-to-action sections
+
+#### Recipe Pages
+- **Recipe Library** (`/recipes`) - Requires package purchase:
+  - Grid layout with recipe cards
+  - Search functionality (by title)
+  - Tag filtering (High Protein, Low Carb, Vegetarian, Vegan, Quick Prep, Gluten Free, Dairy Free)
+  - Recipe cards show image, title, description, calories, macros
+- **Individual Recipe** (`/recipes/[id]`) - Detailed recipe view with:
+  - Full recipe image
+  - Ingredients list
+  - Step-by-step instructions
+  - Macro breakdown (calories, protein, carbs, fats)
+  - Tags/categories
+
+#### Legal Pages
+- **Privacy Policy** (`/privacy`) - Privacy policy page
+- **Terms of Service** (`/terms`) - Terms of service page
+
+#### Payment Result Pages
+- **Success Pages** (`/success`, `/packages/success`, `/payment/success`) - Payment confirmation pages
+- **Cancel Pages** (`/cancel`, `/payment/cancel`, `/packages/cancel`) - Payment cancellation pages
+
+### Referral Program
+- **Automatic Code Generation** (`src/lib/referral.ts`):
+  - Unique referral codes generated on user registration
+  - Format: `PREFIX-RANDOM` (e.g., `MACRO-A83F` or `JOHN-XY9Z`)
+  - Prefix based on user's first name (sanitized, max 6 chars)
+  - Checks Firestore for uniqueness before assignment
+  - Fallback to timestamp-based code if conflicts persist
+- **Referral Tracking:**
+  - Users can share referral links: `/register?ref=CODE`
+  - Referral code stored in user document `referredBy` field during registration
+  - Referral link automatically generated on dashboard referrals page
+- **Credit System:**
+  - Referrers earn 1 credit (`referralCredits` field) when a referred user completes a purchase
+  - Credits automatically incremented via Stripe webhook handler (`/api/webhook`)
+  - Credits displayed on both client dashboard and admin panel
+- **User Features:**
+  - View total referrals and credits earned
+  - Share referral link via copy button
+  - QR code placeholder for future implementation
+  - Referral stats visible in admin panel
+- **Credit Usage:** Credits can be used for meal plan updates (exact redemption mechanism determined by admin workflow)
 
 ### Scripts
-- **`scripts/setAdmin.ts`** - TypeScript script to grant admin role to a user (uses dotenv)
-- **`setAdminRole.js`** - Node.js script to grant admin role (uses service account JSON)
+- **`scripts/setAdmin.ts`** - TypeScript script to grant admin role to a user (uses dotenv for credentials)
+  - Usage: `ts-node scripts/setAdmin.ts <USER_UID>`
+  - Sets both Firestore `role` field and Firebase Auth custom claim
+- **`setAdminRole.js`** - Node.js script to grant admin role (uses service account JSON file)
+  - Usage: `node setAdminRole.js <USER_UID>`
+  - Requires `FIREBASE_ADMIN_SDK_PATH` env var or `serviceAccountKey.json` file
 - **`checkClaims.js`** - Utility to check Firebase custom claims for a user
+  - Hardcoded UID for testing, shows custom claims, email, and UID
 
 ---
 
@@ -139,19 +252,61 @@ macromindedready/
 - Session management handled client-side via `AppContext`
 
 ### Firestore Database
-Collections:
-- **`users`** - User profiles, meal plan status, macros, referral data
-- **`purchases`** - Purchase records linked to Stripe sessions
-- **`planUpdateRequests`** - User requests for meal plan modifications
-- **`recipes`** - Recipe library accessible to all authenticated users
-- **`adminSettings`** - Platform configuration (stored in `adminSettings/global`)
-- **`adminActivity`** - Logs for admin actions (e.g., impersonation)
+
+#### Collections
+
+**`users`** - User profiles and data:
+- Profile information (height, weight, age, gender, activity level, goals, dietary preferences)
+- `estimatedMacros` object (calories, protein, carbs, fats)
+- `packageTier` (Essential/Professional/Premium, stored as Basic/Pro/Elite)
+- `mealPlanStatus` (NOT_STARTED, IN_QUEUE, IN_PROGRESS, DELIVERED)
+- `mealPlanFileURL`, `mealPlanImageURLs`, `groceryListURL`
+- `mealPlanDeliveredAt`, `purchaseDate`, `createdAt`
+- `macroWizardCompleted` (boolean flag)
+- `wizardVerified` (admin verification flag)
+- `referralCode` (unique code for sharing)
+- `referralCredits` (number of credits earned)
+- `referredBy` (referral code that referred this user)
+- `role` (display-only, "admin" for admins - NOT used for authorization)
+- `displayName`, `email`
+
+**`purchases`** - Purchase records:
+- Linked to Stripe checkout sessions
+- Contains `userId`, `planType`, `status`, `stripeSessionId`
+- Tracks purchase amount and email
+
+**`planUpdateRequests`** - Meal plan modification requests:
+- `userId`, `requestText` (user's description)
+- `handled` (boolean), `date` (timestamp)
+- Created via secure API route, admins can mark as handled
+
+**`recipes`** - Recipe library:
+- Recipe metadata: `title`, `description`, `calories`, `protein`, `carbs`, `fats`
+- `ingredients` (array), `steps` (array)
+- `imageURL` (optional), `tags` (array for filtering)
+- Accessible to all authenticated users, managed by admins
+
+**`adminSettings`** - Platform configuration:
+- Single document: `adminSettings/global`
+- Contains platform-wide settings (notifications, payments, security settings)
+- Persisted across admin panel settings updates
+
+**`adminActivity`** - Admin action logs:
+- Logs admin actions (e.g., impersonation events)
+- Immutable (no updates/deletes allowed)
+- Admin-only read access
 
 ### Firebase Storage
-- **Path Structure:** `/mealPlans/{userId}/plan.pdf`, `/mealPlans/{userId}/images/{imageName}`, `/mealPlans/{userId}/groceryList.pdf`
-- Users can only download their own meal plans
-- Admins have full read/write/delete access
-- Directory listing restricted to admins (prevents URL guessing)
+- **Path Structure:**
+  - `/mealPlans/{userId}/plan.pdf` - Main meal plan PDF file
+  - `/mealPlans/{userId}/images/{imageName}` - Meal plan preview images
+  - `/mealPlans/{userId}/groceryList.pdf` - Optional grocery shopping list
+- **Access Rules:**
+  - Users can only download files in their own `/mealPlans/{userId}/**` path
+  - Users cannot upload anything (upload blocked by security rules)
+  - Admins have full read/write/delete/list access to all paths
+  - Directory listing restricted to admins only (prevents URL guessing attacks)
+- **File Upload:** Admin uses `CardUpload` component to upload meal plan files via admin panel
 
 ### Security Rules
 - **Firestore:** Rules enforce admin-only writes for sensitive collections, user-owned reads for personal data
@@ -345,18 +500,63 @@ export async function register() {
 
 ## Key Architecture Decisions
 
+### Layout System
+- **ConditionalLayout** (`src/components/ConditionalLayout.tsx`) - Route-aware layout wrapper:
+  - Admin routes: No extra wrapping (AdminLayout handles everything)
+  - Dashboard routes: Includes Navbar/Footer, but DashboardShell handles main content
+  - Regular routes: Standard layout with Navbar, Footer, and PageTransition animations
+- **AdminLayout** (`src/components/admin/AdminLayout.tsx`) - Self-contained admin layout:
+  - Fixed sidebar (256px desktop, overlay mobile)
+  - AdminHeader (page title)
+  - AdminContentWrapper (animated content area)
+  - No global Navbar dependency
+- **DashboardShell** (`src/components/layouts/DashboardShell.tsx`) - Client dashboard layout:
+  - Fixed sidebar (264px desktop, slide-in mobile)
+  - Main content area with padding
+  - Mobile menu button
+  - Loading overlay support
+- **Navbar** (`src/components/Navbar.tsx`) - Global navigation:
+  - Visible on public routes and dashboard
+  - Hidden on admin routes (admin has own navigation)
+  - Responsive mobile menu
+
+### Design System
+- **Brand Colors:**
+  - Background: Black (`#000000`, `bg-black`)
+  - Accent: Red (`#D7263D`, `accent`)
+  - Neutral tones: `neutral-800`, `neutral-900`, `neutral-950` for cards and borders
+- **Typography:**
+  - Headings: Anton font (`font-display`) - uppercase, tracking-wider
+  - Body: Geist Sans (default) - clean, readable
+- **Card Styling:**
+  - Standard: `rounded-2xl border border-neutral-800 bg-neutral-900 p-6`
+  - Hover effects: `hover:border-[#D7263D]/30`, scale animations
+  - Shadows: Red glow effects for emphasis (`shadow-[0_0_40px_-20px_rgba(215,38,61,0.6)]`)
+- **Animations:**
+  - Framer Motion for page transitions and component animations
+  - Subtle hover effects (scale 1.02, y -2)
+  - Smooth fade and slide transitions
+
 ### Client-Side State Management
 - **AppContext** (`src/context/AppContext.tsx`) - Centralized state for:
-  - Authentication status
-  - User document data
-  - Dashboard data
-  - Loading states
-  - Admin status
+  - Authentication status (`user`, `loadingAuth`, `loadingUserDoc`)
+  - User document data (`userDoc`, `data`)
+  - Dashboard data (`purchase`, `macros`, `packageTier`, `isUnlocked`)
+  - Loading states (aggregated `loading` flag)
+  - Admin status (`isAdmin`, `loadingAdmin`)
+  - Error states (`error`, `sessionExpired`)
+  - Actions (`refresh`, `signOutAndRedirect`)
 
 ### Route Protection
-- Multiple guard components for fine-grained access control
+- Multiple guard components for fine-grained access control:
+  - `RequireAuth` - Blocks unauthenticated users
+  - `RequireAdmin` - Blocks non-admin users
+  - `RequireWizard` - Redirects if macro wizard not completed
+  - `RequireProfileCompletion` - Ensures profile is complete
+  - `RequirePackage` - Blocks users without purchased package
 - Guards use optimistic rendering to prevent black screens during navigation
 - Layout-level guards ensure proper structure rendering
+- Guards track "has rendered before" state to allow instant navigation after initial load
 
 ### Data Flow
 1. **User Registration** → API route creates user document → Firestore
