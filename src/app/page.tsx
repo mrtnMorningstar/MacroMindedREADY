@@ -509,7 +509,7 @@ export default function Home() {
       </section>
 
       {/* FAQ SECTION */}
-      <section className="relative px-6 py-20">
+      <section id="faq" className="relative px-6 py-20">
         <div className="mx-auto max-w-4xl">
           <motion.div
             initial="hidden"
