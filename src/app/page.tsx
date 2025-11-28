@@ -111,7 +111,7 @@ function FAQAccordion() {
           viewport={{ once: true, amount: 0.2 }}
           variants={fadeInUp}
           custom={index * 0.1}
-          className="group rounded-xl border border-neutral-800/50 bg-neutral-900/50 backdrop-blur-sm overflow-hidden transition-all hover:border-[#D7263D]/30 hover:bg-neutral-900/80"
+          className="group rounded-xl border border-neutral-800/70 bg-gradient-to-br from-neutral-900/60 via-neutral-900/50 to-neutral-950/60 backdrop-blur-sm overflow-hidden transition-all hover:border-[#D7263D]/40 hover:bg-gradient-to-br hover:from-neutral-900/70 hover:via-neutral-900/60 hover:to-neutral-950/70 shadow-[0_0_20px_-10px_rgba(0,0,0,0.3)]"
         >
           <button
             onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}
@@ -150,17 +150,103 @@ function FAQAccordion() {
 
 export default function Home() {
   return (
-    <div className="relative min-h-screen bg-black overflow-hidden">
+    <div className="relative min-h-screen bg-gradient-to-b from-neutral-950 via-black to-neutral-950 overflow-hidden">
       {/* Animated Background */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-[#D7263D]/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-[#D7263D]/5 rounded-full blur-[100px]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black via-black to-black" />
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        {/* Animated gradient orbs */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ 
+            opacity: [0.3, 0.5, 0.3],
+            scale: [1, 1.1, 1],
+            x: [0, 100, 0],
+            y: [0, 50, 0],
+          }}
+          transition={{ 
+            duration: 20,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[900px] bg-[#D7263D]/15 rounded-full blur-[140px]" 
+        />
+      <motion.div
+        initial={{ opacity: 0 }}
+          animate={{ 
+            opacity: [0.2, 0.4, 0.2],
+            scale: [1, 1.2, 1],
+            x: [0, -80, 0],
+            y: [0, -60, 0],
+          }}
+          transition={{ 
+            duration: 25,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 2
+          }}
+          className="absolute bottom-0 right-0 w-[700px] h-[700px] bg-[#D7263D]/12 rounded-full blur-[130px]" 
+        />
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ 
+            opacity: [0.15, 0.3, 0.15],
+            scale: [1, 1.15, 1],
+            x: [0, 120, 0],
+            y: [0, -80, 0],
+          }}
+          transition={{ 
+            duration: 30,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 4
+          }}
+          className="absolute top-1/3 left-0 w-[600px] h-[600px] bg-[#D7263D]/10 rounded-full blur-[120px]" 
+        />
+        
+        {/* Mesh gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-neutral-950/80 via-black/60 to-neutral-950/80" />
+        
+        {/* Subtle grid pattern */}
+        <div 
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(215, 38, 61, 0.1) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(215, 38, 61, 0.1) 1px, transparent 1px)
+            `,
+            backgroundSize: '50px 50px'
+          }}
+        />
       </div>
 
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center px-6 py-32">
-        <div className="max-w-5xl mx-auto text-center">
+        {/* Floating background elements */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {[...Array(6)].map((_, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 0 }}
+              animate={{
+                opacity: [0, 0.1, 0],
+                y: [0, -100, 0],
+                x: [0, Math.sin(i) * 50, 0],
+              }}
+              transition={{
+                duration: 15 + i * 2,
+                repeat: Infinity,
+                delay: i * 2,
+                ease: "easeInOut",
+              }}
+              className="absolute w-2 h-2 rounded-full bg-[#D7263D] blur-sm"
+              style={{
+                left: `${20 + i * 15}%`,
+                top: `${30 + (i % 3) * 20}%`,
+              }}
+            />
+          ))}
+        </div>
+        
+        <div className="max-w-5xl mx-auto text-center relative z-10">
       <motion.div
             initial="hidden"
             animate="visible"
@@ -223,7 +309,10 @@ export default function Home() {
 
       {/* Benefits Section */}
       <section className="relative py-24 px-6">
-        <div className="max-w-6xl mx-auto">
+        {/* Section background glow */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-neutral-950/30 to-transparent pointer-events-none" />
+        
+        <div className="max-w-6xl mx-auto relative z-10">
           <motion.div
           initial="hidden"
             whileInView="visible"
@@ -266,8 +355,24 @@ export default function Home() {
       </section>
 
       {/* Process Section */}
-      <section className="relative py-24 px-6 bg-gradient-to-b from-black via-neutral-950/50 to-black">
-        <div className="max-w-5xl mx-auto">
+      <section className="relative py-24 px-6 bg-gradient-to-b from-neutral-950/80 via-neutral-900/40 to-neutral-950/80">
+        {/* Animated accent lines */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <motion.div
+            initial={{ x: "-100%" }}
+            animate={{ x: "200%" }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            className="absolute top-1/4 left-0 w-px h-32 bg-gradient-to-b from-transparent via-[#D7263D]/20 to-transparent"
+          />
+          <motion.div
+            initial={{ x: "200%" }}
+            animate={{ x: "-100%" }}
+            transition={{ duration: 25, repeat: Infinity, ease: "linear", delay: 5 }}
+            className="absolute bottom-1/4 right-0 w-px h-32 bg-gradient-to-b from-transparent via-[#D7263D]/20 to-transparent"
+          />
+        </div>
+        
+        <div className="max-w-5xl mx-auto relative z-10">
           <motion.div
             initial="hidden"
             whileInView="visible"
@@ -292,7 +397,7 @@ export default function Home() {
                 viewport={{ once: true, amount: 0.3 }}
                 variants={fadeInUp}
                 custom={index * 0.15}
-                className="flex flex-col sm:flex-row gap-6 p-8 rounded-xl border border-neutral-800/50 bg-neutral-900/30 backdrop-blur-sm hover:border-[#D7263D]/30 transition-all group"
+                className="flex flex-col sm:flex-row gap-6 p-8 rounded-xl border border-neutral-800/70 bg-gradient-to-br from-neutral-900/50 via-neutral-900/40 to-neutral-950/50 backdrop-blur-sm hover:border-[#D7263D]/40 hover:bg-gradient-to-br hover:from-neutral-900/60 hover:via-neutral-900/50 hover:to-neutral-950/60 transition-all group shadow-[0_0_30px_-15px_rgba(0,0,0,0.5)]"
               >
                 <div className="flex-shrink-0">
                   <div className="w-16 h-16 rounded-xl bg-[#D7263D] flex items-center justify-center">
@@ -317,14 +422,35 @@ export default function Home() {
 
       {/* Pricing CTA Section */}
       <section className="relative py-24 px-6">
-        <div className="max-w-4xl mx-auto">
+        {/* Background glow */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#D7263D]/5 to-transparent pointer-events-none" />
+        
+        <div className="max-w-4xl mx-auto relative z-10">
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.3 }}
             variants={scaleIn}
-            className="text-center p-12 rounded-2xl border border-neutral-800/50 bg-gradient-to-br from-neutral-900/80 to-neutral-950/80 backdrop-blur-sm shadow-[0_0_60px_-30px_rgba(215,38,61,0.5)]"
+            className="text-center p-12 rounded-2xl border border-neutral-800/70 bg-gradient-to-br from-neutral-900/90 via-neutral-900/80 to-neutral-950/90 backdrop-blur-md shadow-[0_0_80px_-30px_rgba(215,38,61,0.6)] relative overflow-hidden"
           >
+            {/* Animated gradient overlay */}
+            <motion.div
+              animate={{
+                backgroundPosition: ["0% 0%", "100% 100%"],
+              }}
+              transition={{
+                duration: 10,
+                repeat: Infinity,
+                repeatType: "reverse",
+                ease: "linear",
+              }}
+              className="absolute inset-0 opacity-20 pointer-events-none"
+              style={{
+                background: `linear-gradient(135deg, rgba(215, 38, 61, 0.1) 0%, transparent 50%, rgba(215, 38, 61, 0.1) 100%)`,
+                backgroundSize: "200% 200%",
+              }}
+            />
+            <div className="relative z-10">
             <h2 className="text-4xl sm:text-5xl font-display font-bold text-white mb-4">
               Ready to Transform Your Nutrition?
             </h2>
@@ -339,13 +465,29 @@ export default function Home() {
               View Plans & Pricing
               <ArrowRightIcon className="h-5 w-5" />
             </Link>
+            </div>
           </motion.div>
         </div>
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" className="relative py-24 px-6 bg-gradient-to-b from-black via-neutral-950/50 to-black">
-        <div className="max-w-3xl mx-auto">
+      <section id="faq" className="relative py-24 px-6 bg-gradient-to-b from-neutral-950/80 via-neutral-900/40 to-neutral-950/80">
+        {/* Subtle animated background */}
+        <div className="absolute inset-0 pointer-events-none">
+          <motion.div
+            animate={{
+              opacity: [0.1, 0.15, 0.1],
+            }}
+            transition={{
+              duration: 8,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#D7263D]/10 rounded-full blur-[100px]"
+          />
+        </div>
+        
+        <div className="max-w-3xl mx-auto relative z-10">
           <motion.div
             initial="hidden"
             whileInView="visible"
@@ -366,8 +508,16 @@ export default function Home() {
       </section>
 
       {/* Final CTA */}
-      <section className="relative py-24 px-6">
-        <div className="max-w-4xl mx-auto text-center">
+      <section className="relative py-24 px-6 bg-gradient-to-b from-neutral-950 to-black">
+        {/* Radial gradient accent */}
+        <div 
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle at center, rgba(215, 38, 61, 0.1) 0%, transparent 70%)'
+          }}
+        />
+        
+        <div className="max-w-4xl mx-auto text-center relative z-10">
           <motion.div
             initial="hidden"
             whileInView="visible"
