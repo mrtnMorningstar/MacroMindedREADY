@@ -3,206 +3,128 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
-import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
+import { 
+  ChevronDownIcon, 
+  ChevronUpIcon,
+  CheckIcon,
+  ArrowRightIcon,
+  SparklesIcon
+} from "@heroicons/react/24/outline";
 
 const heroEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
-const heroTextVariants: Variants = {
-  hidden: { opacity: 0, y: 40 },
-  visible: (custom: number = 0) => ({
+const fadeInUp: Variants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: (delay: number = 0) => ({
     opacity: 1,
     y: 0,
     transition: {
-      type: "tween",
-      duration: 0.7,
-      delay: custom,
+      duration: 0.6,
+      delay,
       ease: heroEase,
     },
   }),
 };
 
-const cardVariants: Variants = {
-  hidden: { opacity: 0, y: 24 },
-  visible: (custom: number = 0) => ({
+const scaleIn: Variants = {
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: {
     opacity: 1,
-    y: 0,
+    scale: 1,
     transition: {
-      duration: 0.6,
-      delay: 0.4 + custom * 0.1,
-      ease: "easeOut",
+      duration: 0.5,
+      ease: heroEase,
     },
-  }),
+  },
 };
 
-const features = [
+const benefits = [
   {
-    title: "Macro-Perfect Plans",
-    description: "Precision nutrition for your cut, bulk, or maintenance goals. Every macro calculated for your body.",
-    icon: "💪",
+    title: "Expert-Crafted Plans",
+    description: "Personalized meal plans designed by certified nutrition coaches, not AI algorithms.",
   },
   {
-    title: "Recipe Library",
-    description: "Hundreds of high-protein, macro-friendly recipes to fuel your training and hit your targets.",
-    icon: "🔥",
+    title: "Precision Macros",
+    description: "Every macro calculated specifically for your body, goals, and training schedule.",
   },
   {
-    title: "Progress Tracking",
-    description: "Monitor your gains, track macros, and see real results with our fitness-focused dashboard.",
-    icon: "📈",
+    title: "Flexible & Adaptable",
+    description: "Update your plan as your goals evolve. From cut to bulk, we've got you covered.",
   },
   {
-    title: "Expert Coaching",
-    description: "Get guidance from certified nutrition coaches who understand training and performance.",
-    icon: "🎯",
+    title: "Complete Support",
+    description: "Access to recipe library, dashboard tracking, and direct coach communication.",
   },
 ];
 
-const workflowSteps = [
+const process = [
   {
-    title: "1. Pick Your Speed",
-    description: "Choose Basic (5 days), Pro (3 days), or Elite (1 day) delivery. The faster you want results, the faster we deliver.",
+    step: "01",
+    title: "Choose Your Plan",
+    description: "Select Essential, Professional, or Premium based on your delivery timeline needs.",
   },
   {
-    title: "2. Share Your Stats",
-    description: "Tell us your weight, body fat, training schedule, goals (cut/bulk/recomp), and dietary preferences.",
+    step: "02",
+    title: "Complete Assessment",
+    description: "Share your goals, stats, dietary preferences, and training schedule through our wizard.",
   },
   {
-    title: "3. Get Your Plan",
-    description: "A nutrition expert designs your macro-perfect meal plan. Delivered to your dashboard and email.",
-  },
-];
-
-const deliverables = [
-  "Precise daily macro targets (calories, protein, carbs, fats) for your goals",
-  "Complete meal plan: breakfast, lunch, dinner, pre/post-workout, snacks",
-  "High-protein recipes optimized for muscle growth and recovery",
-  "Macro breakdown for every single meal and snack",
-  "Meal prep instructions to save time and stay consistent",
-  "Access to Recipe Library with 200+ macro-friendly recipes",
-  "Private dashboard to track progress and manage your nutrition",
-  "Email delivery of your complete transformation plan",
-  "Request plan updates as you progress (cut → bulk, etc.)",
-  "Progress tracking: weight, body fat, strength gains, photos",
-];
-
-const dashboardFeatures = [
-  {
-    title: "Meal Plan Hub",
-    description: "View your complete macro-perfect meal plan with all meals, macros, and prep instructions.",
-  },
-  {
-    title: "Progress Tracker",
-    description: "Log weight, body fat, measurements, and strength gains. See your transformation data.",
-  },
-  {
-    title: "Recipe Library",
-    description: "Search 200+ high-protein recipes by macros, meal type, and dietary preferences.",
-  },
-  {
-    title: "Profile & Stats",
-    description: "Update your body stats, training schedule, and goals (cut/bulk/recomp) anytime.",
-  },
-  {
-    title: "Plan Modifications",
-    description: "Request updates when switching goals (e.g., cut to bulk) or adjusting macros.",
-  },
-  {
-    title: "Referral Rewards",
-    description: "Earn rewards when you refer friends. Build your fitness community.",
-  },
-];
-
-const packages = [
-  {
-    title: "Basic",
-    description: "For those ready to commit. Get your macro-perfect plan in 5 business days.",
-    delivery: "5 business days",
-    highlight: false,
-  },
-  {
-    title: "Pro",
-    description: "Faster delivery, priority support, and maximum personalization. Most popular choice.",
-    delivery: "3 business days",
-    highlight: true,
-  },
-  {
-    title: "Elite",
-    description: "Want results yesterday? Get your plan in 24 hours. For serious athletes.",
-    delivery: "1 business day",
-    highlight: false,
+    step: "03",
+    title: "Get Your Plan",
+    description: "Receive your personalized meal plan within 24 hours to 5 business days, depending on your tier.",
   },
 ];
 
 const homepageFAQs = [
   {
-    question: "How does MacroMinded work?",
-    answer: "Choose your plan (Essential, Professional, or Premium), complete the macro wizard with your goals and stats, and our nutrition experts design your personalized meal plan. You'll receive it via email and in your dashboard within the delivery timeframe you selected.",
+    question: "How does the meal planning process work?",
+    answer: "After selecting your plan, you'll complete a comprehensive assessment covering your fitness goals, body composition, activity level, dietary restrictions, and food preferences. Our nutrition experts then design a custom meal plan with precise macro targets, meal timing, and recipes tailored to your needs. Your plan is delivered to your dashboard and email within your selected timeframe.",
   },
   {
-    question: "What's included in my meal plan?",
-    answer: "Every plan includes precise daily macro targets, a complete meal plan (breakfast, lunch, dinner, snacks, pre/post-workout), high-protein recipes optimized for your goals, macro breakdowns for every meal, meal prep instructions, and access to our Recipe Library with 200+ macro-friendly recipes.",
+    question: "What's included in each plan?",
+    answer: "All plans include personalized daily macro targets, a complete 7-day meal plan, high-protein recipe recommendations, meal prep guidance, and access to your private dashboard. Professional and Premium tiers also include full Recipe Library access with 200+ macro-friendly recipes and priority email support.",
   },
   {
-    question: "How long does it take to receive my meal plan?",
-    answer: "Essential plans: 3-5 business days. Professional plans: 24-48 hours. Premium plans: 24 hours. Your coach will notify you via email as soon as your plan is ready.",
+    question: "Can plans accommodate dietary restrictions?",
+    answer: "Absolutely. During your assessment, you'll specify any dietary restrictions, allergies, food preferences, or intolerances. Our coaches design every meal plan around these requirements to ensure it's both effective and sustainable for your lifestyle.",
   },
   {
-    question: "Can you accommodate dietary restrictions?",
-    answer: "Yes! During the macro wizard, you'll provide your dietary restrictions, allergies, food preferences, and dislikes. Our coaches design your meal plan around these requirements to ensure it fits your lifestyle.",
+    question: "How do plan updates work?",
+    answer: "Essential plans include 1 update, Professional includes 2, and Premium includes 3. Updates are perfect for adjusting macros as you progress, switching goals (e.g., cut to bulk), or making changes based on your results. Submit update requests directly through your dashboard.",
   },
   {
-    question: "What if I need to change my plan after receiving it?",
-    answer: "All plans include meal plan updates. Essential includes 1 update, Professional includes 2, and Premium includes 3. You can request changes anytime through your dashboard, and your coach will adjust your plan accordingly.",
-  },
-  {
-    question: "Do I get access to the Recipe Library?",
-    answer: "Yes! Professional and Premium plans include full access to our Recipe Library with 200+ high-protein, macro-friendly recipes. You can search by macros, meal type, dietary preferences, and more.",
-  },
-  {
-    question: "Is there a money-back guarantee?",
-    answer: "We're committed to your success. If you're not satisfied with your meal plan, contact us within 7 days of delivery for a full refund or plan revision.",
-  },
-  {
-    question: "Can I use referral credits?",
-    answer: "Yes! Refer friends and earn credits for every successful referral. Credits can be used for meal plan updates and other premium features. The more you refer, the more you save.",
-  },
-  {
-    question: "Do I need to download an app?",
-    answer: "No app required! Access everything through your personalized dashboard on any device. Your meal plan, recipes, progress tracking, and support are all in one place.",
-  },
-  {
-    question: "What makes MacroMinded different from other meal planning services?",
-    answer: "We're not AI-generated or cookie-cutter. Real nutrition experts design every plan specifically for you. We understand training, performance, and physique goals. Plus, you get direct access to your coach and a platform built for athletes who take their nutrition seriously.",
+    question: "Is there a guarantee?",
+    answer: "Yes. We offer a 7-day satisfaction guarantee. If you're not satisfied with your meal plan, contact us for a full refund or complimentary revision.",
   },
 ];
 
 function FAQAccordion() {
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(0); // First FAQ open by default
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {homepageFAQs.map((faq, index) => (
         <motion.div
           key={index}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, amount: 0.3 }}
-          variants={cardVariants}
+          viewport={{ once: true, amount: 0.2 }}
+          variants={fadeInUp}
           custom={index * 0.1}
-          className="rounded-2xl border border-border/70 bg-muted/50 overflow-hidden shadow-[0_0_40px_-20px_rgba(215,38,61,0.3)] backdrop-blur"
+          className="group rounded-xl border border-neutral-800/50 bg-neutral-900/50 backdrop-blur-sm overflow-hidden transition-all hover:border-[#D7263D]/30 hover:bg-neutral-900/80"
         >
           <button
             onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}
-            className="w-full flex items-center justify-between p-6 text-left hover:bg-muted/70 transition-colors group"
+            className="w-full flex items-center justify-between p-5 text-left transition-colors"
             type="button"
           >
-            <span className="text-base font-semibold uppercase tracking-[0.2em] text-foreground pr-6 group-hover:text-accent transition-colors">
+            <span className="text-sm font-semibold text-white pr-4 leading-relaxed">
               {faq.question}
             </span>
             {expandedIndex === index ? (
-              <ChevronUpIcon className="h-5 w-5 text-accent flex-shrink-0" />
+              <ChevronUpIcon className="h-5 w-5 text-[#D7263D] flex-shrink-0" />
             ) : (
-              <ChevronDownIcon className="h-5 w-5 text-foreground/60 flex-shrink-0 group-hover:text-accent transition-colors" />
+              <ChevronDownIcon className="h-5 w-5 text-neutral-500 flex-shrink-0 group-hover:text-[#D7263D] transition-colors" />
             )}
           </button>
           <AnimatePresence>
@@ -212,9 +134,9 @@ function FAQAccordion() {
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="border-t border-border/50 bg-muted/30 overflow-hidden"
+                className="border-t border-neutral-800/50 bg-neutral-950/50 overflow-hidden"
               >
-                <p className="p-6 text-sm uppercase tracking-[0.25em] text-foreground/70 leading-relaxed">
+                <p className="p-5 text-sm text-neutral-300 leading-relaxed">
                   {faq.answer}
                 </p>
               </motion.div>
@@ -228,100 +150,114 @@ function FAQAccordion() {
 
 export default function Home() {
   return (
-    <div className="relative isolate overflow-hidden bg-background">
+    <div className="relative min-h-screen bg-black overflow-hidden">
+      {/* Animated Background */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-[#D7263D]/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-[#D7263D]/5 rounded-full blur-[100px]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black via-black to-black" />
+      </div>
+
+      {/* Hero Section */}
+      <section className="relative min-h-screen flex items-center justify-center px-6 py-32">
+        <div className="max-w-5xl mx-auto text-center">
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1.2 }}
-        className="pointer-events-none absolute inset-0"
-      >
-        <div className="absolute -top-24 left-1/2 h-[620px] w-[620px] -translate-x-1/2 rounded-full bg-accent/30 blur-3xl" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#1a1a1a_0%,rgba(0,0,0,0.85)_55%,#000000_95%)]" />
-        <motion.div
-          initial={{ opacity: 0, rotate: 15 }}
-          animate={{ opacity: 0.5, rotate: 0 }}
-          transition={{ duration: 1.8, ease: "easeOut" }}
-          className="absolute inset-y-0 left-1/4 w-1/2 bg-gradient-to-b from-transparent via-accent/10 to-transparent blur-3xl"
-        />
+            initial="hidden"
+            animate="visible"
+            variants={fadeInUp}
+            custom={0.1}
+            className="mb-6"
+          >
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#D7263D]/10 border border-[#D7263D]/20 text-[#D7263D] text-xs font-semibold uppercase tracking-wider">
+              <SparklesIcon className="h-4 w-4" />
+              Personalized Nutrition Plans
+            </span>
       </motion.div>
 
-      {/* HERO */}
-      <section className="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-6xl flex-col items-center justify-center px-6 py-24 text-center">
         <motion.h1
           initial="hidden"
           animate="visible"
+            variants={fadeInUp}
           custom={0.2}
-          variants={heroTextVariants}
-          className="text-4xl font-bold uppercase tracking-[0.2em] text-foreground sm:text-6xl"
+            className="text-5xl sm:text-6xl lg:text-7xl font-display font-bold text-white mb-6 leading-tight tracking-tight"
         >
-          Fuel Your Gains. Hit Your Macros. Transform Your Body.
+            Custom Meal Plans
+            <br />
+            <span className="text-[#D7263D]">Built for Your Goals</span>
         </motion.h1>
+
         <motion.p
           initial="hidden"
           animate="visible"
+            variants={fadeInUp}
           custom={0.3}
-          variants={heroTextVariants}
-          className="mt-6 max-w-3xl text-base uppercase tracking-[0.28em] text-foreground/70 sm:text-lg"
+            className="text-lg sm:text-xl text-neutral-400 mb-10 max-w-2xl mx-auto leading-relaxed"
         >
-          No AI bullshit. No cookie-cutter plans. Real nutrition experts crafting meal plans for your cut, bulk, or recomp.
+            Expert-designed nutrition plans tailored to your body, training schedule, and physique goals. 
+            No cookie-cutter solutions. Just results.
         </motion.p>
+
         <motion.div
           initial="hidden"
           animate="visible"
+            variants={fadeInUp}
           custom={0.4}
-          variants={heroTextVariants}
-          className="mt-12 flex flex-col gap-4 sm:flex-row"
+            className="flex flex-col sm:flex-row items-center justify-center gap-4"
         >
           <Link
             href="/packages"
-            className="rounded-full bg-accent px-8 py-3 text-xs font-semibold uppercase tracking-[0.32em] text-background transition hover:bg-transparent hover:text-accent hover:border hover:border-accent"
+              className="group relative px-8 py-4 bg-[#D7263D] text-white font-semibold rounded-lg transition-all hover:bg-[#D7263D]/90 hover:shadow-[0_0_30px_-10px_rgba(215,38,61,0.8)] hover:scale-105"
           >
-            Start My Transformation
+              Get Started
+              <ArrowRightIcon className="inline-block ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
           </Link>
           <Link
             href="/dashboard"
-            className="rounded-full border border-accent px-8 py-3 text-xs font-semibold uppercase tracking-[0.32em] text-accent transition hover:bg-accent hover:text-background"
+              className="px-8 py-4 border border-neutral-800 text-neutral-300 font-semibold rounded-lg transition-all hover:border-[#D7263D]/50 hover:text-white hover:bg-neutral-900/50"
           >
-            See The Dashboard
+              View Dashboard
           </Link>
         </motion.div>
+        </div>
       </section>
 
-      {/* FEATURE CARDS */}
-      <section className="relative px-6 py-20">
-        <div className="mx-auto max-w-6xl">
+      {/* Benefits Section */}
+      <section className="relative py-24 px-6">
+        <div className="max-w-6xl mx-auto">
           <motion.div
           initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.3 }}
-            variants={heroTextVariants}
-            className="mb-12 text-center"
+            variants={fadeInUp}
+            className="text-center mb-16"
           >
-            <h2 className="text-3xl font-bold uppercase tracking-[0.2em] text-foreground sm:text-4xl">
-              Built For Athletes. Designed For Results.
+            <h2 className="text-4xl sm:text-5xl font-display font-bold text-white mb-4">
+              Why Choose MacroMinded
             </h2>
-            <p className="mt-4 text-sm uppercase tracking-[0.32em] text-foreground/60">
-              Everything you need to fuel your training and hit your physique goals
+            <p className="text-neutral-400 text-lg max-w-2xl mx-auto">
+              Professional nutrition coaching meets cutting-edge technology for results-driven meal planning.
             </p>
           </motion.div>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {features.map((feature, index) => (
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {benefits.map((benefit, index) => (
               <motion.div
-                key={feature.title}
+                key={benefit.title}
                 initial="hidden"
                 whileInView="visible"
-                viewport={{ once: true, amount: 0.3 }}
-                variants={cardVariants}
-                custom={index}
-                whileHover={{ scale: 1.03, y: -4 }}
-                className="rounded-3xl border border-border/70 bg-muted/50 px-6 py-8 text-left shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] backdrop-blur"
+                viewport={{ once: true, amount: 0.2 }}
+                variants={scaleIn}
+                custom={index * 0.1}
+                className="group p-6 rounded-xl border border-neutral-800/50 bg-gradient-to-br from-neutral-900/50 to-neutral-950/50 backdrop-blur-sm transition-all hover:border-[#D7263D]/30 hover:shadow-[0_0_40px_-20px_rgba(215,38,61,0.4)] hover:scale-[1.02]"
               >
-                <div className="mb-4 text-4xl">{feature.icon}</div>
-                <h3 className="text-xl font-semibold uppercase tracking-[0.2em] text-foreground">
-                  {feature.title}
+                <div className="w-12 h-12 rounded-lg bg-[#D7263D]/10 border border-[#D7263D]/20 flex items-center justify-center mb-4 group-hover:bg-[#D7263D]/20 transition-colors">
+                  <CheckIcon className="h-6 w-6 text-[#D7263D]" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">
+                  {benefit.title}
                 </h3>
-                <p className="mt-3 text-sm uppercase tracking-[0.28em] text-foreground/60">
-                  {feature.description}
+                <p className="text-neutral-400 leading-relaxed">
+                  {benefit.description}
                 </p>
               </motion.div>
             ))}
@@ -329,241 +265,127 @@ export default function Home() {
         </div>
       </section>
 
-      {/* HOW IT WORKS */}
-      <section className="relative px-6 py-20">
-        <div className="mx-auto max-w-4xl">
+      {/* Process Section */}
+      <section className="relative py-24 px-6 bg-gradient-to-b from-black via-neutral-950/50 to-black">
+        <div className="max-w-5xl mx-auto">
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.3 }}
-            variants={heroTextVariants}
-            className="mb-12 text-center"
+            variants={fadeInUp}
+            className="text-center mb-16"
           >
-            <h2 className="text-3xl font-bold uppercase tracking-[0.2em] text-foreground sm:text-4xl">
+            <h2 className="text-4xl sm:text-5xl font-display font-bold text-white mb-4">
               How It Works
             </h2>
-            <p className="mt-4 text-sm uppercase tracking-[0.32em] text-foreground/60">
-              Three steps to your macro-perfect meal plan. No fluff, just results.
+            <p className="text-neutral-400 text-lg">
+              Three simple steps to your personalized meal plan.
             </p>
           </motion.div>
-          <div className="grid gap-8 md:grid-cols-3">
-            {workflowSteps.map((step, index) => (
+
+          <div className="space-y-8">
+            {process.map((item, index) => (
               <motion.div
-                key={step.title}
+                key={item.step}
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, amount: 0.3 }}
-                variants={cardVariants}
-                custom={index}
-                whileHover={{ scale: 1.03 }}
-                className="rounded-3xl border border-border/70 bg-muted/50 px-6 py-8 text-left shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] backdrop-blur"
+                variants={fadeInUp}
+                custom={index * 0.15}
+                className="flex flex-col sm:flex-row gap-6 p-8 rounded-xl border border-neutral-800/50 bg-neutral-900/30 backdrop-blur-sm hover:border-[#D7263D]/30 transition-all group"
               >
-                <h3 className="text-xl font-semibold uppercase tracking-[0.2em] text-foreground">
-                  {step.title}
+                <div className="flex-shrink-0">
+                  <div className="w-16 h-16 rounded-xl bg-[#D7263D] flex items-center justify-center">
+                    <span className="text-2xl font-display font-bold text-white">
+                      {item.step}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-[#D7263D] transition-colors">
+                    {item.title}
                 </h3>
-                <p className="mt-3 text-sm uppercase tracking-[0.28em] text-foreground/60">
-                  {step.description}
+                  <p className="text-neutral-400 leading-relaxed">
+                    {item.description}
                 </p>
+                </div>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* WHAT YOU GET */}
-      <section className="relative px-6 py-20">
-        <div className="mx-auto max-w-4xl">
+      {/* Pricing CTA Section */}
+      <section className="relative py-24 px-6">
+        <div className="max-w-4xl mx-auto">
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.3 }}
-            variants={heroTextVariants}
-            className="mb-12 text-center"
+            variants={scaleIn}
+            className="text-center p-12 rounded-2xl border border-neutral-800/50 bg-gradient-to-br from-neutral-900/80 to-neutral-950/80 backdrop-blur-sm shadow-[0_0_60px_-30px_rgba(215,38,61,0.5)]"
           >
-            <h2 className="text-3xl font-bold uppercase tracking-[0.2em] text-foreground sm:text-4xl">
-              What's In Your Plan
+            <h2 className="text-4xl sm:text-5xl font-display font-bold text-white mb-4">
+              Ready to Transform Your Nutrition?
             </h2>
-            <p className="mt-4 text-sm uppercase tracking-[0.32em] text-foreground/60">
-              Everything you need to fuel your training and transform your physique
+            <p className="text-neutral-400 text-lg mb-8 max-w-2xl mx-auto">
+              Choose from Essential, Professional, or Premium plans. All include expert-designed meal plans, 
+              personalized macros, and ongoing support.
             </p>
+            <Link
+              href="/packages"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-[#D7263D] text-white font-semibold rounded-lg transition-all hover:bg-[#D7263D]/90 hover:shadow-[0_0_30px_-10px_rgba(215,38,61,0.8)] hover:scale-105"
+            >
+              View Plans & Pricing
+              <ArrowRightIcon className="h-5 w-5" />
+            </Link>
           </motion.div>
-          <div className="grid gap-4 md:grid-cols-2">
-            {deliverables.map((item, index) => (
-              <motion.div
-                key={item}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.3 }}
-                variants={cardVariants}
-                custom={index}
-                className="rounded-2xl border border-border/70 bg-muted/40 px-6 py-5 text-left text-sm uppercase tracking-[0.25em] text-foreground/70"
-              >
-                • {item}
-              </motion.div>
-            ))}
-          </div>
         </div>
       </section>
 
-      {/* DASHBOARD FEATURES */}
-      <section className="relative px-6 py-20">
-        <div className="mx-auto max-w-6xl">
+      {/* FAQ Section */}
+      <section id="faq" className="relative py-24 px-6 bg-gradient-to-b from-black via-neutral-950/50 to-black">
+        <div className="max-w-3xl mx-auto">
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.3 }}
-            variants={heroTextVariants}
-            className="mb-12 text-center"
+            variants={fadeInUp}
+            className="text-center mb-12"
           >
-            <h2 className="text-3xl font-bold uppercase tracking-[0.2em] text-foreground sm:text-4xl">
-              Your Command Center
-            </h2>
-            <p className="mt-4 text-sm uppercase tracking-[0.32em] text-foreground/60">
-              Track macros, monitor progress, and manage your nutrition like a pro
-            </p>
-          </motion.div>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {dashboardFeatures.map((feature, index) => (
-              <motion.div
-                key={feature.title}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.3 }}
-                variants={cardVariants}
-                custom={index}
-                whileHover={{ scale: 1.02 }}
-                className="rounded-3xl border border-border/70 bg-muted/50 px-6 py-6 text-left shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] backdrop-blur"
-              >
-                <h3 className="text-lg font-semibold uppercase tracking-[0.2em] text-foreground">
-                  {feature.title}
-                </h3>
-                <p className="mt-2 text-sm uppercase tracking-[0.28em] text-foreground/60">
-                  {feature.description}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* PACKAGES */}
-      <section className="relative px-6 py-20">
-        <div className="mx-auto max-w-5xl">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.3 }}
-            variants={heroTextVariants}
-            className="mb-12 text-center"
-          >
-            <h2 className="text-3xl font-bold uppercase tracking-[0.2em] text-foreground sm:text-4xl">
-              Pick Your Speed
-            </h2>
-            <p className="mt-4 text-sm uppercase tracking-[0.32em] text-foreground/60">
-              Choose how fast you want to start your transformation
-            </p>
-          </motion.div>
-          <div className="grid gap-8 md:grid-cols-3">
-            {packages.map((pkg, index) => (
-              <motion.div
-                key={pkg.title}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.3 }}
-                variants={cardVariants}
-              custom={index}
-                whileHover={{ scale: 1.03 }}
-                className={`rounded-3xl border px-6 py-8 shadow-[0_0_60px_-35px_rgba(215,38,61,0.6)] backdrop-blur ${
-                  pkg.highlight
-                    ? "border-accent bg-accent/10"
-                    : "border-border/70 bg-muted/50"
-                }`}
-              >
-                <h3
-                  className={`text-3xl font-bold uppercase tracking-[0.2em] ${
-                    pkg.highlight ? "text-accent" : "text-foreground"
-                  }`}
-                >
-                  {pkg.title}
-                </h3>
-                <p className="mt-3 text-sm font-semibold uppercase tracking-[0.3em] text-foreground/80">
-                  {pkg.delivery}
-                </p>
-                <p className="mt-3 text-sm uppercase tracking-[0.3em] text-foreground/60">
-                  {pkg.description}
-                </p>
-                <Link
-                  href="/packages"
-                  className={`mt-8 inline-flex w-full items-center justify-center rounded-full px-6 py-3 text-xs font-semibold uppercase tracking-[0.32em] transition ${
-                    pkg.highlight
-                      ? "border border-accent bg-accent text-background hover:bg-transparent hover:text-accent"
-                      : "border border-border/70 text-foreground hover:border-accent hover:text-accent"
-                  }`}
-                >
-                  Get Started
-                </Link>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ SECTION */}
-      <section id="faq" className="relative px-6 py-20">
-        <div className="mx-auto max-w-4xl">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.3 }}
-            variants={heroTextVariants}
-            className="mb-12 text-center"
-          >
-            <h2 className="text-3xl font-bold uppercase tracking-[0.2em] text-foreground sm:text-4xl">
+            <h2 className="text-4xl sm:text-5xl font-display font-bold text-white mb-4">
               Frequently Asked Questions
             </h2>
-            <p className="mt-4 text-sm uppercase tracking-[0.32em] text-foreground/60">
-              Everything you need to know before getting started
+            <p className="text-neutral-400">
+              Everything you need to know about our meal planning service.
             </p>
           </motion.div>
+
           <FAQAccordion />
         </div>
       </section>
 
-      {/* FINAL CTA */}
-      <section className="relative px-6 py-20 text-center">
-        <div className="mx-auto max-w-3xl">
-          <motion.h2
+      {/* Final CTA */}
+      <section className="relative py-24 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.3 }}
-            variants={heroTextVariants}
-            className="text-3xl font-bold uppercase tracking-[0.2em] text-foreground sm:text-4xl"
+            variants={fadeInUp}
           >
-            Ready to Transform Your Body?
-          </motion.h2>
-          <motion.p
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.3 }}
-            variants={heroTextVariants}
-            custom={0.1}
-            className="mt-4 text-sm uppercase tracking-[0.3em] text-foreground/60"
-          >
-            Stop guessing your macros. Start hitting your goals. Get your custom meal plan today.
-          </motion.p>
-        <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.3 }}
-            variants={heroTextVariants}
-            custom={0.2}
-            className="mt-10 flex justify-center"
-          >
+            <h2 className="text-4xl sm:text-5xl font-display font-bold text-white mb-6">
+              Start Your Transformation Today
+            </h2>
+            <p className="text-neutral-400 text-lg mb-10 max-w-2xl mx-auto">
+              Join athletes and fitness enthusiasts who trust MacroMinded for their nutrition goals.
+            </p>
             <Link
               href="/packages"
-              className="rounded-full bg-accent px-10 py-4 text-sm font-semibold uppercase tracking-[0.32em] text-background transition hover:bg-transparent hover:text-accent hover:border hover:border-accent"
+              className="inline-flex items-center gap-2 px-10 py-5 bg-[#D7263D] text-white font-semibold rounded-lg text-lg transition-all hover:bg-[#D7263D]/90 hover:shadow-[0_0_40px_-15px_rgba(215,38,61,0.8)] hover:scale-105"
             >
-              Start My Transformation
+              Get Your Custom Meal Plan
+              <ArrowRightIcon className="h-6 w-6" />
             </Link>
         </motion.div>
         </div>
