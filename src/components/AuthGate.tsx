@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
 import { useAppContext } from "@/context";
-import FullScreenLoader from "./FullScreenLoader";
+import FullScreenLoader from "./shared/FullScreenLoader";
 
 type AuthGateProps = {
   children: React.ReactNode;

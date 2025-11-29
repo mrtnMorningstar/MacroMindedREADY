@@ -2,7 +2,7 @@
 
 import { RequireAuth } from "@/components/guards/RequireAuth";
 import { RequireWizard } from "@/components/guards/RequireWizard";
-import DashboardShell from "@/components/layouts/DashboardShell";
+import DashboardShell from "@/components/layout/DashboardShell";
 import { useAuth } from "@/context";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

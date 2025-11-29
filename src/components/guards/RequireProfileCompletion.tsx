@@ -6,7 +6,7 @@ import { useAppContext } from "@/context";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import ProfileIncompleteBanner from "../banners/ProfileIncompleteBanner";
-import FullScreenLoader from "../FullScreenLoader";
+import FullScreenLoader from "@/components/shared/FullScreenLoader";
 
 type RequireProfileCompletionProps = {
   children: React.ReactNode;

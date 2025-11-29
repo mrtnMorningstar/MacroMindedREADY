@@ -1,4 +1,4 @@
-import FullScreenLoader from "@/components/FullScreenLoader";
+import FullScreenLoader from "@/components/shared/FullScreenLoader";
 
 /**
  * Root loading state - only used on initial page load, not during navigation.

@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Anton } from "next/font/google";
 import "./globals.css";
 import { AppProvider } from "@/context";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import Navbar from "@/components/shared/Navbar";
+import Footer from "@/components/shared/Footer";
 import PageTransition from "@/components/ui/PageTransition";
 import { ToastProvider } from "@/components/ui/Toast";
 import ImpersonationBanner from "@/components/admin/ImpersonationBanner";
-import { ErrorBoundaryWrapper } from "@/components/ErrorBoundaryWrapper";
-import { ConditionalLayout } from "@/components/ConditionalLayout";
+import { ErrorBoundaryWrapper } from "@/components/shared/ErrorBoundaryWrapper";
+import { ConditionalLayout } from "@/components/layout/ConditionalLayout";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

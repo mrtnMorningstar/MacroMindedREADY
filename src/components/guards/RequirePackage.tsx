@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppContext } from "@/context";
 import { getUserPurchase } from "@/lib/purchases";
-import FullScreenLoader from "../FullScreenLoader";
+import FullScreenLoader from "@/components/shared/FullScreenLoader";
 import PackageRequiredModal from "../modals/PackageRequiredModal";
 
 type RequirePackageProps = {

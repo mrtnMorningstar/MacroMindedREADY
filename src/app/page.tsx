@@ -115,10 +115,12 @@ function FAQAccordion() {
         >
           <button
             onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}
-            className="w-full flex items-center justify-between p-5 text-left transition-colors"
+            className="w-full flex items-center justify-between p-5 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-[#D7263D]/50 focus:ring-offset-2 focus:ring-offset-neutral-900"
             type="button"
+            aria-expanded={expandedIndex === index}
+            aria-controls={`faq-answer-${index}`}
           >
-            <span className="text-sm font-semibold text-white pr-4 leading-relaxed">
+            <span id={`faq-question-${index}`} className="text-sm font-semibold text-white pr-4 leading-relaxed">
               {faq.question}
             </span>
             {expandedIndex === index ? (
@@ -130,11 +132,14 @@ function FAQAccordion() {
           <AnimatePresence>
             {expandedIndex === index && (
               <motion.div
+                id={`faq-answer-${index}`}
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
                 className="border-t border-neutral-800/50 bg-neutral-950/50 overflow-hidden"
+                role="region"
+                aria-labelledby={`faq-question-${index}`}
               >
                 <p className="p-5 text-sm text-neutral-300 leading-relaxed">
                   {faq.answer}
@@ -151,8 +156,8 @@ function FAQAccordion() {
 export default function Home() {
   return (
     <div className="relative min-h-screen bg-gradient-to-b from-neutral-950 via-black to-neutral-950 overflow-hidden">
-      {/* Animated Background */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+      {/* Animated Background - absolute so it only appears on homepage */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
         {/* Animated gradient orbs */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -219,7 +224,7 @@ export default function Home() {
       </div>
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center px-6 py-32">
+      <section className="relative min-h-screen flex items-center justify-center px-6 py-32 z-10">
         {/* Floating background elements */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           {[...Array(6)].map((_, i) => (
@@ -308,7 +313,7 @@ export default function Home() {
       </section>
 
       {/* Benefits Section */}
-      <section className="relative py-24 px-6">
+      <section className="relative py-24 px-6 z-10">
         {/* Section background glow */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-neutral-950/30 to-transparent pointer-events-none" />
         
@@ -355,7 +360,7 @@ export default function Home() {
       </section>
 
       {/* Process Section */}
-      <section className="relative py-24 px-6 bg-gradient-to-b from-neutral-950/80 via-neutral-900/40 to-neutral-950/80">
+      <section className="relative py-24 px-6 bg-gradient-to-b from-neutral-950/80 via-neutral-900/40 to-neutral-950/80 z-10">
         {/* Animated accent lines */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <motion.div
@@ -421,7 +426,7 @@ export default function Home() {
       </section>
 
       {/* Pricing CTA Section */}
-      <section className="relative py-24 px-6">
+      <section className="relative py-24 px-6 z-10">
         {/* Background glow */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#D7263D]/5 to-transparent pointer-events-none" />
         
@@ -471,7 +476,7 @@ export default function Home() {
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" className="relative py-24 px-6 bg-gradient-to-b from-neutral-950/80 via-neutral-900/40 to-neutral-950/80">
+      <section id="faq" className="relative py-24 px-6 bg-gradient-to-b from-neutral-950/80 via-neutral-900/40 to-neutral-950/80 z-10">
         {/* Subtle animated background */}
         <div className="absolute inset-0 pointer-events-none">
           <motion.div
@@ -508,7 +513,7 @@ export default function Home() {
       </section>
 
       {/* Final CTA */}
-      <section className="relative py-24 px-6 bg-gradient-to-b from-neutral-950 to-black">
+      <section className="relative py-24 px-6 bg-gradient-to-b from-neutral-950 to-black z-10">
         {/* Radial gradient accent */}
         <div 
           className="absolute inset-0 pointer-events-none"

@@ -8,7 +8,7 @@ import { getImpersonationFromCookie } from "@/lib/impersonation";
 import AdminSidebar from "./AdminSidebar";
 import AdminContentWrapper from "./AdminContentWrapper";
 import ImpersonationBanner from "./ImpersonationBanner";
-import Navbar from "../Navbar";
+import Navbar from "../shared/Navbar";
 import { Bars3Icon } from "@heroicons/react/24/outline";
 
 type AdminLayoutProps = {

@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { signOut } from "firebase/auth";
 import { useAppContext } from "@/context";
 import { auth } from "@/lib/firebase";
-import SessionExpiredModal from "./modals/SessionExpiredModal";
+import SessionExpiredModal from "../modals/SessionExpiredModal";
 
 const publicNavLinks = [
   { href: "/", label: "Home" },
