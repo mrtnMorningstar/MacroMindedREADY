@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { signOut } from "firebase/auth";
-import { useAppContext } from "@/context/AppContext";
+import { useAppContext } from "@/context";
 import { auth } from "@/lib/firebase";
 import SessionExpiredModal from "./modals/SessionExpiredModal";
 

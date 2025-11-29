@@ -1,22 +1,73 @@
 @import "tailwindcss";
 
 :root {
+  /* Background & Surface */
   --background: #000000;
+  --surface: #1a1a1a;
   --foreground: #f5f5f5;
   --muted: #1a1a1a;
+  
+  /* Primary Colors */
+  --primary: #d7263d;
+  --primary-hover: #b81e33;
+  
+  /* Secondary Colors */
+  --secondary: #2563eb;
+  --secondary-hover: #1d4ed8;
+  
+  /* Accent Colors */
   --accent: #d7263d;
+  --accent-hover: #b81e33;
+  
+  /* Text Colors */
+  --text-primary: #f5f5f5;
+  --text-secondary: #a3a3a3;
+  --text-muted: #6b7280;
+  
+  /* Border & Divider */
   --border: #262626;
+  --border-light: #404040;
+  --border-dark: #171717;
+  
+  /* Spacing Scale (matches Tailwind default) */
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  --spacing-12: 3rem;
+  --spacing-16: 4rem;
+  --spacing-24: 6rem;
 }
 
 @theme inline {
+  /* Colors */
   --color-background: var(--background);
+  --color-surface: var(--surface);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
   --color-accent: var(--accent);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
   --color-border: var(--border);
+  
+  /* Fonts */
   --font-sans: var(--font-geist-sans);
   --font-display: var(--font-anton);
   --font-mono: var(--font-geist-mono);
+  
+  /* Spacing */
+  --spacing-xs: var(--spacing-1);
+  --spacing-sm: var(--spacing-2);
+  --spacing-md: var(--spacing-4);
+  --spacing-lg: var(--spacing-6);
+  --spacing-xl: var(--spacing-8);
+  --spacing-2xl: var(--spacing-12);
+  --spacing-3xl: var(--spacing-16);
 }
 
 *,

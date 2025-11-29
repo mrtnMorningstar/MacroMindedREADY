@@ -2,12 +2,12 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useAppContext } from "@/context/AppContext";
+import { useAuth } from "@/context";
 
 type Props = { children: React.ReactNode; redirectTo?: string };
 
 export function RequireAuth({ children, redirectTo = "/login" }: Props) {
-  const { user, loadingAuth, loadingUserDoc } = useAppContext();
+  const { user, loadingAuth, loadingUserDoc } = useAuth();
   const router = useRouter();
   const redirected = useRef(false);
   const hasAuthenticatedOnce = useRef(false);

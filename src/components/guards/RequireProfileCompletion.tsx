@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useAppContext } from "@/context/AppContext";
+import { useAppContext } from "@/context";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import ProfileIncompleteBanner from "../banners/ProfileIncompleteBanner";

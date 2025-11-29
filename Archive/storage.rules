@@ -1,0 +1,134 @@
+rules_version = '2';
+service firebase.storage {
+  // ============================================
+  // FIREBASE STORAGE SECURITY RULES
+  // ============================================
+  // 
+  // SECURITY PRINCIPLES:
+  // 1. Admin access: Only verified via custom claims (request.auth.token.admin == true)
+  // 2. User downloads: Users can ONLY download files in /mealPlans/{uid}/** where uid == request.auth.uid
+  // 3. User uploads: Users CANNOT upload anything anywhere
+  // 4. Admin access: Admins can upload, read, modify, delete any file
+  // 5. Directory listing: Only admins can list directories (prevents URL guessing)
+  // 6. URL guessing protection: Explicit path matching prevents access to other users' files
+  // ============================================
+  
+  // Helper: Check if user is signed in
+  function isSignedIn() {
+    return request.auth != null;
+  }
+
+  // Helper: Check if user is admin via custom claims
+  // This is the ONLY way to verify admin status - no Firestore lookups
+  function isAdmin() {
+    return isSignedIn() && request.auth.token.admin == true;
+  }
+
+  // Helper: Check if the path belongs to the authenticated user
+  function isOwner(userId) {
+    return isSignedIn() && request.auth.uid == userId;
+  }
+
+  match /b/{bucket}/o {
+    
+    // ============================================
+    // MEAL PLANS COLLECTION
+    // ============================================
+    // Path structure: /mealPlans/{userId}/plan.pdf
+    //                /mealPlans/{userId}/images/{imageName}
+    //                /mealPlans/{userId}/groceryList.pdf (optional)
+    
+    // Main meal plan PDF file
+    // Users can ONLY download their own plan.pdf (exact path match prevents guessing)
+    // Admins can read/write/delete any plan.pdf
+    match /mealPlans/{userId}/plan.pdf {
+      // Download: Only if user owns the file OR is admin
+      allow get: if isOwner(userId) || isAdmin();
+      
+      // Upload/Update/Delete: Only admins
+      allow write: if isAdmin();
+      
+      // Directory listing: Explicitly deny for non-admins (prevents discovery)
+      allow list: if isAdmin();
+    }
+
+    // Meal plan images
+    // Users can ONLY download their own images (exact path match prevents guessing)
+    // Admins can read/write/delete any images
+    match /mealPlans/{userId}/images/{imageName} {
+      // Download: Only if user owns the file OR is admin
+      allow get: if isOwner(userId) || isAdmin();
+      
+      // Upload/Update/Delete: Only admins
+      allow write: if isAdmin();
+      
+      // Directory listing: Explicitly deny for non-admins (prevents discovery)
+      allow list: if isAdmin();
+    }
+
+    // Grocery list PDF (optional)
+    // Users can ONLY download their own grocery list
+    // Admins can read/write/delete any grocery list
+    match /mealPlans/{userId}/groceryList.pdf {
+      // Download: Only if user owns the file OR is admin
+      allow get: if isOwner(userId) || isAdmin();
+      
+      // Upload/Update/Delete: Only admins
+      allow write: if isAdmin();
+      
+      // Directory listing: Explicitly deny for non-admins
+      allow list: if isAdmin();
+    }
+
+    // Any other files under mealPlans/{userId}/ (catch-all for future files)
+    // Users can ONLY download if they own the path
+    // Admins can do everything
+    match /mealPlans/{userId}/{allOtherFiles=**} {
+      // Download: Only if user owns the file OR is admin
+      allow get: if isOwner(userId) || isAdmin();
+      
+      // Upload/Update/Delete: Only admins (users CANNOT upload)
+      allow write: if isAdmin();
+      
+      // Directory listing: Explicitly deny for non-admins (prevents URL guessing)
+      allow list: if isAdmin();
+    }
+
+    // ============================================
+    // DIRECTORY LISTING RESTRICTIONS
+    // ============================================
+    // These rules prevent non-admin users from listing directory contents
+    // This is critical to prevent URL guessing attacks
+    
+    // Listing mealPlans root - only admins
+    match /mealPlans {
+      allow list: if isAdmin();
+      allow read, write: if false; // Explicitly deny all other operations
+    }
+
+    // Listing specific user's mealPlans directory - only admins
+    match /mealPlans/{userId} {
+      allow list: if isAdmin();
+      allow read, write: if false; // Explicitly deny all other operations
+    }
+
+    // Listing images directory - only admins
+    match /mealPlans/{userId}/images {
+      allow list: if isAdmin();
+      allow read, write: if false; // Explicitly deny all other operations
+    }
+
+    // ============================================
+    // GLOBAL DENY RULE
+    // ============================================
+    // Deny access to ALL other paths not explicitly allowed above
+    // This ensures that:
+    // 1. Users cannot access files outside /mealPlans/{their-uid}/**
+    // 2. Users cannot upload to any location
+    // 3. No paths are accidentally exposed
+    
+    match /{allOtherPaths=**} {
+      allow read, write, list: if false;
+    }
+  }
+}

@@ -18,7 +18,7 @@ import {
   GiftIcon as GiftIconSolid,
   ChatBubbleLeftRightIcon as ChatBubbleLeftRightIconSolid,
 } from "@heroicons/react/24/solid";
-import { useAppContext } from "@/context/AppContext";
+import { useAuth } from "@/context";
 
 type DashboardSidebarProps = {
   isOpen: boolean;
@@ -63,7 +63,7 @@ export default function DashboardSidebar({
   onClose,
 }: DashboardSidebarProps) {
   const pathname = usePathname();
-  const { loadingAuth, loadingUserDoc } = useAppContext();
+  const { loadingAuth, loadingUserDoc } = useAuth();
   const loading = loadingAuth || loadingUserDoc;
 
   const isActive = (href: string) => {

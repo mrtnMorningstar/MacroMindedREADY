@@ -2,10 +2,10 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { useAppContext } from "@/context/AppContext";
+import { useAuth } from "@/context";
 
 export function RequireWizard({ children }: { children: React.ReactNode }) {
-  const { user, userDoc, loadingAuth, loadingUserDoc } = useAppContext();
+  const { user, userDoc, loadingAuth, loadingUserDoc } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const hasRenderedOnce = useRef(false);

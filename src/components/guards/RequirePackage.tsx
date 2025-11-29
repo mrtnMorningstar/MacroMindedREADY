@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAppContext } from "@/context/AppContext";
+import { useAppContext } from "@/context";
 import { getUserPurchase } from "@/lib/purchases";
 import FullScreenLoader from "../FullScreenLoader";
 import PackageRequiredModal from "../modals/PackageRequiredModal";

@@ -3,10 +3,10 @@
 import { RequireAuth } from "@/components/guards/RequireAuth";
 import { RequireWizard } from "@/components/guards/RequireWizard";
 import DashboardShell from "@/components/layouts/DashboardShell";
-import { useAppContext } from "@/context/AppContext";
+import { useAuth } from "@/context";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { loadingAuth, user } = useAppContext();
+  const { loadingAuth, user } = useAuth();
   
   // Only show overlay on very first load (before we have a user)
   const isFirstLoad = loadingAuth && !user;

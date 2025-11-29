@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { useAppContext } from "@/context/AppContext";
+import { useAppContext } from "@/context";
 import { useToast } from "@/components/ui/Toast";
 
 export type AdminSettings = {

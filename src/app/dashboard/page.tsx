@@ -16,7 +16,7 @@ import {
 
 import LockedDashboard from "@/components/dashboard/LockedDashboard";
 import DashboardCard from "@/components/dashboard/DashboardCard";
-import { useAppContext } from "@/context/AppContext";
+import { useAppContext } from "@/context";
 import { db } from "@/lib/firebase";
 import { parseFirestoreDate } from "@/lib/utils/date";
 import { progressSteps, type MealPlanStatusType } from "@/types/dashboard";

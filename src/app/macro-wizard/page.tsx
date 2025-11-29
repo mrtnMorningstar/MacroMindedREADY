@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { auth } from "@/lib/firebase";
-import { useAppContext } from "@/context/AppContext";
+import { useAppContext } from "@/context";
 import { useFriendlyError } from "@/hooks/useFriendlyError";
 import { useToast } from "@/components/ui/Toast";
 import { useRouter } from "next/navigation";

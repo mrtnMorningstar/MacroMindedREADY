@@ -1,6 +1,6 @@
 "use client";
 
-import { useAppContext } from "@/context/AppContext";
+import { useAppContext } from "@/context";
 
 export default function DebugAuthOverlay() {
   const c = useAppContext();

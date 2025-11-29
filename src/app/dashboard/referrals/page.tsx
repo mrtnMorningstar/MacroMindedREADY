@@ -8,7 +8,7 @@ import {
   ReferralsCard,
 } from "@/components/dashboard/client-components";
 import { DashboardCardSkeleton } from "@/components/skeletons";
-import { useAppContext } from "@/context/AppContext";
+import { useAppContext } from "@/context";
 import DashboardCard from "@/components/dashboard/DashboardCard";
 import StatCard from "@/components/admin/StatCard";
 

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { useAppContext } from "@/context/AppContext";
+import { useAppContext } from "@/context";
 import { getImpersonationFromCookie } from "@/lib/impersonation";
 import AdminSidebar from "./AdminSidebar";
 import AdminContentWrapper from "./AdminContentWrapper";

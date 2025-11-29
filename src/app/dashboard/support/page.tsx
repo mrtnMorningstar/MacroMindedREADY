@@ -11,7 +11,7 @@ import {
   ExclamationTriangleIcon,
   ChatBubbleLeftRightIcon,
 } from "@heroicons/react/24/outline";
-import { useAppContext } from "@/context/AppContext";
+import { useAppContext } from "@/context";
 import {
   LockedDashboardScreen,
 } from "@/components/dashboard/client-components";

@@ -7,7 +7,7 @@ import {
   LockedDashboardScreen,
   ProfileSummary,
 } from "@/components/dashboard/client-components";
-import { useAppContext } from "@/context/AppContext";
+import { useAppContext } from "@/context";
 import { CTA_BUTTON_CLASSES } from "@/lib/ui";
 import ProfileSkeleton from "@/components/skeletons/ProfileSkeleton";
 import DashboardCard from "@/components/dashboard/DashboardCard";

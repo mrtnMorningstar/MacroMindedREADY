@@ -1,0 +1,292 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Check admin status via custom claims (NOT Firestore field)
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // ============================================
+    // SCHEMA VALIDATION FUNCTIONS
+    // ============================================
+
+    // Validate profile object - all fields must be strings
+    function isValidProfile(profile) {
+      return profile is map &&
+        (!('height' in profile) || profile.height is string) &&
+        (!('weight' in profile) || profile.weight is string) &&
+        (!('age' in profile) || profile.age is string) &&
+        (!('gender' in profile) || profile.gender is string) &&
+        (!('activityLevel' in profile) || profile.activityLevel is string) &&
+        (!('goal' in profile) || profile.goal is string) &&
+        (!('dietaryRestrictions' in profile) || profile.dietaryRestrictions is string) &&
+        (!('allergies' in profile) || profile.allergies is string) &&
+        (!('likes' in profile) || profile.likes is string) &&
+        (!('dislikes' in profile) || profile.dislikes is string) &&
+        (!('preferences' in profile) || profile.preferences is string);
+    }
+
+    // Validate estimatedMacros - must contain numeric calories, protein, fats, carbs
+    function isValidEstimatedMacros(macros) {
+      return macros is map &&
+        macros.calories is int &&
+        macros.protein is int &&
+        macros.fats is int &&
+        macros.carbs is int &&
+        macros.calories >= 0 &&
+        macros.protein >= 0 &&
+        macros.fats >= 0 &&
+        macros.carbs >= 0;
+    }
+
+    // Validate user document on create/update
+    function isValidUserData(data, isCreate) {
+      // Profile validation (if present)
+      let profileValid = !('profile' in data && data.profile != null) || isValidProfile(data.profile);
+
+      // estimatedMacros validation (if present)
+      let macrosValid = !('estimatedMacros' in data && data.estimatedMacros != null) || isValidEstimatedMacros(data.estimatedMacros);
+
+      // macroWizardCompleted must be boolean (if present)
+      let wizardValid = !('macroWizardCompleted' in data && data.macroWizardCompleted != null) || data.macroWizardCompleted is bool;
+
+      // Admin-only fields that users cannot modify
+      let adminOnlyFields = [
+        'packageTier',
+        'mealPlanStatus',
+        'referralCredits',
+        'mealPlanFileURL',
+        'mealPlanImageURLs',
+        'groceryListURL',
+        'mealPlanDeliveredAt',
+        'role',
+        'email',
+        'displayName',
+        'referralCode',
+        'referredBy',
+        'createdAt',
+        'purchaseDate',
+        'deliveredAt'
+      ];
+
+      // On user updates, check that admin-only fields are not being modified
+      // (Admins can modify anything)
+      let adminFieldsValid = isCreate || isAdmin() || !request.resource.data.diff(resource.data).changedKeys().hasAny(adminOnlyFields);
+
+      return profileValid && macrosValid && wizardValid && adminFieldsValid;
+    }
+
+    // Validate planUpdateRequests document
+    function isValidPlanUpdateRequest(data) {
+      return data is map &&
+        data.userId is string &&
+        data.requestText is string &&
+        data.handled is bool;
+      // date is typically a timestamp set by serverTimestamp(), so we don't validate it here
+    }
+
+    // Validate purchases document
+    function isValidPurchase(data) {
+      return data is map &&
+        data.userId is string &&
+        data.planType is string &&
+        data.status is string &&
+        (!('amount' in data) || data.amount == null || data.amount is int || data.amount is float) &&
+        (!('mealPlanUrl' in data) || data.mealPlanUrl == null || data.mealPlanUrl is string) &&
+        (!('stripeSessionId' in data) || data.stripeSessionId == null || data.stripeSessionId is string) &&
+        (!('email' in data) || data.email == null || data.email is string);
+    }
+
+    // Validate recipes document
+    function isValidRecipe(data) {
+      return data is map &&
+        data.title is string &&
+        data.description is string &&
+        data.calories is int &&
+        data.protein is int &&
+        data.carbs is int &&
+        data.fats is int &&
+        data.ingredients is list &&
+        data.steps is list &&
+        (!('imageURL' in data) || data.imageURL is string) &&
+        (!('tags' in data) || data.tags is list);
+    }
+
+    // ============================================
+    // USERS COLLECTION
+    // ============================================
+
+    match /users/{userId} {
+      // Read: users can read themselves, admins can read all
+      allow read: if isOwner(userId) || isAdmin();
+
+      // Create: DENY all client-side writes
+      // User documents must be created via secure API route: /api/user/create-user-document
+      // This ensures proper validation, referral code verification, and security
+      allow create: if false;
+
+      // Update: DENY all client-side writes for regular users
+      // Profile and macro updates must go through secure API route: /api/user/submit-macro-wizard
+      // This ensures proper validation, permission checks, and security
+      // Admins can still update directly (though should use API routes for consistency)
+      allow update: if (
+        isAdmin() &&
+        isValidUserData(request.resource.data, false)
+      );
+
+      // Delete: users can delete their own doc, admins can delete any
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    // Allow admins to list all users (for admin panel)
+    match /users {
+      allow list: if isAdmin();
+    }
+
+    // ============================================
+    // PURCHASES COLLECTION
+    // ============================================
+
+    match /purchases/{purchaseId} {
+      // Read: admins can read all, users can only read their own purchases
+      allow read: if isAdmin() || (
+        isSignedIn() && 
+        resource.data.userId is string &&
+        resource.data.userId == request.auth.uid
+      );
+
+      // Create: authenticated users can create purchases, must be valid schema
+      // The userId must match the authenticated user (prevent spoofing)
+      allow create: if 
+        isSignedIn() &&
+        request.resource.data.userId == request.auth.uid &&
+        isValidPurchase(request.resource.data);
+
+      // Update: only admins can update purchases
+      allow update: if isAdmin() && isValidPurchase(request.resource.data);
+
+      // Delete: only admins can delete purchases
+      allow delete: if isAdmin();
+    }
+
+    // Allow admins to list all purchases (for admin panel)
+    match /purchases {
+      allow list: if isAdmin();
+    }
+
+    // ============================================
+    // PLAN UPDATE REQUESTS COLLECTION
+    // ============================================
+
+    match /planUpdateRequests/{requestId} {
+      // Read: admins can read all, users can only read their own requests
+      allow read: if isAdmin() || (
+        isSignedIn() &&
+        resource.data.userId is string &&
+        resource.data.userId == request.auth.uid
+      );
+
+      // Create: DENY all client-side writes
+      // Plan update requests must be created via secure API route: /api/user/create-plan-update-request
+      // This ensures proper validation, permission checks, and security
+      allow create: if false;
+
+      // Update: only admins can update requests (e.g., mark as handled)
+      allow update: if isAdmin();
+
+      // Delete: only admins can delete requests
+      allow delete: if isAdmin();
+    }
+
+    // Allow admins to list all plan update requests (for admin panel)
+    match /planUpdateRequests {
+      allow list: if isAdmin();
+    }
+
+    // ============================================
+    // RECIPES COLLECTION
+    // ============================================
+
+    match /recipes/{recipeId} {
+      // Read: authenticated users can read recipes
+      allow read: if isSignedIn();
+
+      // Write: only admins can create/update/delete recipes
+      // Must pass schema validation
+      allow create: if isAdmin() && isValidRecipe(request.resource.data);
+      allow update: if isAdmin() && isValidRecipe(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // Allow authenticated users to list recipes (for recipes page)
+    // Admins can also list
+    match /recipes {
+      allow list: if isSignedIn();
+    }
+
+    // ============================================
+    // ADMIN SETTINGS COLLECTION
+    // ============================================
+
+    match /adminSettings/{settingsId} {
+      // Read: only admins can read admin settings
+      allow read: if isAdmin();
+
+      // Create: only admins can create admin settings
+      allow create: if isAdmin();
+
+      // Update: only admins can update admin settings
+      allow update: if isAdmin();
+
+      // Delete: only admins can delete admin settings
+      allow delete: if isAdmin();
+    }
+
+    // Allow admins to list all admin settings
+    match /adminSettings {
+      allow list: if isAdmin();
+    }
+
+    // ============================================
+    // ADMIN ACTIVITY COLLECTION (for impersonation logs)
+    // ============================================
+
+    match /adminActivity/{activityId} {
+      // Read: only admins can read admin activity logs
+      allow read: if isAdmin();
+
+      // Create: only admins can create activity logs
+      allow create: if isAdmin();
+
+      // Update/Delete: prevent modification/deletion of activity logs
+      allow update, delete: if false;
+    }
+
+    // Allow admins to list admin activity
+    match /adminActivity {
+      allow list: if isAdmin();
+    }
+
+    // ============================================
+    // DENY ALL OTHER COLLECTIONS
+    // ============================================
+
+    // Block everything else - deny all writes not explicitly allowed
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

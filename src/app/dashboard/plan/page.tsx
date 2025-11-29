@@ -18,7 +18,7 @@ import {
 } from "@/components/dashboard/client-components";
 import { MealPlanSkeleton } from "@/components/skeletons";
 import MealPlanStatusCard from "@/components/status/MealPlanStatusCard";
-import { useAppContext } from "@/context/AppContext";
+import { useAppContext } from "@/context";
 import { progressSteps, type MealPlanStatusType } from "@/types/dashboard";
 import { MealPlanStatus } from "@/types/status";
 import DashboardCard from "@/components/dashboard/DashboardCard";

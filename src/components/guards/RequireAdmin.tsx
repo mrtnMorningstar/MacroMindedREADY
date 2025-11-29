@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAppContext } from "@/context/AppContext";
+import { useAppContext } from "@/context";
 import FullScreenLoader from "../FullScreenLoader";
 
 type RequireAdminProps = {

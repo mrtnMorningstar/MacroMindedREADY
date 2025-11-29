@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
-import { useAppContext } from "@/context/AppContext";
+import { useAppContext } from "@/context";
 import FullScreenLoader from "./FullScreenLoader";
 
 type AuthGateProps = {
